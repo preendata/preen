@@ -1,0 +1,45 @@
+version: 3
+method:
+  name: stream
+  options:
+    plugin: pgoutput
+    publication: plexdb_replication
+    replicationSlotOptions: 
+      name: plexdb_replication
+      temporary: true
+sources:
+  - name: users-db-us-east-1
+    engine: postgres
+    connection:
+      host: 127.0.0.1
+      port: 54321
+      database: postgres
+      username: postgres
+      password: thisisnotarealpassword
+  - name: users-db-us-west-1
+    engine: postgres
+    connection:
+      host: 127.0.0.1
+      port: 54322
+      database: postgres
+      username: postgres
+      password: thisisnotarealpassword
+  - name: users-db-us-east-2
+    engine: postgres
+    connection:
+      host: 127.0.0.1
+      port: 54323
+      database: postgres
+      username: postgres
+      password: thisisnotarealpassword
+target:
+  name: clickhouse-us-east-1
+  engine: clickhouse
+  connection:
+    host: 127.0.0.1
+    port: 8123
+    database: default
+    username: test
+    password: thisisnotarealpassword
+tables:
+  - name: users

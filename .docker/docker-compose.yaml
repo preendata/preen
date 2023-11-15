@@ -1,0 +1,52 @@
+version: "3"
+
+services:
+
+  clickhouse:
+    image: clickhouse/clickhouse-server
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ""
+
+  postgres-1:
+    image: postgres:16
+    ports: 
+      - "54321:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: thisisnotarealpassword
+      POSTGRES_DB: postgres
+    volumes:
+      - ./db/scripts:/docker-entrypoint-initdb.d
+      - ./db/data/mock-user-data-1.csv:/home/data/mock-user-data.csv
+    command: ["postgres", "-c", "log_statement=all", "-c", "wal_level=logical"]
+
+  postgres-2:
+    image: postgres:15
+    ports: 
+      - "54322:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: thisisnotarealpassword
+      POSTGRES_DB: postgres
+    volumes:
+      - ./db/scripts:/docker-entrypoint-initdb.d
+      - ./db/data/mock-user-data-2.csv:/home/data/mock-user-data.csv
+    command: ["postgres", "-c", "log_statement=all", "-c", "wal_level=logical"]
+
+  postgres-3:
+    image: postgres:15
+    ports: 
+      - "54323:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: thisisnotarealpassword
+      POSTGRES_DB: postgres
+    volumes:
+      - ./db/scripts:/docker-entrypoint-initdb.d
+      - ./db/data/mock-user-data-3.csv:/home/data/mock-user-data.csv
+    command: ["postgres", "-c", "log_statement=all", "-c", "wal_level=logical"]
