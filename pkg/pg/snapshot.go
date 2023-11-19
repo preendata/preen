@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/scalecraft/plex-db/pkg/clickhouse"
 	"github.com/scalecraft/plex-db/pkg/config"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -14,13 +15,11 @@ type snapshotter struct {
 	conn *pgconn.PgConn
 	cfg  config.Config
 	url  string
-	ch   chan map[string]interface{}
 }
 
-func Snapshot(cfg *config.Config, ch chan map[string]interface{}) {
+func Snapshot(cfg *config.Config) {
 	var s snapshotter
 	s.cfg = *cfg
-	s.ch = ch
 
 	for _, source := range s.cfg.Sources {
 		s.url = fmt.Sprintf(
@@ -51,13 +50,6 @@ func (s *snapshotter) getSnapshot(sourceName string) {
 			log.Fatalf("Failed to export snapshot: %s", err)
 		}
 
-		for _, result := range snapshot {
-			message := make(map[string]interface{})
-			for row := range result.Rows {
-				message[table.Columns[i].Name] = column
-			}
-			message["sourceName"] = sourceName
-			s.ch <- message
-		}
+		clickhouse.Insert(&s.cfg, snapshot, sourceName)
 	}
 }

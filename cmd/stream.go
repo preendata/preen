@@ -36,7 +36,7 @@ var streamCmd = &cobra.Command{
 		}
 		go func() {
 			defer wg.Done()
-			clickhouse.Insert(&config, ch)
+			clickhouse.StreamInsert(&config, ch)
 		}()
 		wg.Wait()
 	},
