@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/scalecraft/plex-db/pkg/clickhouse"
 	"github.com/scalecraft/plex-db/pkg/config"
 
 	"github.com/jackc/pglogrepl"
@@ -43,6 +44,7 @@ func Stream(cfg *config.Config, url string, ch chan map[string]interface{}, sour
 	r.conn = connect(url)
 	r.createPublication()
 	r.createReplicationSlot()
+	r.exportSnapshot(url, sourceName)
 	r.startReplication()
 	r.stream()
 }
@@ -100,6 +102,30 @@ func (r *replicator) createReplicationSlot() {
 
 	}
 	r.rs = &rs
+}
+
+func (r *replicator) exportSnapshot(url string, sourceName string) {
+	conn := connect(url)
+	defer conn.Close(context.Background())
+
+	for _, table := range r.cfg.Tables {
+		result := conn.Exec(
+			context.Background(),
+			fmt.Sprintf(
+				"begin isolation level repeatable read; set transaction snapshot '%s'; select * from %s; commit;",
+				r.rs.SnapshotName,
+				table.Name,
+			),
+		)
+
+		snapshot, err := result.ReadAll()
+
+		if err != nil {
+			log.Fatalf("Failed to export snapshot: %s", err)
+		}
+
+		clickhouse.Insert(&r.cfg, snapshot, sourceName)
+	}
 }
 
 func (r *replicator) startReplication() {

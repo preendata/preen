@@ -14,24 +14,24 @@ sources:
       host: 127.0.0.1
       port: 54321
       database: postgres
-      username: postgres
-      password: thisisnotarealpassword
+      username: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
   - name: users-db-us-west-1
     engine: postgres
     connection:
       host: 127.0.0.1
       port: 54322
       database: postgres
-      username: postgres
-      password: thisisnotarealpassword
+      username: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
   - name: users-db-us-east-2
     engine: postgres
     connection:
       host: 127.0.0.1
       port: 54323
       database: postgres
-      username: postgres
-      password: thisisnotarealpassword
+      username: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
 target:
   name: clickhouse-us-east-1
   engine: clickhouse
@@ -39,7 +39,17 @@ target:
     host: 127.0.0.1
     port: 8123
     database: default
-    username: test
-    password: thisisnotarealpassword
+    username: ${CLICKHOUSE_USER}
+    password: ${CLICKHOUSE_PASSWORD}
 tables:
   - name: users
+    schema: public
+    columns:
+      - id
+      - first_name
+      - last_name
+      - email
+      - gender
+      - ip_address
+      - is_active
+      - source

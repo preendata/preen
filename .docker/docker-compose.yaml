@@ -10,7 +10,7 @@ services:
     environment:
       CLICKHOUSE_DB: default
       CLICKHOUSE_USER: default
-      CLICKHOUSE_PASSWORD: ""
+      CLICKHOUSE_PASSWORD: thisisnotarealpassword
 
   postgres-1:
     image: postgres:16
@@ -21,7 +21,7 @@ services:
       POSTGRES_PASSWORD: thisisnotarealpassword
       POSTGRES_DB: postgres
     volumes:
-      - ./db/scripts:/docker-entrypoint-initdb.d
+      - ./db/scripts/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
       - ./db/data/mock-user-data-1.csv:/home/data/mock-user-data.csv
     command: ["postgres", "-c", "log_statement=all", "-c", "wal_level=logical"]
 
@@ -34,7 +34,7 @@ services:
       POSTGRES_PASSWORD: thisisnotarealpassword
       POSTGRES_DB: postgres
     volumes:
-      - ./db/scripts:/docker-entrypoint-initdb.d
+      - ./db/scripts/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
       - ./db/data/mock-user-data-2.csv:/home/data/mock-user-data.csv
     command: ["postgres", "-c", "log_statement=all", "-c", "wal_level=logical"]
 
@@ -47,6 +47,6 @@ services:
       POSTGRES_PASSWORD: thisisnotarealpassword
       POSTGRES_DB: postgres
     volumes:
-      - ./db/scripts:/docker-entrypoint-initdb.d
+      - ./db/scripts/provision-db-test.sql:/docker-entrypoint-initdb.d/provision-db.sql
       - ./db/data/mock-user-data-3.csv:/home/data/mock-user-data.csv
     command: ["postgres", "-c", "log_statement=all", "-c", "wal_level=logical"]

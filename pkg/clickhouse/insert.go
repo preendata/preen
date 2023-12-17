@@ -12,32 +12,13 @@ import (
 	"github.com/ClickHouse/ch-go/proto"
 )
 
-func createTable(conn *ch.Client, ctx context.Context) error {
-
-	return conn.Do(ctx, ch.Query{
-		Body: `create table if not exists users (
-			id String,
-			first_name String,
-			last_name String,
-			email String,
-			gender String,
-			ip_address String,
-			is_active String,
-			source String
-		) engine = Memory`,
-	})
-}
-
 func StreamInsert(cfg *config.Config, results chan map[string]interface{}) {
 	log.Println("Opening a stream of data updates to Clickhouse")
 	ctx := context.Background()
 
-	conn, err := ch.Dial(ctx, ch.Options{})
-	if err != nil {
-		log.Panicf("No connection to Clickhouse: %v", err)
-	}
+	conn := Connect(ctx, cfg)
 
-	if err := createTable(conn, ctx); err != nil {
+	if err := CreateTable(conn, ctx); err != nil {
 		log.Panicf("Table creation error: %v", err)
 	}
 
@@ -90,12 +71,9 @@ func Insert(cfg *config.Config, results []*pgconn.Result, sourceName string) {
 	log.Println("Inserting snapshot into Clickhouse")
 	ctx := context.Background()
 
-	conn, err := ch.Dial(ctx, ch.Options{})
-	if err != nil {
-		log.Panicf("No connection to Clickhouse: %v", err)
-	}
+	conn := Connect(ctx, cfg)
 
-	if err := createTable(conn, ctx); err != nil {
+	if err := CreateTable(conn, ctx); err != nil {
 		log.Panicf("Table creation error: %v", err)
 	}
 

@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -15,7 +16,9 @@ func connect(url string) *pgconn.PgConn {
 	connection, err := pgconn.Connect(context.Background(), url)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		slog.Error(
+			fmt.Sprintf("Unable to connect to database: %v\n", err),
+		)
 		os.Exit(1)
 	}
 	return connection
