@@ -15,7 +15,7 @@ type Table struct {
 	Schema  string            `json:"schema"`
 }
 
-type ColumnTypes struct {
+type ColumnType struct {
 	Types        []string `json:"types"`
 	MajorityType string   `json:"majority_type"`
 }
@@ -26,18 +26,18 @@ type Source struct {
 }
 
 type Validator struct {
-	Sources     map[string]Source      `json:"sources"`
-	ColumnTypes map[string]ColumnTypes `json:"column_types"`
-	cfg         config.Config          `json:"-"`
+	Sources     map[string]Source                `json:"sources"`
+	ColumnTypes map[string]map[string]ColumnType `json:"column_types"`
+	cfg         config.Config                    `json:"-"`
 }
 
 func Validate(cfg *config.Config) {
 	var v Validator
 	v.cfg = *cfg
 	v.Sources = make(map[string]Source)
-	v.ColumnTypes = make(map[string]ColumnTypes)
+	v.ColumnTypes = make(map[string]map[string]ColumnType)
 
-	for _, source := range v.cfg.Sources {
+	for sourceIdx, source := range v.cfg.Sources {
 		v.Sources[source.Name] = Source{
 			Url: fmt.Sprintf(
 				"postgres://%s:%s@%s:%d/%s",
@@ -49,11 +49,13 @@ func Validate(cfg *config.Config) {
 			),
 			Tables: make(map[string]Table),
 		}
-		v.getDataTypes(v.Sources[source.Name])
+		v.getDataTypes(v.Sources[source.Name], sourceIdx)
 	}
 
-	for column, types := range v.ColumnTypes {
-		v.majority(column, types.Types)
+	for table, columns := range v.ColumnTypes {
+		for column, types := range columns {
+			v.majority(table, column, types.Types)
+		}
 	}
 
 	validatorJSON, err := json.Marshal(v)
@@ -64,11 +66,11 @@ func Validate(cfg *config.Config) {
 		)
 	}
 
-	slog.Debug(string(validatorJSON))
+	slog.Info(string(validatorJSON))
 
 }
 
-func (v *Validator) getDataTypes(source Source) {
+func (v *Validator) getDataTypes(source Source, sourceIdx int) {
 	conn := connect(source.Url)
 	defer conn.Close(context.Background())
 
@@ -78,6 +80,9 @@ func (v *Validator) getDataTypes(source Source) {
 	`
 
 	for tableIdx, table := range v.cfg.Tables {
+		if v.ColumnTypes[table.Name] == nil {
+			v.ColumnTypes[table.Name] = make(map[string]ColumnType)
+		}
 		source.Tables[table.Name] = Table{
 			Schema:  table.Schema,
 			Columns: make(map[string]string),
@@ -100,7 +105,7 @@ func (v *Validator) getDataTypes(source Source) {
 			)
 		}
 		v.parseQueryResult(result, source.Tables[table.Name])
-		v.collectDataTypes(tableIdx, source.Tables[table.Name])
+		v.collectDataTypes(tableIdx, source.Tables[table.Name], table.Name, sourceIdx)
 	}
 }
 
@@ -112,19 +117,19 @@ func (v *Validator) parseQueryResult(result []*pgconn.Result, table Table) {
 	}
 }
 
-func (v *Validator) collectDataTypes(tableIdx int, table Table) {
+func (v *Validator) collectDataTypes(tableIdx int, table Table, tableName string, sourceIdx int) {
 	for _, column := range v.cfg.Tables[tableIdx].Columns {
-		if len(v.ColumnTypes[column].Types) == 0 {
-			v.ColumnTypes[column] = ColumnTypes{
+		if sourceIdx == 0 {
+			v.ColumnTypes[tableName][column] = ColumnType{
 				Types:        make([]string, len(v.cfg.Sources)),
 				MajorityType: "unknown",
 			}
 		}
-		v.ColumnTypes[column].Types[len(v.Sources)-1] = table.Columns[column]
+		v.ColumnTypes[tableName][column].Types[sourceIdx] = table.Columns[column]
 	}
 }
 
-func (v *Validator) majority(columnName string, types []string) {
+func (v *Validator) majority(tableName string, columnName string, types []string) {
 	// Implement Boyer-Moore majority vote algorithm
 	var majority string
 	votes := 0
@@ -157,9 +162,9 @@ func (v *Validator) majority(columnName string, types []string) {
 		slog.Debug(
 			fmt.Sprintf("Data type majority for column '%s' is: %s", columnName, majority),
 		)
-		if entry, ok := v.ColumnTypes[columnName]; ok {
+		if entry, ok := v.ColumnTypes[tableName][columnName]; ok {
 			entry.MajorityType = majority
-			v.ColumnTypes[columnName] = entry
+			v.ColumnTypes[tableName][columnName] = entry
 		}
 	} else {
 		slog.Warn(

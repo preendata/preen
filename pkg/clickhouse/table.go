@@ -1,9 +1,9 @@
 package clickhouse
 
 import (
-	"context"
+	"log/slog"
 
-	"github.com/ClickHouse/ch-go"
+	"github.com/scalecraft/plex-db/pkg/config"
 )
 
 var typeMap = map[string]string{
@@ -21,18 +21,15 @@ var typeMap = map[string]string{
 	"real":              "Float",
 }
 
-func CreateTable(conn *ch.Client, ctx context.Context) error {
+func CreateTables(cfg *config.Config) error {
+	slog.Info("Creating tables in Clickhouse.")
+	// ctx := context.Background()
 
-	return conn.Do(ctx, ch.Query{
-		Body: `create table if not exists users (
-			id String,
-			first_name String,
-			last_name String,
-			email String,
-			gender String,
-			ip_address String,
-			is_active String,
-			source String
-		) engine = Memory`,
-	})
+	// conn := Connect(ctx, cfg)
+
+	// for k, v := range *colTypes {
+	// 	fmt.Println(k, v)
+	// }
+
+	return nil
 }

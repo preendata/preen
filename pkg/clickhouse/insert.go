@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/scalecraft/plex-db/pkg/config"
@@ -13,14 +14,10 @@ import (
 )
 
 func StreamInsert(cfg *config.Config, results chan map[string]interface{}) {
-	log.Println("Opening a stream of data updates to Clickhouse")
+	slog.Info("Opening a stream of data updates to Clickhouse")
 	ctx := context.Background()
 
 	conn := Connect(ctx, cfg)
-
-	if err := CreateTable(conn, ctx); err != nil {
-		log.Panicf("Table creation error: %v", err)
-	}
 
 	// Define all columns of table.
 	var (
@@ -72,10 +69,6 @@ func Insert(cfg *config.Config, results []*pgconn.Result, sourceName string) {
 	ctx := context.Background()
 
 	conn := Connect(ctx, cfg)
-
-	if err := CreateTable(conn, ctx); err != nil {
-		log.Panicf("Table creation error: %v", err)
-	}
 
 	// Define all columns of table.
 	var (

@@ -13,7 +13,6 @@ var snapshotCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		config := config.GetConfig()
-
 		pg.Snapshot(&config)
 	},
 }
