@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/scalecraft/plex-db/codegen/go";
+
+message transactions {
+  string transaction_id = 1;
+  int32 user_id = 2;
+  string product_id = 3;
+  int32 quantity = 4;
+  float price = 5;
+  google.protobuf.Timestamp transaction_date = 6;
+  string payment_method = 7;
+  string shipping_address = 8;
+  string order_status = 9;
+  string discount_code = 10;
+}

@@ -2,7 +2,6 @@ package pg
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -10,35 +9,14 @@ import (
 	"github.com/scalecraft/plex-db/pkg/config"
 )
 
-type Table struct {
-	Columns map[string]string `json:"columns"`
-	Schema  string            `json:"schema"`
-}
+func Validate(cfg *config.Config) config.Validator {
+	var v config.Validator
+	v.Cfg = *cfg
+	v.Databases = make(map[string]config.Database)
+	v.ColumnTypes = make(map[string]map[string]config.ColumnType)
 
-type ColumnType struct {
-	Types        []string `json:"types"`
-	MajorityType string   `json:"majority_type"`
-}
-
-type Source struct {
-	Tables map[string]Table `json:"tables"`
-	Url    string           `json:"url"`
-}
-
-type Validator struct {
-	Sources     map[string]Source                `json:"sources"`
-	ColumnTypes map[string]map[string]ColumnType `json:"column_types"`
-	cfg         config.Config                    `json:"-"`
-}
-
-func Validate(cfg *config.Config) {
-	var v Validator
-	v.cfg = *cfg
-	v.Sources = make(map[string]Source)
-	v.ColumnTypes = make(map[string]map[string]ColumnType)
-
-	for sourceIdx, source := range v.cfg.Sources {
-		v.Sources[source.Name] = Source{
+	for sourceIdx, source := range v.Cfg.Sources {
+		v.Databases[source.Name] = config.Database{
 			Url: fmt.Sprintf(
 				"postgres://%s:%s@%s:%d/%s",
 				source.Connection.Username,
@@ -47,31 +25,21 @@ func Validate(cfg *config.Config) {
 				source.Connection.Port,
 				source.Connection.Database,
 			),
-			Tables: make(map[string]Table),
+			TableResults: make(map[string]config.TableResult),
 		}
-		v.getDataTypes(v.Sources[source.Name], sourceIdx)
+		getDataTypes(v, sourceIdx, v.Databases[source.Name])
 	}
 
 	for table, columns := range v.ColumnTypes {
 		for column, types := range columns {
-			v.majority(table, column, types.Types)
+			majority(v, table, column, types.Types)
 		}
 	}
-
-	validatorJSON, err := json.Marshal(v)
-
-	if err != nil {
-		slog.Error(
-			fmt.Sprintf("Failed to marshal sources: %v", err),
-		)
-	}
-
-	slog.Info(string(validatorJSON))
-
+	return v
 }
 
-func (v *Validator) getDataTypes(source Source, sourceIdx int) {
-	conn := connect(source.Url)
+func getDataTypes(v config.Validator, sourceIdx int, d config.Database) {
+	conn := connect(d.Url)
 	defer conn.Close(context.Background())
 
 	query := `
@@ -79,11 +47,11 @@ func (v *Validator) getDataTypes(source Source, sourceIdx int) {
 		where table_schema = '%s' and table_name = '%s';
 	`
 
-	for tableIdx, table := range v.cfg.Tables {
+	for tableIdx, table := range v.Cfg.Tables {
 		if v.ColumnTypes[table.Name] == nil {
-			v.ColumnTypes[table.Name] = make(map[string]ColumnType)
+			v.ColumnTypes[table.Name] = make(map[string]config.ColumnType)
 		}
-		source.Tables[table.Name] = Table{
+		d.TableResults[table.Name] = config.TableResult{
 			Schema:  table.Schema,
 			Columns: make(map[string]string),
 		}
@@ -101,15 +69,15 @@ func (v *Validator) getDataTypes(source Source, sourceIdx int) {
 
 		if len(result[0].Rows) == 0 {
 			slog.Warn(
-				fmt.Sprintf("Table '%s' not found for source '%s'\n", table.Name, source.Url),
+				fmt.Sprintf("Table '%s' not found for source '%s'\n", table.Name, d.Url),
 			)
 		}
-		v.parseQueryResult(result, source.Tables[table.Name])
-		v.collectDataTypes(tableIdx, source.Tables[table.Name], table.Name, sourceIdx)
+		parseQueryResult(result, d.TableResults[table.Name])
+		collectDataTypes(v, tableIdx, d.TableResults[table.Name], table.Name, sourceIdx)
 	}
 }
 
-func (v *Validator) parseQueryResult(result []*pgconn.Result, table Table) {
+func parseQueryResult(result []*pgconn.Result, table config.TableResult) {
 	for _, res := range result {
 		for _, row := range res.Rows {
 			table.Columns[string(row[0])] = string(row[1])
@@ -117,11 +85,11 @@ func (v *Validator) parseQueryResult(result []*pgconn.Result, table Table) {
 	}
 }
 
-func (v *Validator) collectDataTypes(tableIdx int, table Table, tableName string, sourceIdx int) {
-	for _, column := range v.cfg.Tables[tableIdx].Columns {
+func collectDataTypes(v config.Validator, tableIdx int, table config.TableResult, tableName string, sourceIdx int) {
+	for _, column := range v.Cfg.Tables[tableIdx].Columns {
 		if sourceIdx == 0 {
-			v.ColumnTypes[tableName][column] = ColumnType{
-				Types:        make([]string, len(v.cfg.Sources)),
+			v.ColumnTypes[tableName][column] = config.ColumnType{
+				Types:        make([]string, len(v.Cfg.Sources)),
 				MajorityType: "unknown",
 			}
 		}
@@ -129,7 +97,7 @@ func (v *Validator) collectDataTypes(tableIdx int, table Table, tableName string
 	}
 }
 
-func (v *Validator) majority(tableName string, columnName string, types []string) {
+func majority(v config.Validator, tableName string, columnName string, types []string) {
 	// Implement Boyer-Moore majority vote algorithm
 	var majority string
 	votes := 0

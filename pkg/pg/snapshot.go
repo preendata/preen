@@ -50,6 +50,6 @@ func (s *snapshotter) getSnapshot(sourceName string) {
 			log.Fatalf("Failed to export snapshot: %s", err)
 		}
 
-		clickhouse.Insert(&s.cfg, snapshot, sourceName)
+		clickhouse.Insert(&s.cfg, snapshot, sourceName, table.Name)
 	}
 }

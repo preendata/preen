@@ -1,0 +1,14 @@
+version: v1
+managed:
+  enabled: false
+  go_package_prefix: 
+    default: github.com/scalecraft/plex-db/codegen/go
+plugins:
+  - name: go
+    out: codegen/go
+    opt:
+      - paths=source_relative
+  - name: go-grpc
+    out: codegen/go
+    opt:
+      - paths=source_relative

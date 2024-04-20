@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/scalecraft/plex-db/codegen/go";
+
+message users {
+  string id = 1;
+  string first_name = 2;
+  string last_name = 3;
+  string email = 4 [
+    (plex_db.redacted) = true
+  ];
+  string gender = 5;
+  string ip_address = 6 [
+    (plex_db.hashed) = true
+  ];
+  google.protobuf.BoolValue is_active = 7;
+}

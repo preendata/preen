@@ -124,7 +124,7 @@ func (r *replicator) exportSnapshot(url string, sourceName string) {
 			log.Fatalf("Failed to export snapshot: %s", err)
 		}
 
-		clickhouse.Insert(&r.cfg, snapshot, sourceName)
+		clickhouse.Insert(&r.cfg, snapshot, sourceName, table.Name)
 	}
 }
 

@@ -11,6 +11,8 @@ services:
       CLICKHOUSE_DB: default
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: thisisnotarealpassword
+    volumes:
+      - ../proto:/var/lib/clickhouse/format_schemas/proto
 
   postgres-1:
     image: postgres:16
