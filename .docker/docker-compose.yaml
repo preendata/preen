@@ -1,16 +1,14 @@
-version: "3"
-
 services:
 
-  clickhouse:
-    image: clickhouse/clickhouse-server
-    ports:
-      - "8123:8123"
-      - "9000:9000"
-    environment:
-      CLICKHOUSE_DB: default
-      CLICKHOUSE_USER: default
-      CLICKHOUSE_PASSWORD: thisisnotarealpassword
+  # clickhouse:
+  #   image: clickhouse/clickhouse-server
+  #   ports:
+  #     - "8123:8123"
+  #     - "9000:9000"
+  #   environment:
+  #     CLICKHOUSE_DB: default
+  #     CLICKHOUSE_USER: default
+  #     CLICKHOUSE_PASSWORD: thisisnotarealpassword
 
   postgres-1:
     image: postgres:16
@@ -21,7 +19,7 @@ services:
       POSTGRES_PASSWORD: thisisnotarealpassword
       POSTGRES_DB: postgres
     volumes:
-      - ./db/scripts/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
+      - ./db/scripts/provision-db-1.sql:/docker-entrypoint-initdb.d/provision-db.sql
       - ./db/data/users/mock-user-data-1.csv:/home/data/mock-user-data.csv
       - ./db/data/transactions/mock-transaction-data-1.csv:/home/data/mock-transaction-data.csv
     command: ["postgres", "-c", "log_statement=all", "-c", "wal_level=logical"]

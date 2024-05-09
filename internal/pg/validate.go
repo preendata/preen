@@ -7,7 +7,7 @@ import (
 	"log/slog"
 
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/scalecraft/plex-db/pkg/config"
+	"github.com/scalecraft/plex-db/internal/config"
 )
 
 type Table struct {
@@ -31,7 +31,7 @@ type Validator struct {
 	cfg         config.Config                    `json:"-"`
 }
 
-func Validate(cfg *config.Config) {
+func Validate(cfg *config.Config) (*Validator, error) {
 	var v Validator
 	v.cfg = *cfg
 	v.Sources = make(map[string]Source)
@@ -49,7 +49,11 @@ func Validate(cfg *config.Config) {
 			),
 			Tables: make(map[string]Table),
 		}
-		v.getDataTypes(v.Sources[source.Name], sourceIdx)
+		err := v.getDataTypes(v.Sources[source.Name], sourceIdx)
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for table, columns := range v.ColumnTypes {
@@ -64,14 +68,23 @@ func Validate(cfg *config.Config) {
 		slog.Error(
 			fmt.Sprintf("Failed to marshal sources: %v", err),
 		)
+		return nil, err
 	}
 
-	slog.Info(string(validatorJSON))
+	slog.Info("Validation completed successfully!")
+	slog.Debug(string(validatorJSON))
+
+	return &v, nil
 
 }
 
-func (v *Validator) getDataTypes(source Source, sourceIdx int) {
-	conn := connect(source.Url)
+func (v *Validator) getDataTypes(source Source, sourceIdx int) error {
+	conn, err := connect(source.Url)
+
+	if err != nil {
+		return err
+	}
+
 	defer conn.Close(context.Background())
 
 	query := `
@@ -107,6 +120,8 @@ func (v *Validator) getDataTypes(source Source, sourceIdx int) {
 		v.parseQueryResult(result, source.Tables[table.Name])
 		v.collectDataTypes(tableIdx, source.Tables[table.Name], table.Name, sourceIdx)
 	}
+
+	return nil
 }
 
 func (v *Validator) parseQueryResult(result []*pgconn.Result, table Table) {
@@ -158,14 +173,18 @@ func (v *Validator) majority(tableName string, columnName string, types []string
 		slog.Warn(
 			fmt.Sprintf("Column: '%s' is missing from majority of tables!", columnName),
 		)
-	} else if count > len(types)/2 {
+	} else if count > len(types)/2 && count == len(types) {
 		slog.Debug(
-			fmt.Sprintf("Data type majority for column '%s' is: %s", columnName, majority),
+			fmt.Sprintf("Data type for column '%s' is: %s", columnName, majority),
 		)
 		if entry, ok := v.ColumnTypes[tableName][columnName]; ok {
 			entry.MajorityType = majority
 			v.ColumnTypes[tableName][columnName] = entry
 		}
+	} else if count > len(types)/2 && count != len(types) {
+		slog.Warn(
+			fmt.Sprintf("Discrepancy in data types for column '%s'!", columnName),
+		)
 	} else {
 		slog.Warn(
 			fmt.Sprintf("No majority data type found for column '%s'!", columnName),
