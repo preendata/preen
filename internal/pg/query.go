@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hyphadb/hyphadb/internal/config"
+	"github.com/hyphadb/hyphadb/internal/sql"
 	"github.com/jackc/pgx/v5"
-	"github.com/scalecraft/plex-db/internal/config"
 )
 
-type Result map[string]any
-
-func Query(query string, cfg *config.Config) ([]map[string]any, error) {
+func Execute(statement string, cfg *config.Config) ([]map[string]any, error) {
 	returnResults := []map[string]any{}
-	for _, source := range cfg.Sources {
+	for idx, source := range cfg.Sources {
+
 		url := fmt.Sprintf(
 			"postgres://%s:%s@%s:%d/%s",
 			source.Connection.Username,
@@ -30,22 +30,30 @@ func Query(query string, cfg *config.Config) ([]map[string]any, error) {
 
 		defer dbpool.Close()
 
-		result, err := dbpool.Query(
-			context.Background(),
-			query,
-		)
+		parsedQuery, err := sql.Parse(statement, cfg, idx)
 
 		if err != nil {
 			return nil, err
 		}
 
-		rows, err := pgx.CollectRows(result, pgx.RowToMap)
+		if parsedQuery != nil {
+			result, err := dbpool.Query(
+				context.Background(),
+				*parsedQuery,
+			)
 
-		if err != nil {
-			return nil, err
+			if err != nil {
+				return nil, err
+			}
+
+			rows, err := pgx.CollectRows(result, pgx.RowToMap)
+
+			if err != nil {
+				return nil, err
+			}
+
+			returnResults = append(returnResults, rows...)
 		}
-
-		returnResults = append(returnResults, rows...)
 	}
 
 	return returnResults, nil

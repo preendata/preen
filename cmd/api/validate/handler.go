@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/scalecraft/plex-db/internal/config"
-	"github.com/scalecraft/plex-db/internal/pg"
+	"github.com/hyphadb/hyphadb/internal/config"
+	"github.com/hyphadb/hyphadb/internal/pg"
 )
 
 type HandlerResponse struct {

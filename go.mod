@@ -1,4 +1,4 @@
-module github.com/scalecraft/plex-db
+module github.com/hyphadb/hyphadb
 
 go 1.21.1
 
@@ -8,6 +8,7 @@ require (
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/joho/godotenv v1.5.1
 	github.com/spf13/cobra v1.7.0
+	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2
 	gopkg.in/yaml.v3 v3.0.1
 )
 

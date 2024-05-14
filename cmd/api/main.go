@@ -6,8 +6,8 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/scalecraft/plex-db/internal/query"
-	"github.com/scalecraft/plex-db/internal/validate"
+	"github.com/hyphadb/hyphadb/cmd/api/query"
+	"github.com/hyphadb/hyphadb/cmd/api/validate"
 )
 
 func main() {

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/scalecraft/plex-db/internal/config"
 )
 
 type Table struct {
