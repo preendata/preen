@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/scalecraft/plex-db/internal/config"
-	"github.com/scalecraft/plex-db/internal/pg"
+	"github.com/hyphadb/hyphadb/internal/config"
+	"github.com/hyphadb/hyphadb/internal/pg"
 )
 
 type HandlerRequest struct {
@@ -42,7 +42,7 @@ func Handler(c *gin.Context) {
 		c.JSON(500, gin.H{"error": err.Error()})
 	}
 
-	response.Rows, err = pg.Query(parsedQuery, &config)
+	response.Rows, err = pg.Execute(parsedQuery, &config)
 
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})

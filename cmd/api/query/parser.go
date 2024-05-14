@@ -1,7 +1,7 @@
 package query
 
 import (
-	"github.com/scalecraft/plex-db/internal/config"
+	"github.com/hyphadb/hyphadb/internal/config"
 )
 
 func ParseQuery(query string, config *config.Config) (string, error) {
