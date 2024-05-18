@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Docker Composer
-        run: docker-compose up -d
+        run: docker-compose -f .docker/docker-compose.yaml up -d
       - name: Test Query Endpoint
         run: |
           curl -X POST -H "Content-Type: application/json" -d '{"query": "select * from users limit 3" }' http://localhost:5051/query
