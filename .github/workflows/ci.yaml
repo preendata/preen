@@ -7,9 +7,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Docker Composer
-        run: docker-compose -f .docker/docker-compose.yaml up -d
+      - name: Build Docker Image
+        run: docker build -t hyphadb-api -f .docker/hyphadb.Dockerfile ..
       - name: Test Query Endpoint
         run: |
+          docker-compose -f .docker/docker-compose.yaml up -d
           sleep 15
           curl -X POST -H "Content-Type: application/json" -d '{"query": "select * from users limit 3" }' http://localhost:5051/query
