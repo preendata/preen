@@ -11,5 +11,5 @@ jobs:
         run: docker-compose -f .docker/docker-compose.yaml up -d
       - name: Test Query Endpoint
         run: |
-          sleep 5
+          sleep 15
           curl -X POST -H "Content-Type: application/json" -d '{"query": "select * from users limit 3" }' http://localhost:5051/query
