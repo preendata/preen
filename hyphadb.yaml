@@ -3,24 +3,24 @@ sources:
   - name: users-db-us-east-1
     engine: postgres
     connection:
-      host: 127.0.0.1
-      port: 54321
+      host: postgres-1
+      port: 5432
       database: postgres
       username: ${POSTGRES_USER}
       password: ${POSTGRES_PASSWORD}
   - name: users-db-us-west-1
     engine: postgres
     connection:
-      host: 127.0.0.1
-      port: 54322
+      host: postgres-2
+      port: 5432
       database: postgres
       username: ${POSTGRES_USER}
       password: ${POSTGRES_PASSWORD}
   - name: users-db-us-east-2
     engine: postgres
     connection:
-      host: 127.0.0.1
-      port: 54323
+      host: postgres-3
+      port: 5432
       database: postgres
       username: ${POSTGRES_USER}
       password: ${POSTGRES_PASSWORD}
