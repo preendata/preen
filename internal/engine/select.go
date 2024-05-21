@@ -14,7 +14,7 @@ func (q *ParsedQuery) SelectParser(sourceIndex int, nSources int) *ParsedQuery {
 
 	switch tableList := table.(type) {
 	case *sqlparser.JoinTableExpr:
-		q.Join = tableList
+		q.JoinExpr = tableList
 	}
 	if q.Select.Limit.Rowcount != nil {
 		q.UpdateLimit(sourceIndex, nSources)

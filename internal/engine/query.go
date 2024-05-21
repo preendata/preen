@@ -1,34 +1,41 @@
 package engine
 
 import (
+	"errors"
+
 	"github.com/hyphadb/hyphadb/internal/config"
-	"github.com/hyphadb/hyphadb/internal/pg"
 	"github.com/xwb1989/sqlparser"
 )
 
 type ParsedQuery struct {
 	Statement   sqlparser.Statement
 	Select      *sqlparser.Select
-	Join        *sqlparser.JoinTableExpr
+	JoinExpr    *sqlparser.JoinTableExpr
 	QueryString string
+	Source      config.Source
+	NodeResults []map[string]any
 }
 
 type Query struct {
-	Input string
-	Cfg   *config.Config
-	Main  ParsedQuery
-	Node  ParsedQuery
+	Input           string
+	Cfg             *config.Config
+	Main            ParsedQuery
+	Nodes           []ParsedQuery
+	Results         []map[string]any
+	ReducerRequired bool
+	Err             error
 }
 
 // Execute executes a prepared statement on all sources in the config
 func Execute(statement string, cfg *config.Config) ([]map[string]any, error) {
 	q := Query{
-		Input: statement,
-		Cfg:   cfg,
+		Input:   statement,
+		Cfg:     cfg,
+		Nodes:   make([]ParsedQuery, len(cfg.Sources)),
+		Results: make([]map[string]any, 0),
 	}
-	results := []map[string]any{}
 
-	parsed, err := sqlparser.Parse(statement)
+	parsed, err := sqlparser.Parse(q.Input)
 
 	if err != nil {
 		return nil, err
@@ -36,22 +43,53 @@ func Execute(statement string, cfg *config.Config) ([]map[string]any, error) {
 
 	q.Main.Statement = parsed
 
-	for idx, source := range cfg.Sources {
-		q.Node.Statement, _ = sqlparser.Parse(statement)
-		switch stmt := q.Node.Statement.(type) {
-		case *sqlparser.Select:
-			q.Node.Select = stmt
+	switch stmt := q.Main.Statement.(type) {
+	case *sqlparser.Select:
+		q.Main.Select = stmt
+		err = q.SelectMapper()
+		if err != nil {
+			return nil, err
 		}
-		q.Node.SelectParser(idx, len(cfg.Sources))
-		q.Node.QueryString = sqlparser.String(q.Node.Statement)
+		q.SelectReducer()
+	default:
+		err = errors.New("unsupported sql statement. please provide a select statement")
+		return nil, err
+	}
 
-		if source.Engine == "postgres" {
-			result, err := pg.ExecuteRaw(q.Node.QueryString, q.Cfg, source)
-			if err != nil {
-				return nil, err
-			}
-			results = append(results, result...)
+	return q.Results, nil
+}
+
+func (q *Query) SelectMapper() error {
+	for idx, source := range q.Cfg.Sources {
+		q.Nodes[idx].Source = source
+		q.Nodes[idx].Statement, _ = sqlparser.Parse(q.Input)
+		switch stmt := q.Nodes[idx].Statement.(type) {
+		case *sqlparser.Select:
+			q.Nodes[idx].Select = stmt
+		}
+		q.Nodes[idx].SelectParser(idx, len(q.Cfg.Sources))
+		if q.Nodes[idx].JoinExpr != nil {
+			q.ReducerRequired = true
+		}
+		q.Nodes[idx].QueryString = sqlparser.String(q.Nodes[idx].Statement)
+		err := q.Nodes[idx].Map(q.Cfg)
+
+		if err != nil {
+			return err
 		}
 	}
-	return results, nil
+
+	return nil
+}
+
+func (q *Query) SelectReducer() (*Query, error) {
+	if q.ReducerRequired {
+		q.Reduce()
+	} else {
+		for idx := range q.Nodes {
+			q.Results = append(q.Results, q.Nodes[idx].NodeResults...)
+		}
+	}
+
+	return q, nil
 }
