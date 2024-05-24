@@ -4,30 +4,28 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/urfave/cli/v2"
 )
 
-type Connections struct {
-	Host string `json:"host"`
-	Port int    `json:"port"`
-}
-
 func listConnections(c *cli.Context) error {
-	connections := []Connections{
-		{Host: "localhost", Port: 5433},
-		{Host: "localhost", Port: 5434},
-		{Host: "localhost", Port: 5435},
-	}
+	config := config.GetConfig()
 
-	for _, conn := range connections {
-		b, err := json.MarshalIndent(conn, "", "  ")
+	for _, conn := range config.Sources {
+		c, err := json.MarshalIndent(conn, "", "  ")
 
 		if err != nil {
 			fmt.Println("Error:", err)
 			return nil
 		}
 
-		fmt.Println(string(b))
+		fmt.Println(string(c))
 	}
+	return nil
+}
+
+func saveConnection(c *cli.Context) error {
+	fmt.Println("Saving password to plaintext")
+
 	return nil
 }
