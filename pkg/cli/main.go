@@ -10,9 +10,9 @@ func NewApp() *cli.App {
 		Usage: "A command-line application for MyProject",
 		Commands: []*cli.Command{
 			{
-				Name:   "do-something",
-				Usage:  "Does something useful",
-				Action: doSomething,
+				Name:   "list-connections",
+				Usage:  "Print stored connection credentials",
+				Action: listConnections,
 			},
 		},
 	}
