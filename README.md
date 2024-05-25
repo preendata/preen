@@ -12,3 +12,7 @@ Running the API:
 ```bash
 go run cmd/api/main.go
 ```
+
+CLI entrypoint: 
+
+`go run cmd/cli/main.go -h`
