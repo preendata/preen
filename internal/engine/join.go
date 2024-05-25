@@ -1,26 +1,43 @@
 package engine
 
 import (
-	"fmt"
+	"maps"
+	"reflect"
 
 	"github.com/xwb1989/sqlparser"
 )
 
-func (q *ParsedQuery) Join() []map[string]any {
-	join := q.JoinExpr
-	leftTableName := sqlparser.String(join.LeftExpr)
-	rightTableName := sqlparser.String(join.RightExpr)
-	joinType := join.Join
-	joinCondition := sqlparser.String(join.Condition)
+func (p *ParsedQuery) JoinNodeQuery() error {
+	join := p.JoinDetails.JoinExpr
+	p.JoinDetails.LeftTableName = sqlparser.String(join.LeftExpr)
+	p.JoinDetails.RightTableName = sqlparser.String(join.RightExpr)
+	p.JoinDetails.Condition = &join.Condition
 
-	leftRows := collectRows(leftTableName)
-	rightRows := collectRows(rightTableName)
+	leftTableQuery := "select * from " + p.JoinDetails.LeftTableName
+	rightTableQuery := "select * from " + p.JoinDetails.RightTableName
 
-	fmt.Println(joinType, joinCondition, leftRows, rightRows)
+	p.QueryString = append(p.QueryString, leftTableQuery, rightTableQuery)
+
 	return nil
 }
 
-func collectRows(tableName string) []map[string]any {
-	fmt.Println(tableName)
-	return nil
+func (q *Query) JoinReducer() (*Query, error) {
+	// operator := q.Nodes[0].JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Operator
+	leftColumn := q.Nodes[0].JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Left.(*sqlparser.ColName).Name
+	rightColumn := q.Nodes[0].JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Right.(*sqlparser.ColName).Name
+
+	for idx := range q.Nodes {
+		leftRows := q.Nodes[idx].NodeResults[q.Nodes[idx].JoinDetails.LeftTableName]
+		for _, leftRow := range leftRows {
+			rightRows := q.Nodes[idx].NodeResults[q.Nodes[idx].JoinDetails.RightTableName]
+			for _, rightRow := range rightRows {
+				if reflect.DeepEqual(leftRow[leftColumn.String()], rightRow[rightColumn.String()]) {
+					maps.Copy(leftRow, rightRow)
+					q.Results = append(q.Results, leftRow)
+				}
+			}
+		}
+	}
+
+	return q, nil
 }
