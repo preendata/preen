@@ -6,6 +6,7 @@ dbt_modules/
 .DS_Store
 conf/.user.yml
 .idea/
+.docker/db/data
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

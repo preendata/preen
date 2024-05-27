@@ -10,16 +10,16 @@ services:
   #     CLICKHOUSE_USER: default
   #     CLICKHOUSE_PASSWORD: thisisnotarealpassword
 
-  # trino:
-  #   image: trinodb/trino
-  #   ports:
-  #     - "8080:8080"
-  #   environment:
-  #     CATALOG_MANAGEMENT: dynamic
-  #   volumes:
-  #     - ./trino/config/pg1.properties:/etc/trino/catalog/pg1.properties
-  #     - ./trino/config/pg2.properties:/etc/trino/catalog/pg2.properties
-  #     - ./trino/config/pg3.properties:/etc/trino/catalog/pg3.properties
+  trino:
+    image: trinodb/trino
+    ports:
+      - "8080:8080"
+    environment:
+      CATALOG_MANAGEMENT: dynamic
+    volumes:
+      - ./trino/config/pg1.properties:/etc/trino/catalog/pg1.properties
+      - ./trino/config/pg2.properties:/etc/trino/catalog/pg2.properties
+      - ./trino/config/pg3.properties:/etc/trino/catalog/pg3.properties
 
   hyphadb-api:
     image: hyphadb-api

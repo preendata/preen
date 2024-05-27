@@ -2,6 +2,7 @@ package engine
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/hyphadb/hyphadb/internal/config"
@@ -63,8 +64,8 @@ func Execute(statement string, cfg *config.Config) ([]map[string]any, error) {
 		err = errors.New("unsupported sql statement. please provide a select statement")
 		return nil, err
 	}
-
-	return q.Results, nil
+	fmt.Println(len(q.Results))
+	return q.Results[0:1], nil
 }
 
 func (q *Query) SelectMapper() error {

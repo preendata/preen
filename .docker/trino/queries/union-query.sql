@@ -14,7 +14,7 @@ all_transactions as (
 )
 
 select
-	*
+	count(*)
 from
 	all_users
 left join
