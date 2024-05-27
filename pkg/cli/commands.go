@@ -9,7 +9,7 @@ import (
 )
 
 func listConnections(c *cli.Context) error {
-	config := config.GetConfig()
+	config := config.GetConfig("test.yaml")
 
 	for _, conn := range config.Sources {
 		c, err := json.MarshalIndent(conn, "", "  ")
@@ -25,7 +25,24 @@ func listConnections(c *cli.Context) error {
 }
 
 func saveConnection(c *cli.Context) error {
-	fmt.Println("Saving password to plaintext")
+	filename := "test.yaml"
+	newSource := config.Source{
+		Name:   "users-db-us-east-3",
+		Engine: "postgres",
+		Connection: config.Connection{
+			Host:     "127.0.0.1",
+			Port:     54329,
+			Database: "postgres",
+			Username: "${POSTGRES_USER}",
+			Password: "${POSTGRES_PASSWORD}",
+		},
+	}
+
+	err := config.AddSource(filename, newSource)
+
+	if err != nil {
+		fmt.Println("Error saving new connection: ", err)
+	}
 
 	return nil
 }
