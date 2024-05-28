@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hyphadb/hyphadb/internal/config"
-	"github.com/hyphadb/hyphadb/internal/pg"
+	"github.com/hyphadb/hyphadb/internal/engine"
 )
 
 type HandlerRequest struct {
@@ -36,13 +36,12 @@ func Handler(c *gin.Context) {
 	response := HandlerResponse{}
 
 	config := config.GetConfig()
-	parsedQuery, err := ParseQuery(request.Query, &config)
 
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 	}
 
-	response.Rows, err = pg.Execute(parsedQuery, &config)
+	response.Rows, err = engine.Execute(request.Query, &config)
 
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})

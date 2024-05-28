@@ -7,6 +7,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/hyphadb/hyphadb/cmd/api/query"
+	"github.com/hyphadb/hyphadb/cmd/api/stats"
 	"github.com/hyphadb/hyphadb/cmd/api/validate"
 	"github.com/hyphadb/hyphadb/pkg/hlog"
 	"github.com/joho/godotenv"
@@ -33,8 +34,8 @@ func main() {
 		hlog.Error("Failed to set trusted proxies", err)
 	}
 
+	r.GET("/stats", stats.Handler)
 	r.GET("/validate", validate.Handler)
-
 	r.POST("/query", query.Handler)
 
 	err = r.Run(":5051")

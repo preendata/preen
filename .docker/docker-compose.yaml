@@ -10,6 +10,33 @@ services:
   #     CLICKHOUSE_USER: default
   #     CLICKHOUSE_PASSWORD: thisisnotarealpassword
 
+  trino:
+    image: trinodb/trino
+    ports:
+      - "8080:8080"
+    environment:
+      CATALOG_MANAGEMENT: dynamic
+    volumes:
+      - ./trino/config/pg1.properties:/etc/trino/catalog/pg1.properties
+      - ./trino/config/pg2.properties:/etc/trino/catalog/pg2.properties
+      - ./trino/config/pg3.properties:/etc/trino/catalog/pg3.properties
+
+  hyphadb-api:
+    image: hyphadb-api
+    build:
+      context: ..
+      dockerfile: .docker/hyphadb.Dockerfile
+    ports:
+      - "5051:5051"
+    working_dir: /home/hyphadb
+    command: go run cmd/api/main.go
+    volumes:
+      - ../:/home/hyphadb
+    depends_on:
+      - postgres-1
+      - postgres-2
+      - postgres-3
+
   postgres-1:
     image: postgres:16
     ports: 
@@ -19,7 +46,7 @@ services:
       POSTGRES_PASSWORD: thisisnotarealpassword
       POSTGRES_DB: postgres
     volumes:
-      - ./db/scripts/provision-db-1.sql:/docker-entrypoint-initdb.d/provision-db.sql
+      - ./db/scripts/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
       - ./db/data/users/mock-user-data-1.csv:/home/data/mock-user-data.csv
       - ./db/data/transactions/mock-transaction-data-1.csv:/home/data/mock-transaction-data.csv
     command: ["postgres", "-c", "log_statement=all", "-c", "wal_level=logical"]
