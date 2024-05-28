@@ -1,6 +1,7 @@
 package hlog
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -8,7 +9,9 @@ import (
 
 var logger *logrus.Logger
 
-func Initialize() {
+type Fields = logrus.Fields
+
+func Initialize() error {
 	logger = logrus.New()
 	logger.Out = os.Stdout
 
@@ -26,10 +29,11 @@ func Initialize() {
 	// Set loglevel
 	level, err := logrus.ParseLevel(logLevel)
 	if err != nil {
-		logger.Fatalf("invalid log level: %v", err)
+		return fmt.Errorf("invalid log level: %v", err)
 	}
 	logger.SetLevel(level)
 
+	return nil
 }
 
 func Debug(args ...interface{}) {
@@ -71,7 +75,10 @@ func Fatalf(format string, args ...interface{}) {
 	logger.Fatalf(format, args...)
 }
 
-// WithFields creates an entry with fields
 func WithFields(fields logrus.Fields) *logrus.Entry {
 	return logger.WithFields(fields)
+}
+
+func WithError(err error) *logrus.Entry {
+	return logger.WithError(err)
 }
