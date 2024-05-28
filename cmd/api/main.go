@@ -20,7 +20,10 @@ func main() {
 		log.Fatalf("warn: error loading .env file: %v", err)
 	}
 
-	hlog.Initialize()
+	//TODO add verbosity flag for logLevel
+	if err := hlog.Initialize(); err != nil {
+		log.Fatal("fatal error initializing logger", err)
+	}
 
 	flag.Parse()
 	r := gin.Default()
