@@ -1,22 +1,17 @@
 package config
 
 import (
-	"log"
 	"os"
 
+	"github.com/hyphadb/hyphadb/pkg/hlog"
 	yaml "gopkg.in/yaml.v3"
 )
 
-func GetConfig(filenames ...string) Config {
-	filename := "plex.yaml"
-	if len(filenames) > 0 {
-		filename = filenames[0]
-	}
-
-	file, err := os.ReadFile(filename)
+func GetConfig() Config {
+	file, err := os.ReadFile(SingleConfigPath)
 
 	if err != nil {
-		log.Fatalf("Failed to read config file: %s", err)
+		hlog.Fatalf("Failed to read config file: %s", err)
 	}
 
 	c := Config{}
@@ -24,7 +19,7 @@ func GetConfig(filenames ...string) Config {
 	err = yaml.Unmarshal(file, &c)
 
 	if err != nil {
-		log.Fatalf("Failed to parse config file: %s", err)
+		hlog.Fatalf("Failed to parse config file: %s", err)
 	}
 
 	fromEnv(&c)

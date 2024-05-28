@@ -1,3 +1,4 @@
+.config/
 .venv/
 target/
 dbt_modules/

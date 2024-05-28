@@ -13,9 +13,9 @@ import (
 var envRegex = regexp.MustCompile(`^\${(\w+)}$`)
 
 var GlobalConfig Config
+var SingleConfigPath string
 
 func Initialize() {
-
 	configDirectoryPath := os.Getenv("HYPHADB_CONFIG_PATH")
 
 	// Default to home directory if none set by user
@@ -35,9 +35,9 @@ func Initialize() {
 		hlog.Fatalf("error ensuring configuration exists: %v", err)
 	}
 
-	configFilePath := filepath.Join(configDirectoryPath, "config.yaml")
+	SingleConfigPath = filepath.Join(configDirectoryPath, "config.yaml")
 
-	GlobalConfig = GetConfig(configFilePath)
+	GlobalConfig = GetConfig()
 
 }
 
@@ -46,11 +46,11 @@ func ensureConfigExists(configDirectoryPath string) error {
 
 	// If no directory, create
 	if _, err := os.Stat(configDirectoryPath); os.IsNotExist(err) {
-		hlog.Debugf("Directory does not exist, creating it: %s", configDirectoryPath)
+		hlog.Debugf("Config directory does not exist, creating it: %s", configDirectoryPath)
 		err = os.MkdirAll(configDirectoryPath, 0755)
 
 		if err != nil {
-			return fmt.Errorf("failed to create directory: %s", err)
+			return fmt.Errorf("failed to create config directory: %s", err)
 		}
 	} else if err != nil {
 		return fmt.Errorf("error checking directory: %s", err)

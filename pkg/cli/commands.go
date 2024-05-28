@@ -5,17 +5,18 @@ import (
 	"fmt"
 
 	"github.com/hyphadb/hyphadb/internal/config"
+	"github.com/hyphadb/hyphadb/pkg/hlog"
 	"github.com/urfave/cli/v2"
 )
 
 func listConnections(c *cli.Context) error {
-	config := config.GetConfig("plex.yaml")
+	config := config.GlobalConfig
 
 	for _, conn := range config.Sources {
 		c, err := json.MarshalIndent(conn, "", "  ")
 
 		if err != nil {
-			fmt.Println("Error:", err)
+			hlog.Fatal("Error unmarshalling config:", err)
 			return nil
 		}
 
@@ -24,8 +25,9 @@ func listConnections(c *cli.Context) error {
 	return nil
 }
 
+// BROKEN - this is hardcoded and incomplete for now.
 func saveConnection(c *cli.Context) error {
-	filename := "test.yaml"
+	filename := config.SingleConfigPath
 	newSource := config.Source{
 		Name:   "users-db-us-east-3",
 		Engine: "postgres",
@@ -41,7 +43,7 @@ func saveConnection(c *cli.Context) error {
 	err := config.AddSource(filename, newSource)
 
 	if err != nil {
-		fmt.Println("Error saving new connection: ", err)
+		hlog.Fatal("Error saving new connection: ", err)
 	}
 
 	return nil

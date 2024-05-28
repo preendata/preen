@@ -7,6 +7,10 @@ This is the backend for the HyphaDB project. There are several components to thi
 
 ## Quick Start
 
+`cp .env.example .env`
+
+Temporary: name the config file config.yaml and place it in ./.config/
+
 Running the API:
 
 ```bash

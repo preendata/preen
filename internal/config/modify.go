@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hyphadb/hyphadb/pkg/hlog"
 	"gopkg.in/yaml.v3"
 )
 
 func AddSource(filename string, newSource Source) error {
+	hlog.Debugf("Attempting to read in file %s", filename)
 	// Read the YAML file
 	data, err := os.ReadFile(filename)
 	if err != nil {
