@@ -2,26 +2,36 @@ package main
 
 import (
 	"flag"
-	"log/slog"
+	"log"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/hyphadb/hyphadb/cmd/api/query"
 	"github.com/hyphadb/hyphadb/cmd/api/stats"
 	"github.com/hyphadb/hyphadb/cmd/api/validate"
+	"github.com/hyphadb/hyphadb/pkg/hlog"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		// Use builtin log before hlog instantiation
+		log.Fatalf("warn: error loading .env file: %v", err)
+	}
+
+	hlog.Initialize()
+
 	flag.Parse()
 	r := gin.Default()
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
 	r.Use(cors.New(config))
 
-	err := r.SetTrustedProxies(nil)
+	err = r.SetTrustedProxies(nil)
 
 	if err != nil {
-		slog.Error("Failed to set trusted proxies", err)
+		hlog.Error("Failed to set trusted proxies", err)
 	}
 
 	r.GET("/stats", stats.Handler)
@@ -31,6 +41,6 @@ func main() {
 	err = r.Run(":5051")
 
 	if err != nil {
-		slog.Error("Failed to start server", err)
+		hlog.Error("Failed to start server", err)
 	}
 }
