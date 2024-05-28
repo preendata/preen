@@ -68,7 +68,7 @@ func init() {
 }
 
 func GetConfig() Config {
-	file, err := os.ReadFile("plex.yaml")
+	file, err := os.ReadFile("hyphadb.yaml")
 
 	if err != nil {
 		log.Fatalf("Failed to read config file: %s", err)

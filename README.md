@@ -1,8 +1,18 @@
-# PlexDB
+# HyphaDB
 
-Welcome to PlexDB, a developer first tool for managing analytics data flows. To get started, check out the [documentation](https://plexdb.github.io/plexdb-docs/). If you have any questions or problems, feel free to [open an issue](https://github.com/scalecraft/plex-db/issues/new).
+This is the backend for the HyphaDB project. There are several components to this project:
+
+- [REST API](./cmd/api/)
+- [CLI](./cmd/cli/)
 
 ## Quick Start
 
+Running the API:
+
+```bash
+go run cmd/api/main.go
+```
+
 CLI entrypoint: 
+
 `go run cmd/cli/main.go -h`
