@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/hyphadb/hyphadb/internal/config"
@@ -13,12 +13,11 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Errorf("warn: error loading .env file: %v", err)
+		// Use builtin log before hlog instantiation
+		log.Fatalf("warn: error loading .env file: %v", err)
 	}
 
 	hlog.Initialize()
-	hlog.Info("test hlog exec")
-
 	config.Initialize()
 
 	app := cli.NewApp()
