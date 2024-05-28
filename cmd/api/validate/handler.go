@@ -16,7 +16,12 @@ func Handler(c *gin.Context) {
 	var err error
 	response := HandlerResponse{}
 
-	config := config.GetConfig()
+	config, err := config.GetConfig()
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+	}
+
+	c.JSON(500, gin.H{"error": err.Error()})
 
 	response.Validator, err = pg.Validate(&config)
 

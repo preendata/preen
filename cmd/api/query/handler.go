@@ -35,7 +35,11 @@ func Handler(c *gin.Context) {
 
 	response := HandlerResponse{}
 
-	config := config.GetConfig()
+	config, err := config.GetConfig()
+
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+	}
 
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})

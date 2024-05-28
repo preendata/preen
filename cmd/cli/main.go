@@ -13,12 +13,16 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		// Use builtin log before hlog instantiation
-		log.Fatalf("warn: error loading .env file: %v", err)
+		log.Fatal("warn: error loading .env file", err)
 	}
 
-	hlog.Initialize()
-	config.Initialize()
+	if err = hlog.Initialize(); err != nil {
+		log.Fatal("fatal error initializing logger", err)
+	}
+
+	if err = config.Initialize(); err != nil {
+		hlog.WithError(err).Fatal("fatal error initializing config")
+	}
 
 	app := cli.NewApp()
 	if err := app.Run(os.Args); err != nil {

@@ -9,8 +9,13 @@ import (
 )
 
 func AddSource(filename string, newSource Source) error {
-	hlog.Debugf("Attempting to read in file %s", filename)
+	hlog.WithFields(hlog.Fields{
+		"filename":  filename,
+		"newSource": newSource,
+	}).Debug("Executing config.AddSource with arguments")
+
 	// Read the YAML file
+	hlog.Debugf("Attempting to read in file %s", filename)
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return fmt.Errorf("could not read file: %v", err)

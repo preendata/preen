@@ -10,14 +10,18 @@ import (
 )
 
 func listConnections(c *cli.Context) error {
-	config := config.GlobalConfig
+	hlog.Debug("Executing cli.listConnections")
+	config, err := config.GetConfig()
+
+	if err != nil {
+		return fmt.Errorf("Error getting config %w", err)
+	}
 
 	for _, conn := range config.Sources {
 		c, err := json.MarshalIndent(conn, "", "  ")
 
 		if err != nil {
-			hlog.Fatal("Error unmarshalling config:", err)
-			return nil
+			return fmt.Errorf("error unmarshalling config %w", err)
 		}
 
 		fmt.Println(string(c))
@@ -27,6 +31,7 @@ func listConnections(c *cli.Context) error {
 
 // BROKEN - this is hardcoded and incomplete for now.
 func saveConnection(c *cli.Context) error {
+	hlog.Debug("Executing cli.saveConnection")
 	filename := config.SingleConfigPath
 	newSource := config.Source{
 		Name:   "users-db-us-east-3",
@@ -43,7 +48,7 @@ func saveConnection(c *cli.Context) error {
 	err := config.AddSource(filename, newSource)
 
 	if err != nil {
-		hlog.Fatal("Error saving new connection: ", err)
+		return fmt.Errorf("error saving new connection: %w", err)
 	}
 
 	return nil

@@ -15,14 +15,14 @@ var envRegex = regexp.MustCompile(`^\${(\w+)}$`)
 var GlobalConfig Config
 var SingleConfigPath string
 
-func Initialize() {
+func Initialize() error {
 	configDirectoryPath := os.Getenv("HYPHADB_CONFIG_PATH")
 
 	// Default to home directory if none set by user
 	// Get the current user's home directory
 	usr, err := user.Current()
 	if err != nil {
-		hlog.Fatalf("failed to get current user: %v", err)
+		return fmt.Errorf("failed to get current user: %w", err)
 	}
 	if configDirectoryPath == "" {
 		configDirectoryPath = filepath.Join(usr.HomeDir, ".hyphadb") // fallback to default path
@@ -32,13 +32,17 @@ func Initialize() {
 	err = ensureConfigExists(configDirectoryPath)
 
 	if err != nil {
-		hlog.Fatalf("error ensuring configuration exists: %v", err)
+		return fmt.Errorf("error ensuring configuration exists: %v", err)
 	}
 
 	SingleConfigPath = filepath.Join(configDirectoryPath, "config.yaml")
 
-	GlobalConfig = GetConfig()
+	GlobalConfig, err = GetConfig()
+	if err != nil {
+		return fmt.Errorf("error getting config: %w ", err)
+	}
 
+	return nil
 }
 
 func ensureConfigExists(configDirectoryPath string) error {
@@ -50,10 +54,10 @@ func ensureConfigExists(configDirectoryPath string) error {
 		err = os.MkdirAll(configDirectoryPath, 0755)
 
 		if err != nil {
-			return fmt.Errorf("failed to create config directory: %s", err)
+			return fmt.Errorf("failed to create config directory: %w", err)
 		}
 	} else if err != nil {
-		return fmt.Errorf("error checking directory: %s", err)
+		return fmt.Errorf("error checking directory: %w", err)
 	} else {
 		hlog.Debugf("Directory already exists: %s", configDirectoryPath)
 	}

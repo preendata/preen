@@ -1,17 +1,17 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/hyphadb/hyphadb/pkg/hlog"
 	yaml "gopkg.in/yaml.v3"
 )
 
-func GetConfig() Config {
+func GetConfig() (Config, error) {
 	file, err := os.ReadFile(SingleConfigPath)
 
 	if err != nil {
-		hlog.Fatalf("Failed to read config file: %s", err)
+		return Config{}, fmt.Errorf("Failed to read config file: %s", err)
 	}
 
 	c := Config{}
@@ -19,10 +19,10 @@ func GetConfig() Config {
 	err = yaml.Unmarshal(file, &c)
 
 	if err != nil {
-		hlog.Fatalf("Failed to parse config file: %s", err)
+		return Config{}, fmt.Errorf("Failed to parse config file: %w", err)
 	}
 
 	fromEnv(&c)
 
-	return c
+	return c, nil
 }
