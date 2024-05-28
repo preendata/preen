@@ -45,3 +45,17 @@ func AddSource(filename string, newSource Source) error {
 
 	return nil
 }
+
+func validateNewSource(existingSource Source, newSource Source) error {
+	if existingSource.Name == newSource.Name {
+		return fmt.Errorf("a database source already exists with the name: %s", newSource.Name)
+	}
+
+	if existingSource.Connection.Host == newSource.Connection.Host &&
+		existingSource.Connection.Database == newSource.Connection.Database &&
+		existingSource.Connection.Port == newSource.Connection.Port {
+		return fmt.Errorf("a connection with the same combination of host: %s, port: %d, and database: %s already exists", newSource.Connection.Host, newSource.Connection.Port, newSource.Connection.Database)
+	}
+
+	return nil
+}

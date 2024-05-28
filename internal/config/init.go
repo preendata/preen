@@ -7,35 +7,14 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/joho/godotenv"
-	"github.com/sirupsen/logrus"
+	"github.com/hyphadb/hyphadb/pkg/hlog"
 )
 
-var logger = logrus.New()
 var envRegex = regexp.MustCompile(`^\${(\w+)}$`)
 
 var GlobalConfig Config
 
-// Defining our own initialization function because the logic is complex enough that I need to be able to return errors
-func Initialize() error {
-	err := godotenv.Load()
-	if err != nil {
-		logger.Warnf("warn: error loading .env file: %v", err)
-	}
-
-	// Initialize logger
-	logLevel := os.Getenv("HYPHADB_LOG_LEVEL")
-
-	if logLevel == "" {
-		logLevel = "ERROR"
-	}
-
-	level, err := logrus.ParseLevel(logLevel)
-	if err != nil {
-		return fmt.Errorf("invalid log level: %v", err)
-	}
-	logger.SetLevel(level)
-	// End intialize logger
+func Initialize() {
 
 	configDirectoryPath := os.Getenv("HYPHADB_CONFIG_PATH")
 
@@ -43,34 +22,31 @@ func Initialize() error {
 	// Get the current user's home directory
 	usr, err := user.Current()
 	if err != nil {
-		return fmt.Errorf("failed to get current user: %v", err)
+		hlog.Fatalf("failed to get current user: %v", err)
 	}
 	if configDirectoryPath == "" {
 		configDirectoryPath = filepath.Join(usr.HomeDir, ".hyphadb") // fallback to default path
 	}
 
-	logger.Debugf("Ensuring configuration exists: %s", configDirectoryPath)
+	hlog.Debugf("Ensuring configuration exists: %s", configDirectoryPath)
 	err = ensureConfigExists(configDirectoryPath)
 
 	if err != nil {
-		return fmt.Errorf("error ensuring configuration exists: %v", err)
+		hlog.Fatalf("error ensuring configuration exists: %v", err)
 	}
 
 	configFilePath := filepath.Join(configDirectoryPath, "config.yaml")
 
 	GlobalConfig = GetConfig(configFilePath)
 
-	fmt.Println(configFilePath)
-
-	return nil
 }
 
 func ensureConfigExists(configDirectoryPath string) error {
-	logger.Debugf("Checking if directory exists: %s", configDirectoryPath)
+	hlog.Debugf("Checking if directory exists: %s", configDirectoryPath)
 
 	// If no directory, create
 	if _, err := os.Stat(configDirectoryPath); os.IsNotExist(err) {
-		logger.Debugf("Directory does not exist, creating it: %s", configDirectoryPath)
+		hlog.Debugf("Directory does not exist, creating it: %s", configDirectoryPath)
 		err = os.MkdirAll(configDirectoryPath, 0755)
 
 		if err != nil {
@@ -79,7 +55,7 @@ func ensureConfigExists(configDirectoryPath string) error {
 	} else if err != nil {
 		return fmt.Errorf("error checking directory: %s", err)
 	} else {
-		logger.Debugf("Directory already exists: %s", configDirectoryPath)
+		hlog.Debugf("Directory already exists: %s", configDirectoryPath)
 	}
 
 	// If no database config, create

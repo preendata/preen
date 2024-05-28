@@ -1,22 +1,28 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/pkg/cli"
+	"github.com/hyphadb/hyphadb/pkg/hlog"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	err := config.Initialize()
-
+	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Error initializing CLI: %v", err)
+		fmt.Errorf("warn: error loading .env file: %v", err)
 	}
+
+	hlog.Initialize()
+	hlog.Info("test hlog exec")
+
+	config.Initialize()
 
 	app := cli.NewApp()
 	if err := app.Run(os.Args); err != nil {
-		log.Fatal(err)
+		hlog.Fatal(err)
 	}
 }

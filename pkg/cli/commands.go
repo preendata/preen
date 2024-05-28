@@ -9,7 +9,7 @@ import (
 )
 
 func listConnections(c *cli.Context) error {
-	config := config.GetConfig("test.yaml")
+	config := config.GetConfig("plex.yaml")
 
 	for _, conn := range config.Sources {
 		c, err := json.MarshalIndent(conn, "", "  ")
