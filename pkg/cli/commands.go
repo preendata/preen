@@ -9,6 +9,15 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+func query(c *cli.Context) error {
+	hlog.Debug("Executing cli.query")
+
+	stmt := c.Args().First()
+	hlog.Debug("Query: ", stmt)
+
+	return nil
+}
+
 func listConnections(c *cli.Context) error {
 	hlog.Debug("Executing cli.listConnections")
 	config, err := config.GetConfig()

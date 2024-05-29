@@ -17,7 +17,6 @@ func NewApp() *cli.App {
 				Name:    "log-level",
 				Aliases: []string{"l"},
 				Usage:   "Set the log level (DEBUG, INFO, WARN, ERROR, FATAL, PANIC)",
-				Value:   "INFO",
 			},
 			&cli.BoolFlag{
 				Name:    "verbose",
@@ -26,6 +25,12 @@ func NewApp() *cli.App {
 			},
 		},
 		Commands: []*cli.Command{
+			{
+				Name:    "query",
+				Aliases: []string{"q"},
+				Usage:   "Execute a query",
+				Action:  query,
+			},
 			{
 				Name:    "list-connections",
 				Aliases: []string{"lc"},
@@ -52,22 +57,29 @@ func NewApp() *cli.App {
 			},
 		},
 		Before: func(c *cli.Context) error {
-			fmt.Println("In before")
-			logLevel := c.String("log-level")
+			logLevel := ""
+
+			// Check if log-level flag is set
+			if c.IsSet("log-level") {
+				logLevel = c.String("log-level")
+			}
+
+			// Check if verbose flag is set
 			if c.Bool("verbose") {
 				logLevel = "DEBUG"
 			}
 
-			// Initialize logger
-			if err := hlog.IsValidLogLevel(logLevel); err != nil {
-				return fmt.Errorf("invalid log level: %s. Allowed values are: (DEBUG, INFO, WARN, ERROR, FATAL, PANIC)", logLevel)
+			err := hlog.IsValidLogLevel(logLevel)
+			if logLevel != "" && err != nil {
+				return fmt.Errorf("invalid log level: %s. Allowed values are: DEBUG, INFO, WARN, ERROR, FATAL, PANIC", logLevel)
 			}
 
+			// Initialize logger, passes empty string if no flag set which is handled by variadic Intialize function
 			if err := hlog.Initialize(logLevel); err != nil {
 				return err
 			}
 
-			// Initialie config
+			// Initialize config
 			if err := config.Initialize(); err != nil {
 				return err
 			}
