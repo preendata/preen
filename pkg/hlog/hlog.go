@@ -24,7 +24,7 @@ func Initialize(logLevels ...string) error {
 	}
 
 	// If log level passed in flag, prefer it
-	if len(logLevels) > 0 {
+	if len(logLevels) > 0 && logLevels[0] != "" {
 		logLevel = logLevels[0]
 	}
 
@@ -34,6 +34,7 @@ func Initialize(logLevels ...string) error {
 		return fmt.Errorf("invalid log level: %v", err)
 	}
 	logger.SetLevel(level)
+
 	Debugf("Log level set to %s", level)
 
 	return nil
@@ -50,11 +51,19 @@ func IsValidLogLevel(logLevel string) error {
 }
 
 func Debug(args ...interface{}) {
-	logger.Debug(args...)
+	file, line := getCaller()
+	entry := logger.WithFields(Fields{
+		"caller": fmt.Sprintf("%s:%d", file, line),
+	})
+	entry.Debug(args...)
 }
 
 func Debugf(format string, args ...interface{}) {
-	logger.Debugf(format, args...)
+	file, line := getCaller()
+	entry := logger.WithFields(Fields{
+		"caller": fmt.Sprintf("%s:%d", file, line),
+	})
+	entry.Debugf(format, args...)
 }
 
 func Warn(args ...interface{}) {
