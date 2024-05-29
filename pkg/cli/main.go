@@ -1,13 +1,30 @@
 package cli
 
 import (
+	"fmt"
+
+	"github.com/hyphadb/hyphadb/internal/config"
+	"github.com/hyphadb/hyphadb/pkg/hlog"
 	"github.com/urfave/cli/v2"
 )
 
 func NewApp() *cli.App {
 	app := &cli.App{
-		Name:  "mycli",
-		Usage: "A command-line application for MyProject",
+		Name:  "HyphaDB CLI",
+		Usage: "A command-line application for HyphaDB",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "log-level",
+				Aliases: []string{"l"},
+				Usage:   "Set the log level (DEBUG, INFO, WARN, ERROR, FATAL, PANIC)",
+				Value:   "INFO",
+			},
+			&cli.BoolFlag{
+				Name:    "verbose",
+				Aliases: []string{"v"},
+				Usage:   "Set the log level to DEBUG",
+			},
+		},
 		Commands: []*cli.Command{
 			{
 				Name:    "list-connections",
@@ -33,6 +50,28 @@ func NewApp() *cli.App {
 					},
 				},
 			},
+		},
+		Before: func(c *cli.Context) error {
+			fmt.Println("In before")
+			logLevel := c.String("log-level")
+			if c.Bool("verbose") {
+				logLevel = "DEBUG"
+			}
+
+			// Initialize logger
+			if err := hlog.IsValidLogLevel(logLevel); err != nil {
+				return fmt.Errorf("invalid log level: %s. Allowed values are: (DEBUG, INFO, WARN, ERROR, FATAL, PANIC)", logLevel)
+			}
+
+			if err := hlog.Initialize(logLevel); err != nil {
+				return err
+			}
+
+			// Initialie config
+			if err := config.Initialize(); err != nil {
+				return err
+			}
+			return nil
 		},
 	}
 	return app

@@ -11,7 +11,7 @@ var logger *logrus.Logger
 
 type Fields = logrus.Fields
 
-func Initialize() error {
+func Initialize(logLevels ...string) error {
 	logger = logrus.New()
 	logger.Out = os.Stdout
 
@@ -24,7 +24,9 @@ func Initialize() error {
 	}
 
 	// If log level passed in flag, prefer it
-	//TODO
+	if len(logLevels) > 0 {
+		logLevel = logLevels[0]
+	}
 
 	// Set loglevel
 	level, err := logrus.ParseLevel(logLevel)
@@ -32,6 +34,17 @@ func Initialize() error {
 		return fmt.Errorf("invalid log level: %v", err)
 	}
 	logger.SetLevel(level)
+	Debugf("Log level set to %s", level)
+
+	return nil
+}
+
+func IsValidLogLevel(logLevel string) error {
+	_, err := logrus.ParseLevel(logLevel)
+
+	if err != nil {
+		return fmt.Errorf("invalid log level: %s. Allowed values are: (DEBUG, INFO, WARN, ERROR, FATAL, PANIC)", logLevel)
+	}
 
 	return nil
 }
