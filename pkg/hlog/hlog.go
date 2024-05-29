@@ -34,6 +34,7 @@ func Initialize(logLevels ...string) error {
 		return fmt.Errorf("invalid log level: %v", err)
 	}
 	logger.SetLevel(level)
+	Debugf("Log level set to %s", level)
 
 	return nil
 }

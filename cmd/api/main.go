@@ -14,18 +14,29 @@ import (
 )
 
 func main() {
+	// Load env
 	err := godotenv.Load()
 	if err != nil {
 		// Use builtin log before hlog instantiation
 		log.Fatalf("warn: error loading .env file: %v", err)
 	}
 
-	//TODO add verbosity flag for logLevel
-	if err := hlog.Initialize(); err != nil {
-		log.Fatal("fatal error initializing logger", err)
+	// Load flags
+	var verbose bool
+	flag.BoolVar(&verbose, "v", false, "Set the log level to DEBUG (shorthand)")
+	flag.Parse()
+
+	// Set up logging
+	logLevel := "ERROR"
+	if verbose {
+		logLevel = "DEBUG"
 	}
 
-	flag.Parse()
+	if err := hlog.Initialize(logLevel); err != nil {
+		log.Fatalf("fatal error initializing logger: %v", err)
+	}
+
+	// Set up server
 	r := gin.Default()
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
