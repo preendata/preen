@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/hyphadb/hyphadb/internal/config"
+	"github.com/hyphadb/hyphadb/pkg/hlog"
 	"github.com/xwb1989/sqlparser"
 )
 
@@ -57,6 +58,7 @@ func Execute(statement string, cfg *config.Config) ([]map[string]any, error) {
 		q.Main.Select = stmt
 		err = q.SelectMapper()
 		if err != nil {
+			hlog.Debug("Error mapping select statement", q)
 			return nil, err
 		}
 		q.SelectReducer()

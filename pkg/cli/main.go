@@ -26,10 +26,21 @@ func NewApp() *cli.App {
 		},
 		Commands: []*cli.Command{
 			{
+				Name:    "stats",
+				Aliases: []string{"s"},
+				Usage:   "Wtf does this do?",
+				Action:  stats,
+			},
+			{
 				Name:    "query",
 				Aliases: []string{"q"},
 				Usage:   "Execute a query",
 				Action:  query,
+			},
+			{
+				Name:   "validate",
+				Usage:  "Validate config file",
+				Action: validate,
 			},
 			{
 				Name:    "list-connections",
