@@ -34,7 +34,7 @@ func Initialize() error {
 	if err != nil {
 		return fmt.Errorf("error ensuring configuration exists: %v", err)
 	}
-
+	fmt.Println(configDirectoryPath)
 	SingleConfigPath = filepath.Join(configDirectoryPath, "config.yaml")
 
 	GlobalConfig, err = GetConfig()

@@ -11,7 +11,7 @@ func GetConfig() (Config, error) {
 	file, err := os.ReadFile(SingleConfigPath)
 
 	if err != nil {
-		return Config{}, fmt.Errorf("Failed to read config file: %s", err)
+		return Config{}, fmt.Errorf("failed to read config file: %s", err)
 	}
 
 	c := Config{}
@@ -19,7 +19,7 @@ func GetConfig() (Config, error) {
 	err = yaml.Unmarshal(file, &c)
 
 	if err != nil {
-		return Config{}, fmt.Errorf("Failed to parse config file: %w", err)
+		return Config{}, fmt.Errorf("failed to parse config file: %w", err)
 	}
 
 	fromEnv(&c)

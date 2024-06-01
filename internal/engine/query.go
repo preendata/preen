@@ -67,7 +67,7 @@ func Execute(statement string, cfg *config.Config) ([]map[string]any, error) {
 		return nil, err
 	}
 	fmt.Println(len(q.Results))
-	return q.Results[0:1], nil
+	return q.Results[0:10], nil
 }
 
 func (q *Query) SelectMapper() error {
