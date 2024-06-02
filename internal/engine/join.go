@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"log/slog"
 	"maps"
 	"strconv"
@@ -18,8 +19,10 @@ func (p *ParsedQuery) JoinNodeQuery() error {
 	p.JoinDetails.RightTableName = sqlparser.String(join.RightExpr)
 	p.JoinDetails.Condition = &join.Condition
 
-	leftTableQuery := "select * from " + p.JoinDetails.LeftTableName
-	rightTableQuery := "select * from " + p.JoinDetails.RightTableName
+	leftColumns, rightColumns := p.parseColumnNames()
+
+	leftTableQuery := fmt.Sprintf("select %v from %v", leftColumns, p.JoinDetails.LeftTableName)
+	rightTableQuery := fmt.Sprintf("select %v from %v", rightColumns, p.JoinDetails.RightTableName)
 
 	p.QueryString = append(p.QueryString, leftTableQuery, rightTableQuery)
 
@@ -92,4 +95,22 @@ func (q *Query) lookup(leftColumn string, row map[string]any, joinHash map[any][
 			q.Results = append(q.Results, row)
 		}
 	}
+}
+
+func (p *ParsedQuery) parseColumnNames() (string, string) {
+	leftColumns := p.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Left.(*sqlparser.ColName).Name.String()
+	rightColumns := p.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Right.(*sqlparser.ColName).Name.String()
+
+	for _, column := range p.Select.SelectExprs {
+		colName := column.(*sqlparser.AliasedExpr).Expr.(*sqlparser.ColName).Name.String()
+		tableName := column.(*sqlparser.AliasedExpr).Expr.(*sqlparser.ColName).Qualifier.Name.String()
+		if tableName == p.JoinDetails.LeftTableName {
+			leftColumns += "," + colName
+
+		}
+		if tableName == p.JoinDetails.RightTableName {
+			rightColumns += "," + colName
+		}
+	}
+	return leftColumns, rightColumns
 }

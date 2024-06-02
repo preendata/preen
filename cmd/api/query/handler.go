@@ -20,6 +20,14 @@ type HandlerResponse struct {
 
 func Handler(c *gin.Context) {
 	var err error
+	config, ok := c.MustGet("config").(*config.Config)
+
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "could not get hypha config!!!!",
+		})
+	}
+
 	request := HandlerRequest{}
 	body, err := io.ReadAll(c.Request.Body)
 
@@ -35,8 +43,6 @@ func Handler(c *gin.Context) {
 
 	response := HandlerResponse{}
 
-	config, err := config.GetConfig()
-
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 	}
@@ -45,7 +51,7 @@ func Handler(c *gin.Context) {
 		c.JSON(500, gin.H{"error": err.Error()})
 	}
 
-	response.Rows, err = engine.Execute(request.Query, &config)
+	response.Rows, err = engine.Execute(request.Query, config)
 
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
