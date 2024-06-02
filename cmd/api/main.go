@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/hyphadb/hyphadb/internal/hlog"
 	"log"
 
 	"github.com/gin-contrib/cors"
@@ -10,7 +11,6 @@ import (
 	"github.com/hyphadb/hyphadb/cmd/api/stats"
 	"github.com/hyphadb/hyphadb/cmd/api/validate"
 	"github.com/hyphadb/hyphadb/internal/config"
-	"github.com/hyphadb/hyphadb/pkg/hlog"
 	"github.com/joho/godotenv"
 )
 

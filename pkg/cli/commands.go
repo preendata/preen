@@ -3,12 +3,12 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/hyphadb/hyphadb/internal/hlog"
+	"github.com/hyphadb/hyphadb/internal/utils"
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/engine"
 	"github.com/hyphadb/hyphadb/internal/pg"
-	"github.com/hyphadb/hyphadb/pkg/hlog"
-	"github.com/hyphadb/hyphadb/pkg/utils"
 	"github.com/urfave/cli/v2"
 )
 
