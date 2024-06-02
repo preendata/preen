@@ -2,12 +2,11 @@ package config
 
 import (
 	"fmt"
+	"github.com/hyphadb/hyphadb/internal/hlog"
 	"os"
 	"os/user"
 	"path/filepath"
 	"regexp"
-
-	"github.com/hyphadb/hyphadb/pkg/hlog"
 )
 
 var envRegex = regexp.MustCompile(`^\${(\w+)}$`)

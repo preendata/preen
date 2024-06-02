@@ -2,9 +2,9 @@ package config
 
 import (
 	"fmt"
+	"github.com/hyphadb/hyphadb/internal/hlog"
 	"os"
 
-	"github.com/hyphadb/hyphadb/pkg/hlog"
 	"gopkg.in/yaml.v3"
 )
 

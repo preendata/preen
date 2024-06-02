@@ -1,11 +1,11 @@
 package main
 
 import (
+	"github.com/hyphadb/hyphadb/internal/hlog"
 	"log"
 	"os"
 
 	"github.com/hyphadb/hyphadb/pkg/cli"
-	"github.com/hyphadb/hyphadb/pkg/hlog"
 	"github.com/joho/godotenv"
 )
 

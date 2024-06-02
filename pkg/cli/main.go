@@ -2,9 +2,9 @@ package cli
 
 import (
 	"fmt"
+	"github.com/hyphadb/hyphadb/internal/hlog"
 
 	"github.com/hyphadb/hyphadb/internal/config"
-	"github.com/hyphadb/hyphadb/pkg/hlog"
 	"github.com/urfave/cli/v2"
 )
 

@@ -3,10 +3,10 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"github.com/hyphadb/hyphadb/internal/hlog"
 	"reflect"
 
 	"github.com/hyphadb/hyphadb/internal/config"
-	"github.com/hyphadb/hyphadb/pkg/hlog"
 	"github.com/xwb1989/sqlparser"
 )
 
