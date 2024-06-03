@@ -48,8 +48,6 @@ func Repl(c *cli.Context) error {
 
 		input = strings.TrimSpace(input)
 
-		fmt.Println("Input received: ", input)
-
 		// Handle exit command
 		if input == "exit" || input == "quit" {
 			fmt.Println("Exiting REPL.")
@@ -63,8 +61,6 @@ func Repl(c *cli.Context) error {
 			continue
 		}
 
-		fmt.Println(result)
-
 		writeToTable(result)
 	}
 
@@ -73,11 +69,12 @@ func Repl(c *cli.Context) error {
 
 func writeToTable(rows []map[string]any) {
 
+	// Set up
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 	t.SetStyle(table.StyleLight)
 
-	// Set table headers
+	// Set table headers. This is fucked, non-deterministic order of fields.
 	headers := table.Row{}
 	for header := range rows[0] {
 		headers = append(headers, header)
