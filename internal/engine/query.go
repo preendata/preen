@@ -26,13 +26,21 @@ type ParsedQuery struct {
 	NodeResults map[string][]map[string]any
 }
 
+type Column struct {
+	Table     string
+	FuncName  string
+	IsGroupBy bool
+}
+
 type Query struct {
 	Input           string
 	Cfg             *config.Config
 	Main            ParsedQuery
 	Nodes           []ParsedQuery
 	Results         []map[string]any
+	Columns         map[string]Column
 	ReducerRequired bool
+	IsAggregate     bool
 	Err             error
 }
 
@@ -43,6 +51,7 @@ func Execute(statement string, cfg *config.Config) ([]map[string]any, error) {
 		Cfg:     cfg,
 		Nodes:   make([]ParsedQuery, len(cfg.Sources)),
 		Results: make([]map[string]any, 0),
+		Columns: make(map[string]Column, 0),
 	}
 
 	parsed, err := sqlparser.Parse(q.Input)
@@ -56,6 +65,7 @@ func Execute(statement string, cfg *config.Config) ([]map[string]any, error) {
 	switch stmt := q.Main.Statement.(type) {
 	case *sqlparser.Select:
 		q.Main.Select = stmt
+		q.ParseColumns()
 		err = q.SelectMapper()
 		if err != nil {
 			hlog.Debug("Error mapping select statement", q)
@@ -66,8 +76,7 @@ func Execute(statement string, cfg *config.Config) ([]map[string]any, error) {
 		err = errors.New("unsupported sql statement. please provide a select statement")
 		return nil, err
 	}
-
-	return q.Results[0:10], nil
+	return q.Results, nil
 }
 
 func (q *Query) SelectMapper() error {
@@ -97,11 +106,10 @@ func (q *Query) SelectMapper() error {
 			return err
 		}
 	}
-
 	return nil
 }
 
-func (q *Query) SelectReducer() (*Query, error) {
+func (q *Query) SelectReducer() error {
 	if q.ReducerRequired {
 		q.Reduce()
 	} else {
@@ -111,6 +119,5 @@ func (q *Query) SelectReducer() (*Query, error) {
 			q.Results = append(q.Results, q.Nodes[idx].NodeResults[firstKey]...)
 		}
 	}
-
-	return q, nil
+	return nil
 }

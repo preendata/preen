@@ -9,22 +9,20 @@ import (
 	"github.com/xwb1989/sqlparser"
 )
 
-func (q *ParsedQuery) SelectParser(sourceIndex int, nSources int) *ParsedQuery {
-	table := q.Select.From[0]
+func (p *ParsedQuery) SelectParser(sourceIndex int, nSources int) {
+	table := p.Select.From[0]
 
 	switch tableList := table.(type) {
 	case *sqlparser.JoinTableExpr:
-		q.JoinDetails.JoinExpr = tableList
+		p.JoinDetails.JoinExpr = tableList
 	}
-	if q.Select.Limit != nil {
-		q.UpdateLimit(sourceIndex, nSources)
+	if p.Select.Limit != nil {
+		p.UpdateLimit(sourceIndex, nSources)
 	}
-
-	return q
 }
 
-func (q *ParsedQuery) UpdateLimit(sourceIndex int, nSources int) {
-	sLimit := sqlparser.String(q.Select.Limit.Rowcount)
+func (p *ParsedQuery) UpdateLimit(sourceIndex int, nSources int) {
+	sLimit := sqlparser.String(p.Select.Limit.Rowcount)
 	iLimit, err := strconv.Atoi(sLimit)
 
 	if err != nil {
@@ -35,10 +33,10 @@ func (q *ParsedQuery) UpdateLimit(sourceIndex int, nSources int) {
 	remainder := iLimit % nSources
 
 	if sourceIndex == 0 {
-		q.Select.Limit.Rowcount = sqlparser.NewIntVal([]byte(fmt.Sprintf("%d", baseRowCount+remainder)))
+		p.Select.Limit.Rowcount = sqlparser.NewIntVal([]byte(fmt.Sprintf("%d", baseRowCount+remainder)))
 	} else if baseRowCount > 0 {
-		q.Select.Limit.Rowcount = sqlparser.NewIntVal([]byte(fmt.Sprintf("%d", baseRowCount)))
+		p.Select.Limit.Rowcount = sqlparser.NewIntVal([]byte(fmt.Sprintf("%d", baseRowCount)))
 	} else {
-		q.Select = nil
+		p.Select = nil
 	}
 }
