@@ -3,8 +3,9 @@ package engine
 import (
 	"errors"
 	"fmt"
-	"github.com/hyphadb/hyphadb/internal/hlog"
 	"reflect"
+
+	"github.com/hyphadb/hyphadb/internal/hlog"
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/xwb1989/sqlparser"
@@ -67,7 +68,7 @@ func Execute(statement string, cfg *config.Config) ([]map[string]any, error) {
 		return nil, err
 	}
 	fmt.Println(len(q.Results))
-	return q.Results[0:10], nil
+	return q.Results[0:1], nil
 }
 
 func (q *Query) SelectMapper() error {
