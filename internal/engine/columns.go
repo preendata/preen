@@ -1,6 +1,8 @@
 package engine
 
-import "github.com/xwb1989/sqlparser"
+import (
+	"github.com/xwb1989/sqlparser"
+)
 
 func (q *Query) ParseColumns() error {
 	for idx := range q.Main.Select.SelectExprs {
@@ -9,28 +11,47 @@ func (q *Query) ParseColumns() error {
 			switch expr.Expr.(type) {
 			case *sqlparser.ColName:
 				col := Column{
-					Table:       expr.Expr.(*sqlparser.ColName).Qualifier.Name.String(),
-					Name:        expr.Expr.(*sqlparser.ColName).Name.String(),
-					IsAggregate: false,
-					IsGroupBy:   false,
+					Table:     expr.Expr.(*sqlparser.ColName).Qualifier.Name.String(),
+					IsGroupBy: false,
 				}
-				q.Columns = append(q.Columns, col)
+				colName := expr.Expr.(*sqlparser.ColName).Name.String()
+				q.Columns[colName] = col
 			case *sqlparser.FuncExpr:
+				q.ReducerRequired = true
+				q.IsAggregate = true
 				col := Column{
-					Table:       "",
-					FuncName:    expr.Expr.(*sqlparser.FuncExpr).Name.String(),
-					IsAggregate: true,
-					IsGroupBy:   false,
+					Table:     "",
+					FuncName:  expr.Expr.(*sqlparser.FuncExpr).Name.String(),
+					IsGroupBy: false,
 				}
 				if expr.As.String() != "" {
-					col.Name = expr.As.String()
+					colName := expr.As.String()
+					q.Columns[colName] = col
 				} else {
-					col.Name = expr.Expr.(*sqlparser.FuncExpr).Name.String()
+					colName := expr.Expr.(*sqlparser.FuncExpr).Name.String()
+					q.Columns[colName] = col
 				}
-				q.Columns = append(q.Columns, col)
 			}
 		}
 	}
 
 	return nil
+}
+
+func (p *ParsedQuery) ParseJoinColumns() (string, string) {
+	leftColumns := p.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Left.(*sqlparser.ColName).Name.String()
+	rightColumns := p.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Right.(*sqlparser.ColName).Name.String()
+
+	for _, column := range p.Select.SelectExprs {
+		colName := column.(*sqlparser.AliasedExpr).Expr.(*sqlparser.ColName).Name.String()
+		tableName := column.(*sqlparser.AliasedExpr).Expr.(*sqlparser.ColName).Qualifier.Name.String()
+		if tableName == p.JoinDetails.LeftTableName {
+			leftColumns += "," + colName
+
+		}
+		if tableName == p.JoinDetails.RightTableName {
+			rightColumns += "," + colName
+		}
+	}
+	return leftColumns, rightColumns
 }
