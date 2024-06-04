@@ -2,10 +2,6 @@ package engine
 
 import (
 	"errors"
-<<<<<<< HEAD
-	"fmt"
-=======
->>>>>>> main
 	"reflect"
 
 	"github.com/hyphadb/hyphadb/internal/hlog"
