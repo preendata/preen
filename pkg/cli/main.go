@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"github.com/hyphadb/hyphadb/internal/cli_commands"
 	"github.com/hyphadb/hyphadb/internal/hlog"
 
 	"github.com/hyphadb/hyphadb/internal/config"
@@ -26,33 +27,38 @@ func NewApp() *cli.App {
 		},
 		Commands: []*cli.Command{
 			{
+				Name:    "repl",
+				Aliases: []string{"r"},
+				Usage:   "Initiate interactive query session",
+				Action:  cli_commands.Repl,
+			}, {
 				Name:    "stats",
 				Aliases: []string{"s"},
 				Usage:   "Wtf does this do?",
-				Action:  stats,
+				Action:  cli_commands.Stats,
 			},
 			{
 				Name:    "query",
 				Aliases: []string{"q"},
 				Usage:   "Execute a query",
-				Action:  query,
+				Action:  cli_commands.Query,
 			},
 			{
 				Name:   "validate",
 				Usage:  "Validate config file",
-				Action: validate,
+				Action: cli_commands.Validate,
 			},
 			{
 				Name:    "list-connections",
 				Aliases: []string{"lc"},
 				Usage:   "Print stored connection credentials",
-				Action:  listConnections,
+				Action:  cli_commands.ListConnections,
 			},
 			{
 				Name:    "save-connection",
 				Aliases: []string{"sc"},
 				Usage:   "Save new connection to config",
-				Action:  saveConnection,
+				Action:  cli_commands.SaveConnection,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    "name",

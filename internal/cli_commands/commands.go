@@ -1,4 +1,4 @@
-package cli
+package cli_commands
 
 import (
 	"encoding/json"
@@ -12,19 +12,19 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func query(c *cli.Context) error {
+func Query(c *cli.Context) error {
 	hlog.Debug("Executing cli.query")
 
 	stmt := c.Args().First()
 	hlog.Debug("Query: ", stmt)
 
-	config, err := config.GetConfig()
+	conf, err := config.GetConfig()
 
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	rows, err := engine.Execute(stmt, &config)
+	rows, err := engine.Execute(stmt, &conf)
 
 	if err != nil {
 		hlog.Debug("error executing query", err)
@@ -41,16 +41,16 @@ func query(c *cli.Context) error {
 	return nil
 }
 
-func stats(c *cli.Context) error {
+func Stats(c *cli.Context) error {
 	hlog.Debug("Executing cli.stats")
 
-	config, err := config.GetConfig()
+	conf, err := config.GetConfig()
 
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	stats, err := pg.GetStats(&config)
+	stats, err := pg.GetStats(&conf)
 
 	if err != nil {
 		hlog.Debug("error getting stats", err)
@@ -67,16 +67,16 @@ func stats(c *cli.Context) error {
 	return nil
 }
 
-func validate(c *cli.Context) error {
+func Validate(c *cli.Context) error {
 	hlog.Debug("Executing cli.stats")
 
-	config, err := config.GetConfig()
+	conf, err := config.GetConfig()
 
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	validator, err := pg.Validate(&config)
+	validator, err := pg.Validate(&conf)
 
 	if err != nil {
 		hlog.Debug("error validating config", err)
@@ -93,15 +93,15 @@ func validate(c *cli.Context) error {
 	return nil
 }
 
-func listConnections(c *cli.Context) error {
+func ListConnections(c *cli.Context) error {
 	hlog.Debug("Executing cli.listConnections")
-	config, err := config.GetConfig()
+	conf, err := config.GetConfig()
 
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	for _, conn := range config.Sources {
+	for _, conn := range conf.Sources {
 		c, err := json.MarshalIndent(conn, "", "  ")
 
 		if err != nil {
@@ -114,7 +114,7 @@ func listConnections(c *cli.Context) error {
 }
 
 // BROKEN - this is hardcoded and incomplete for now.
-func saveConnection(c *cli.Context) error {
+func SaveConnection(c *cli.Context) error {
 	hlog.Debug("Executing cli.saveConnection")
 	filename := config.SingleConfigPath
 	newSource := config.Source{
