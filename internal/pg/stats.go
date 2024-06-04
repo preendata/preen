@@ -27,7 +27,7 @@ func GetStats(cfg *config.Config) ([]Stats, error) {
 			return nil, err
 		}
 
-		for _, row := range results {
+		for _, row := range results.Rows {
 			stat := Stats{}
 
 			stat.TableSchema = row["schemaname"].(string)

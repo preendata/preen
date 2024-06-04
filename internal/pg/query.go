@@ -14,7 +14,7 @@ type QueryResult struct {
 }
 
 // Execute a raw statement on all sources in the config.
-func ExecuteRaw(statement string, cfg *config.Config, source config.Source) ([]map[string]any, error) {
+func ExecuteRaw(statement string, cfg *config.Config, source config.Source) (QueryResult, error) {
 
 	url := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s",
@@ -28,7 +28,7 @@ func ExecuteRaw(statement string, cfg *config.Config, source config.Source) ([]m
 	dbpool, err := dbpool(url)
 
 	if err != nil {
-		return nil, err
+		return QueryResult{}, err
 	}
 
 	defer dbpool.Close()
@@ -39,15 +39,15 @@ func ExecuteRaw(statement string, cfg *config.Config, source config.Source) ([]m
 	)
 
 	if err != nil {
-		return nil, err
+		return QueryResult{}, err
 	}
 
 	qr, err := buildResultSet(result)
 	if err != nil {
-		return nil, err
+		return QueryResult{}, err
 	}
 
-	return qr.Rows, nil
+	return qr, nil
 }
 
 func buildResultSet(result pgx.Rows) (QueryResult, error) {

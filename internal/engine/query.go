@@ -19,12 +19,13 @@ type Join struct {
 }
 
 type ParsedQuery struct {
-	Statement   sqlparser.Statement
-	Select      *sqlparser.Select
-	JoinDetails Join
-	QueryString []string
-	Source      config.Source
-	NodeResults map[string][]map[string]any
+	Statement      sqlparser.Statement
+	Select         *sqlparser.Select
+	JoinDetails    Join
+	QueryString    []string
+	Source         config.Source
+	NodeResults    map[string][]map[string]any
+	OrderedColumns []string
 }
 
 type Query struct {
