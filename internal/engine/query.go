@@ -3,8 +3,9 @@ package engine
 import (
 	"errors"
 	"fmt"
-	"github.com/hyphadb/hyphadb/internal/hlog"
 	"reflect"
+
+	"github.com/hyphadb/hyphadb/internal/hlog"
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/xwb1989/sqlparser"
@@ -26,12 +27,21 @@ type ParsedQuery struct {
 	NodeResults map[string][]map[string]any
 }
 
+type Column struct {
+	Table       string
+	Name        string
+	FuncName    string
+	IsAggregate bool
+	IsGroupBy   bool
+}
+
 type Query struct {
 	Input           string
 	Cfg             *config.Config
 	Main            ParsedQuery
 	Nodes           []ParsedQuery
 	Results         []map[string]any
+	Columns         []Column
 	ReducerRequired bool
 	Err             error
 }
@@ -56,6 +66,8 @@ func Execute(statement string, cfg *config.Config) ([]map[string]any, error) {
 	switch stmt := q.Main.Statement.(type) {
 	case *sqlparser.Select:
 		q.Main.Select = stmt
+		q.ParseColumns()
+		fmt.Println(q.Columns)
 		err = q.SelectMapper()
 		if err != nil {
 			hlog.Debug("Error mapping select statement", q)
@@ -66,8 +78,8 @@ func Execute(statement string, cfg *config.Config) ([]map[string]any, error) {
 		err = errors.New("unsupported sql statement. please provide a select statement")
 		return nil, err
 	}
-	fmt.Println(len(q.Results))
-	return q.Results[0:10], nil
+
+	return q.Results, nil
 }
 
 func (q *Query) SelectMapper() error {
@@ -101,7 +113,7 @@ func (q *Query) SelectMapper() error {
 	return nil
 }
 
-func (q *Query) SelectReducer() (*Query, error) {
+func (q *Query) SelectReducer() error {
 	if q.ReducerRequired {
 		q.Reduce()
 	} else {
@@ -112,5 +124,5 @@ func (q *Query) SelectReducer() (*Query, error) {
 		}
 	}
 
-	return q, nil
+	return nil
 }
