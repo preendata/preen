@@ -68,7 +68,6 @@ func Repl(c *cli.Context) error {
 }
 
 func writeToTable(qr engine.QueryResult) {
-
 	// Set up
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
@@ -76,7 +75,7 @@ func writeToTable(qr engine.QueryResult) {
 
 	// Set table headers. This is fucked, non-deterministic order of fields.
 	headers := table.Row{}
-	for header := range qr.Rows[0] {
+	for _, header := range qr.Columns {
 		headers = append(headers, header)
 	}
 	t.AppendHeader(headers)

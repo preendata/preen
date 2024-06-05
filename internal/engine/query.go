@@ -87,6 +87,7 @@ func Execute(statement string, cfg *config.Config) (QueryResult, error) {
 		Rows:    q.Results,
 		Columns: q.Main.OrderedColumns,
 	}
+
 	return qr, nil
 }
 
@@ -95,6 +96,7 @@ func (q *Query) SelectMapper() error {
 		q.Nodes[idx].Source = source
 		q.Nodes[idx].QueryString = make([]string, 0)
 		q.Nodes[idx].Statement, _ = sqlparser.Parse(q.Input)
+
 		switch stmt := q.Nodes[idx].Statement.(type) {
 		case *sqlparser.Select:
 			q.Nodes[idx].Select = stmt
@@ -121,6 +123,10 @@ func (q *Query) SelectMapper() error {
 }
 
 func (q *Query) SelectReducer() error {
+	// TODO - connect all reducers to a parent class that will handle collection of results with common methods
+	// For now, just grab OrderedColumns from the first node, which sucks
+	q.Main.OrderedColumns = q.Nodes[0].OrderedColumns
+
 	if q.ReducerRequired {
 		q.Reduce()
 	} else {
@@ -129,6 +135,7 @@ func (q *Query) SelectReducer() error {
 				keys := reflect.ValueOf(q.Nodes[idx].NodeResults).MapKeys()
 				firstKey := keys[0].String()
 				q.Results = append(q.Results, q.Nodes[idx].NodeResults[firstKey]...)
+
 			}
 		}
 	}
