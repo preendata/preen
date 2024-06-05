@@ -55,19 +55,19 @@ func Repl(c *cli.Context) error {
 		}
 
 		// Execute the input as a query
-		result, err := engine.Execute(input, &conf)
+		qr, err := engine.Execute(input, &conf)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			continue
 		}
 
-		writeToTable(result)
+		writeToTable(qr)
 	}
 
 	return nil
 }
 
-func writeToTable(rows []map[string]any) {
+func writeToTable(qr engine.QueryResult) {
 
 	// Set up
 	t := table.NewWriter()
@@ -76,13 +76,13 @@ func writeToTable(rows []map[string]any) {
 
 	// Set table headers. This is fucked, non-deterministic order of fields.
 	headers := table.Row{}
-	for header := range rows[0] {
+	for header := range qr.Rows[0] {
 		headers = append(headers, header)
 	}
 	t.AppendHeader(headers)
 
 	// Populate table with data
-	for _, row := range rows {
+	for _, row := range qr.Rows {
 		values := table.Row{}
 		for _, header := range headers {
 			values = append(values, row[header.(string)])

@@ -3,6 +3,7 @@ package cli_commands
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/hyphadb/hyphadb/internal/hlog"
 	"github.com/hyphadb/hyphadb/internal/utils"
 
@@ -24,14 +25,14 @@ func Query(c *cli.Context) error {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	rows, err := engine.Execute(stmt, &conf)
+	qr, err := engine.Execute(stmt, &conf)
 
 	if err != nil {
 		hlog.Debug("error executing query", err)
 		return fmt.Errorf("error executing query %w", err)
 	}
 
-	err = utils.PrintPrettyJSON(rows)
+	err = utils.PrintPrettyJSON(qr.Rows)
 	if err != nil {
 		return fmt.Errorf("error pretty printing JSON %w", err)
 	}
