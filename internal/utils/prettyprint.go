@@ -3,6 +3,9 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
+	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 // PrettyPrintJSON pretty prints a slice of maps containing JSON objects.
@@ -39,5 +42,32 @@ func PrintPrettyStruct(v interface{}) error {
 		return fmt.Errorf("failed to pretty print struct: %w", err)
 	}
 	fmt.Println(prettyJSON)
+	return nil
+}
+
+func WriteToTable(rows []map[string]any, columns []string) error {
+	// Set up
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetStyle(table.StyleLight)
+
+	// Set table headers. This is fucked, non-deterministic order of fields.
+	headers := table.Row{}
+	for _, header := range columns {
+		headers = append(headers, header)
+	}
+	t.AppendHeader(headers)
+
+	// Populate table with data
+	for _, row := range rows {
+		values := table.Row{}
+		for _, header := range headers {
+			values = append(values, row[header.(string)])
+		}
+		t.AppendRow(values)
+	}
+
+	t.Render()
+
 	return nil
 }
