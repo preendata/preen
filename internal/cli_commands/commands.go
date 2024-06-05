@@ -32,12 +32,12 @@ func Query(c *cli.Context) error {
 		return fmt.Errorf("error executing query %w", err)
 	}
 
+	// TODO flag for JSON vs table output
+	// err = utils.WriteToTable(qr.Rows, qr.Columns)
 	err = utils.PrintPrettyJSON(qr.Rows)
 	if err != nil {
-		return fmt.Errorf("error pretty printing JSON %w", err)
+		return fmt.Errorf("error writing to table %w", err)
 	}
-
-	//TODO allow for output to file
 
 	return nil
 }
