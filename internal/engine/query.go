@@ -96,7 +96,7 @@ func (q *Query) SelectMapper() error {
 			if err != nil {
 				return err
 			}
-		} else {
+		} else if q.Nodes[idx].Statement != nil {
 			q.Nodes[idx].QueryString = append(q.Nodes[idx].QueryString, sqlparser.String(q.Nodes[idx].Statement))
 		}
 
@@ -114,9 +114,11 @@ func (q *Query) SelectReducer() error {
 		q.Reduce()
 	} else {
 		for idx := range q.Nodes {
-			keys := reflect.ValueOf(q.Nodes[idx].NodeResults).MapKeys()
-			firstKey := keys[0].String()
-			q.Results = append(q.Results, q.Nodes[idx].NodeResults[firstKey]...)
+			if len(q.Nodes[idx].NodeResults) != 0 {
+				keys := reflect.ValueOf(q.Nodes[idx].NodeResults).MapKeys()
+				firstKey := keys[0].String()
+				q.Results = append(q.Results, q.Nodes[idx].NodeResults[firstKey]...)
+			}
 		}
 	}
 	return nil
