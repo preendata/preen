@@ -12,31 +12,32 @@ func (p *ParsedQuery) Map(cfg *config.Config) error {
 	p.NodeResults = make(map[string][]map[string]any)
 	if p.Source.Engine == "postgres" {
 		for _, query := range p.QueryString {
-			nodeParsed, err := sqlparser.Parse(query)
+			if query != "no-op" {
+				nodeParsed, err := sqlparser.Parse(query)
 
-			if err != nil {
-				return err
-			}
-
-			tableName := sqlparser.String(nodeParsed.(*sqlparser.Select).From[0])
-			p.NodeResults[tableName] = make([]map[string]any, 0)
-			result, err := pg.ExecuteRaw(query, cfg, p.Source)
-
-			if err != nil {
-				return err
-			}
-
-			p.NodeResults[tableName] = append(p.NodeResults[tableName], result.Rows...)
-
-			if p.OrderedColumns == nil {
-				p.OrderedColumns = result.Columns
-			} else {
-				err = columnValidation(&p.OrderedColumns, result.Columns)
 				if err != nil {
 					return err
 				}
-			}
 
+				tableName := sqlparser.String(nodeParsed.(*sqlparser.Select).From[0])
+				p.NodeResults[tableName] = make([]map[string]any, 0)
+				result, err := pg.ExecuteRaw(query, cfg, p.Source)
+
+				if err != nil {
+					return err
+				}
+
+				p.NodeResults[tableName] = append(p.NodeResults[tableName], result.Rows...)
+
+				if p.OrderedColumns == nil {
+					p.OrderedColumns = result.Columns
+				} else {
+					err = columnValidation(&p.OrderedColumns, result.Columns)
+					if err != nil {
+						return err
+					}
+				}
+			}
 		}
 	}
 	return nil

@@ -37,6 +37,6 @@ func (p *ParsedQuery) UpdateLimit(sourceIndex int, nSources int) {
 	} else if baseRowCount > 0 {
 		p.Select.Limit.Rowcount = sqlparser.NewIntVal([]byte(fmt.Sprintf("%d", baseRowCount)))
 	} else {
-		p.Select = nil
+		p.Statement = nil
 	}
 }
