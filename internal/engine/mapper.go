@@ -24,9 +24,25 @@ func (p *ParsedQuery) Map(cfg *config.Config) error {
 				if err != nil {
 					return err
 				}
-				p.NodeResults[tableName] = append(p.NodeResults[tableName], result...)
+
+				p.NodeResults[tableName] = append(p.NodeResults[tableName], result.Rows...)
+				p.OrderedColumns = result.Columns
 			}
 		}
 	}
 	return nil
 }
+
+// func columnValidation(orderedCols *[]string, currentResultCols []string) error {
+// 	if len(*orderedCols) != len(currentResultCols) {
+// 		return fmt.Errorf("columns do not match")
+// 	}
+
+// 	for i, col := range *orderedCols {
+// 		if col != currentResultCols[i] {
+// 			return fmt.Errorf("columns do not match")
+// 		}
+// 	}
+
+// 	return nil
+// }

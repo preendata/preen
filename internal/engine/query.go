@@ -18,12 +18,13 @@ type Join struct {
 }
 
 type ParsedQuery struct {
-	Statement   sqlparser.Statement
-	Select      *sqlparser.Select
-	JoinDetails Join
-	QueryString []string
-	Source      config.Source
-	NodeResults map[string][]map[string]any
+	Statement      sqlparser.Statement
+	Select         *sqlparser.Select
+	JoinDetails    Join
+	QueryString    []string
+	Source         config.Source
+	NodeResults    map[string][]map[string]any
+	OrderedColumns []string
 }
 
 type Column struct {
@@ -44,8 +45,13 @@ type Query struct {
 	Err             error
 }
 
+type QueryResult struct {
+	Rows    []map[string]any
+	Columns []string
+}
+
 // Execute executes a prepared statement on all sources in the config
-func Execute(statement string, cfg *config.Config) ([]map[string]any, error) {
+func Execute(statement string, cfg *config.Config) (QueryResult, error) {
 	q := Query{
 		Input:   statement,
 		Cfg:     cfg,
@@ -57,7 +63,7 @@ func Execute(statement string, cfg *config.Config) ([]map[string]any, error) {
 	parsed, err := sqlparser.Parse(q.Input)
 
 	if err != nil {
-		return nil, err
+		return QueryResult{}, err
 	}
 
 	q.Main.Statement = parsed
@@ -69,14 +75,20 @@ func Execute(statement string, cfg *config.Config) ([]map[string]any, error) {
 		err = q.SelectMapper()
 		if err != nil {
 			hlog.Debug("Error mapping select statement", q)
-			return nil, err
+			return QueryResult{}, err
 		}
 		q.SelectReducer()
 	default:
 		err = errors.New("unsupported sql statement. please provide a select statement")
-		return nil, err
+		return QueryResult{}, err
 	}
-	return q.Results, nil
+
+	qr := QueryResult{
+		Rows:    q.Results,
+		Columns: q.Main.OrderedColumns,
+	}
+
+	return qr, nil
 }
 
 func (q *Query) SelectMapper() error {
@@ -84,6 +96,7 @@ func (q *Query) SelectMapper() error {
 		q.Nodes[idx].Source = source
 		q.Nodes[idx].QueryString = make([]string, 0)
 		q.Nodes[idx].Statement, _ = sqlparser.Parse(q.Input)
+
 		switch stmt := q.Nodes[idx].Statement.(type) {
 		case *sqlparser.Select:
 			q.Nodes[idx].Select = stmt
@@ -110,6 +123,10 @@ func (q *Query) SelectMapper() error {
 }
 
 func (q *Query) SelectReducer() error {
+	// TODO - connect all reducers to a parent class that will handle collection of results with common methods
+	// For now, just grab OrderedColumns from the first node, which sucks
+	q.Main.OrderedColumns = q.Nodes[0].OrderedColumns
+
 	if q.ReducerRequired {
 		q.Reduce()
 	} else {
@@ -118,6 +135,7 @@ func (q *Query) SelectReducer() error {
 				keys := reflect.ValueOf(q.Nodes[idx].NodeResults).MapKeys()
 				firstKey := keys[0].String()
 				q.Results = append(q.Results, q.Nodes[idx].NodeResults[firstKey]...)
+
 			}
 		}
 	}

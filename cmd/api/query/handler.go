@@ -51,7 +51,9 @@ func Handler(c *gin.Context) {
 		c.JSON(500, gin.H{"error": err.Error()})
 	}
 
-	response.Rows, err = engine.Execute(request.Query, config)
+	qr, err := engine.Execute(request.Query, config)
+
+	response.Rows = qr.Rows
 
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
