@@ -1,8 +1,6 @@
 package engine
 
 import (
-	"fmt"
-
 	"github.com/xwb1989/sqlparser"
 )
 
@@ -50,7 +48,6 @@ func (p *ParsedQuery) ParseJoinColumns() (string, string) {
 	for _, column := range p.Select.SelectExprs {
 		colName := column.(*sqlparser.AliasedExpr).Expr.(*sqlparser.ColName).Name.String()
 		tableName := column.(*sqlparser.AliasedExpr).Expr.(*sqlparser.ColName).Qualifier.Name.String()
-		fmt.Println(tableName)
 		if tableName == p.JoinDetails.LeftTableName || tableName == leftTableAlias {
 			leftColumns += "," + colName
 		}
