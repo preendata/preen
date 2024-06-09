@@ -17,20 +17,7 @@ func (q *Query) ParseColumns() error {
 				colName := expr.Expr.(*sqlparser.ColName).Name.String()
 				q.Columns[colName] = col
 			case *sqlparser.FuncExpr:
-				q.ReducerRequired = true
-				q.IsAggregate = true
-				col := Column{
-					Table:     "",
-					FuncName:  expr.Expr.(*sqlparser.FuncExpr).Name.String(),
-					IsGroupBy: false,
-				}
-				if expr.As.String() != "" {
-					colName := expr.As.String()
-					q.Columns[colName] = col
-				} else {
-					colName := expr.Expr.(*sqlparser.FuncExpr).Name.String()
-					q.Columns[colName] = col
-				}
+				q.ParseFunctionColumns(expr)
 			}
 		}
 	}
@@ -38,22 +25,55 @@ func (q *Query) ParseColumns() error {
 	return nil
 }
 
-func (p *ParsedQuery) ParseJoinColumns() (string, string) {
-	leftColumns := p.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Left.(*sqlparser.ColName).Name.String()
-	rightColumns := p.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Right.(*sqlparser.ColName).Name.String()
+func (q *Query) ParseJoinColumns() (string, string) {
+	leftColumns := q.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Left.(*sqlparser.ColName).Name.String()
+	rightColumns := q.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Right.(*sqlparser.ColName).Name.String()
 
-	leftTableAlias := p.JoinDetails.JoinExpr.LeftExpr.(*sqlparser.AliasedTableExpr).As.String()
-	rightTableAlias := p.JoinDetails.JoinExpr.RightExpr.(*sqlparser.AliasedTableExpr).As.String()
+	leftTableAlias := q.JoinDetails.JoinExpr.LeftExpr.(*sqlparser.AliasedTableExpr).As.String()
+	rightTableAlias := q.JoinDetails.JoinExpr.RightExpr.(*sqlparser.AliasedTableExpr).As.String()
 
-	for _, column := range p.Select.SelectExprs {
+	for _, column := range q.Main.Select.SelectExprs {
 		colName := column.(*sqlparser.AliasedExpr).Expr.(*sqlparser.ColName).Name.String()
 		tableName := column.(*sqlparser.AliasedExpr).Expr.(*sqlparser.ColName).Qualifier.Name.String()
-		if tableName == p.JoinDetails.LeftTableName || tableName == leftTableAlias {
+
+		// If the column is part of the join condition, skip it
+		if (tableName == q.JoinDetails.LeftTableName || tableName == leftTableAlias) &&
+			(colName == q.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Left.(*sqlparser.ColName).Name.String() ||
+				colName == q.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Right.(*sqlparser.ColName).Name.String()) {
+			continue
+			// If the column is NOT part of the join condition, add it to the query, but mark it as not to be returned
+		} else if tableName == q.JoinDetails.LeftTableName || tableName == leftTableAlias {
 			leftColumns += "," + colName
+			q.JoinDetails.ReturnJoinCols = false
 		}
-		if tableName == p.JoinDetails.RightTableName || tableName == rightTableAlias {
+
+		// Same things as above, but for the right table
+		if (tableName == q.JoinDetails.RightTableName || tableName == rightTableAlias) &&
+			(colName == q.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Right.(*sqlparser.ColName).Name.String() ||
+				colName == q.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Left.(*sqlparser.ColName).Name.String()) {
+			continue
+		} else if tableName == q.JoinDetails.RightTableName || tableName == rightTableAlias {
 			rightColumns += "," + colName
 		}
 	}
 	return leftColumns, rightColumns
+}
+
+func (q *Query) ParseFunctionColumns(expr *sqlparser.AliasedExpr) error {
+	q.ReducerRequired = true
+	q.IsAggregate = true
+	col := Column{
+		Table:     "",
+		FuncName:  expr.Expr.(*sqlparser.FuncExpr).Name.String(),
+		IsGroupBy: false,
+	}
+	if expr.As.String() != "" {
+		colName := expr.As.String()
+		q.Columns[colName] = col
+	} else {
+		colName := expr.Expr.(*sqlparser.FuncExpr).Name.String()
+		q.Columns[colName] = col
+	}
+
+	return nil
 }
