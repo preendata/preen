@@ -14,10 +14,11 @@ all_transactions as (
 )
 
 select
-	count(*)
+	*
 from
 	all_users
 left join
 	all_transactions
 on
-	all_users.user_id = all_transactions.user_id;
+	all_users.user_id = all_transactions.user_id
+limit 1000;
