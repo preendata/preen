@@ -1,0 +1,20 @@
+[
+    {
+        "email": "droser4@addtoany.com",
+        "first_name": "Devin",
+        "gender": "Male",
+        "ip_address": "142.208.213.124",
+        "is_active": true,
+        "last_name": "Roser",
+        "user_id": "5"
+    },
+    {
+        "email": "dfulleylovenm@upenn.edu",
+        "first_name": "Devin",
+        "gender": "Female",
+        "ip_address": "168.249.92.186",
+        "is_active": false,
+        "last_name": "Fulleylove",
+        "user_id": "851"
+    }
+]
