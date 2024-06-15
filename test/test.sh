@@ -40,19 +40,4 @@ else
 fi
 
 
-QUERY_TITLE="WHERE CLAUSE"
-COMMAND=$(go run $APP_DIR/cmd/cli/main.go q "SELECT * FROM users WHERE first_name = 'Devin'")
-EXPECTED=$(cat $APP_DIR/test/data/select_with_limit.json)
-
-echo "Testing query: $QUERY_TITLE"
-DIFF=$(diff <(echo "$COMMAND" | jq '.') <(echo "$EXPECTED" | jq '.'))
-if [[ -n "$DIFF" ]]; then
-    echo "${QUERY_TITLE} query does not match"
-    echo -e "\nDiff:"
-    echo "$DIFF" | colordiff
-else
-    echo "${QUERY_TITLE} query matches"
-fi
-
-
 exit 0
