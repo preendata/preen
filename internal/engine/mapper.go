@@ -6,7 +6,26 @@ import (
 	"github.com/xwb1989/sqlparser"
 )
 
-func (p *ParsedQuery) Map(cfg *config.Config) error {
+// PrepareIndividualQueryForExecution coordinates all preparation of the individual nodes,
+// or federated query components, for execution.
+func (p *ParsedQuery) qPrepareIndividualQueryForExecution(sourceIdx int, query *Query) error {
+	switch stmt := p.Statement.(type) {
+	case *sqlparser.Select:
+		p.Select = stmt
+	}
+	p.NodeParser(sourceIdx, len(config.GlobalConfig.Sources))
+
+	// What is the point of this?
+	if p.Statement != nil && query.JoinDetails.JoinExpr == nil {
+		p.QueryString = make([]string, 0)
+		p.QueryString = append(p.QueryString, sqlparser.String(p.Statement))
+	}
+
+	return nil
+}
+
+// ExecuteFederatedQueryComponent is the adapter between the query parsing engine and the database layer.
+func (p *ParsedQuery) ExecuteFederatedQueryComponent(cfg *config.Config) error {
 	p.NodeResults = make(map[string][]map[string]any)
 	if p.Source.Engine == "postgres" {
 		for _, query := range p.QueryString {
@@ -32,17 +51,3 @@ func (p *ParsedQuery) Map(cfg *config.Config) error {
 	}
 	return nil
 }
-
-// func columnValidation(orderedCols *[]string, currentResultCols []string) error {
-// 	if len(*orderedCols) != len(currentResultCols) {
-// 		return fmt.Errorf("columns do not match")
-// 	}
-
-// 	for i, col := range *orderedCols {
-// 		if col != currentResultCols[i] {
-// 			return fmt.Errorf("columns do not match")
-// 		}
-// 	}
-
-// 	return nil
-// }

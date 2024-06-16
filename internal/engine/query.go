@@ -28,6 +28,7 @@ type ParsedQuery struct {
 	Limit          *int
 }
 
+// Column represents the identity data of a column as well as if it is being utilized for aggregations or joins
 type Column struct {
 	Table     string
 	FuncName  string
@@ -36,10 +37,11 @@ type Column struct {
 }
 
 type Query struct {
-	Input           string
-	Cfg             *config.Config
-	Main            ParsedQuery
-	JoinDetails     Join
+	OriginalQueryStatement string
+	Cfg                    *config.Config
+	Main                   ParsedQuery
+	JoinDetails            Join
+	// Nodes is a list of parsed queries for each source in the config
 	Nodes           []ParsedQuery
 	Results         chan map[string]any
 	Columns         map[string]Column
@@ -48,29 +50,30 @@ type Query struct {
 	Err             error
 }
 
-type QueryResult struct {
+// IntegratedResultSet is final product of a federated query execution. It is the effective unioning of multiple query results.
+type IntegratedResultSet struct {
 	Rows    []map[string]any
 	Columns []string
 }
 
 // Execute executes a prepared statement on all sources in the config
-func Execute(statement string, cfg *config.Config) (QueryResult, error) {
+func Execute(statement string, cfg *config.Config) (IntegratedResultSet, error) {
 	q := Query{
-		Input:   statement,
-		Cfg:     cfg,
-		Nodes:   make([]ParsedQuery, len(cfg.Sources)),
-		Results: make(chan map[string]any),
-		Columns: make(map[string]Column, 0),
+		OriginalQueryStatement: statement,
+		Cfg:                    cfg,
+		Nodes:                  make([]ParsedQuery, len(cfg.Sources)),
+		Results:                make(chan map[string]any),
+		Columns:                make(map[string]Column, 0),
 	}
 
-	qr := QueryResult{
+	qr := IntegratedResultSet{
 		Rows: nil,
 	}
 
-	parsed, err := sqlparser.Parse(q.Input)
+	parsed, err := sqlparser.Parse(q.OriginalQueryStatement)
 
 	if err != nil {
-		return QueryResult{}, err
+		return IntegratedResultSet{}, err
 	}
 
 	q.Main.Statement = parsed
@@ -81,21 +84,17 @@ func Execute(statement string, cfg *config.Config) (QueryResult, error) {
 		err = q.SelectMapper()
 		if err != nil {
 			hlog.Debug("Error mapping select statement", q)
-			return QueryResult{}, err
+			return IntegratedResultSet{}, err
 		}
 		go qr.CollectResults(q.Results)
 		q.ParseColumns()
 		q.SelectReducer()
 	default:
 		err = errors.New("unsupported sql statement. please provide a select statement")
-		return QueryResult{}, err
+		return IntegratedResultSet{}, err
 	}
 
 	qr.Columns = q.Main.OrderedColumns
-
-	if q.Main.Limit != nil {
-		qr.Rows = qr.Rows[:*q.Main.Limit]
-	}
 
 	return qr, nil
 }
@@ -104,20 +103,15 @@ func (q *Query) SelectMapper() error {
 	q.MainParser()
 	for idx, source := range q.Cfg.Sources {
 		q.Nodes[idx].Source = source
-		q.Nodes[idx].Statement, _ = sqlparser.Parse(q.Input)
+		q.Nodes[idx].Statement, _ = sqlparser.Parse(q.OriginalQueryStatement)
 
-		switch stmt := q.Nodes[idx].Statement.(type) {
-		case *sqlparser.Select:
-			q.Nodes[idx].Select = stmt
-		}
-		q.Nodes[idx].NodeParser(idx, len(q.Cfg.Sources))
+		err := q.Nodes[idx].qPrepareIndividualQueryForExecution(idx, q)
 
-		if q.Nodes[idx].Statement != nil && q.JoinDetails.JoinExpr == nil {
-			q.Nodes[idx].QueryString = make([]string, 0)
-			q.Nodes[idx].QueryString = append(q.Nodes[idx].QueryString, sqlparser.String(q.Nodes[idx].Statement))
+		if err != nil {
+			return err
 		}
 
-		err := q.Nodes[idx].Map(q.Cfg)
+		err = q.Nodes[idx].ExecuteFederatedQueryComponent(q.Cfg)
 
 		if err != nil {
 			return err
@@ -147,7 +141,8 @@ func (q *Query) SelectReducer() error {
 	return nil
 }
 
-func (qr *QueryResult) CollectResults(c chan map[string]any) {
+// CollectResults collects results from the individual result set channel and appends them to the IntegratedResultSet
+func (qr *IntegratedResultSet) CollectResults(c chan map[string]any) {
 	for row := range c {
 		qr.Rows = append(qr.Rows, row)
 	}
