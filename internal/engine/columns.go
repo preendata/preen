@@ -1,6 +1,9 @@
 package engine
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/xwb1989/sqlparser"
 )
 
@@ -13,14 +16,21 @@ func (q *Query) ParseColumns() error {
 				col := Column{
 					Table:     expr.Expr.(*sqlparser.ColName).Qualifier.Name.String(),
 					IsGroupBy: false,
+					Position:  idx,
 				}
 				colName := expr.Expr.(*sqlparser.ColName).Name.String()
 				q.Columns[colName] = col
 			case *sqlparser.FuncExpr:
-				q.ParseFunctionColumns(expr)
+				q.ParseFunctionColumns(expr, idx)
 			}
 		}
 	}
+
+	if q.Main.Select.GroupBy != nil {
+		q.ParseGroupByColumns()
+	}
+
+	fmt.Println(q.Columns)
 
 	return nil
 }
@@ -59,13 +69,14 @@ func (q *Query) ParseJoinColumns() (string, string) {
 	return leftColumns, rightColumns
 }
 
-func (q *Query) ParseFunctionColumns(expr *sqlparser.AliasedExpr) error {
+func (q *Query) ParseFunctionColumns(expr *sqlparser.AliasedExpr, idx int) error {
 	q.ReducerRequired = true
 	q.IsAggregate = true
 	col := Column{
 		Table:     "",
 		FuncName:  expr.Expr.(*sqlparser.FuncExpr).Name.String(),
 		IsGroupBy: false,
+		Position:  idx,
 	}
 	if expr.As.String() != "" {
 		colName := expr.As.String()
@@ -73,6 +84,35 @@ func (q *Query) ParseFunctionColumns(expr *sqlparser.AliasedExpr) error {
 	} else {
 		colName := expr.Expr.(*sqlparser.FuncExpr).Name.String()
 		q.Columns[colName] = col
+	}
+
+	return nil
+}
+
+func (q *Query) ParseGroupByColumns() error {
+	groupby := q.Main.Select.GroupBy
+
+	for _, expr := range groupby {
+		switch group := expr.(type) {
+		case *sqlparser.ColName:
+			colName := group.Name.String()
+			if entry, ok := q.Columns[colName]; ok {
+				fmt.Println("here1")
+				entry.IsGroupBy = true
+				q.Columns[colName] = entry
+			}
+		case *sqlparser.SQLVal:
+			colVal, _ := strconv.Atoi(string(group.Val))
+			for name, column := range q.Columns {
+				if (colVal - 1) == column.Position {
+					if entry, ok := q.Columns[name]; ok {
+						fmt.Println("here")
+						entry.IsGroupBy = true
+						q.Columns[name] = entry
+					}
+				}
+			}
+		}
 	}
 
 	return nil

@@ -33,6 +33,7 @@ type Column struct {
 	FuncName  string
 	IsGroupBy bool
 	IsJoin    bool
+	Position  int
 }
 
 type Query struct {
