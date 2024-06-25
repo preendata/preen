@@ -2,8 +2,8 @@ package engine
 
 import (
 	"errors"
-	"reflect"
 
+	"github.com/hyphadb/hyphadb/internal/duckdb"
 	"github.com/hyphadb/hyphadb/internal/hlog"
 
 	"github.com/hyphadb/hyphadb/internal/config"
@@ -23,58 +23,54 @@ type ParsedQuery struct {
 	Select         *sqlparser.Select
 	QueryString    []string
 	Source         config.Source
-	NodeResults    map[string][]map[string]any
+	Columns        map[string]Column
 	OrderedColumns []string
 	Limit          *int
 }
 
-// Column represents the identity data of a column as well as if it is being utilized for aggregations or joins
 type Column struct {
-	Table     string
-	FuncName  string
-	IsGroupBy bool
-	IsJoin    bool
-	Position  int
+	Table    *string
+	FuncName string
+	IsJoin   bool
+	Position int
+}
+
+type QueryResults struct {
+	Rows        []map[string]any
+	Columns     []string
+	ResultsChan chan map[string]any
 }
 
 type Query struct {
 	OriginalQueryStatement string
+	OrderedColumns         []string
+	QueryContext           QueryContext
 	Cfg                    *config.Config
 	Main                   ParsedQuery
 	JoinDetails            Join
-	// Nodes is a list of parsed queries for each source in the config
-	Nodes           []ParsedQuery
-	Results         chan map[string]any
-	Columns         map[string]Column
-	ReducerRequired bool
-	IsAggregate     bool
-	Err             error
-}
-
-// IntegratedResultSet is final product of a federated query execution. It is the effective unioning of multiple query results.
-type IntegratedResultSet struct {
-	Rows    []map[string]any
-	Columns []string
+	Nodes                  []ParsedQuery
+	Results                QueryResults
 }
 
 // Execute executes a prepared statement on all sources in the config
-func Execute(statement string, cfg *config.Config) (IntegratedResultSet, error) {
+func Execute(statement string, cfg *config.Config) (*QueryResults, error) {
 	q := Query{
 		OriginalQueryStatement: statement,
 		Cfg:                    cfg,
 		Nodes:                  make([]ParsedQuery, len(cfg.Sources)),
-		Results:                make(chan map[string]any),
-		Columns:                make(map[string]Column, 0),
 	}
+	q.Main.Columns = make(map[string]Column)
 
-	qr := IntegratedResultSet{
-		Rows: nil,
+	q.Results = QueryResults{
+		Rows:        nil,
+		Columns:     nil,
+		ResultsChan: make(chan map[string]any),
 	}
 
 	parsed, err := sqlparser.Parse(q.OriginalQueryStatement)
 
 	if err != nil {
-		return IntegratedResultSet{}, err
+		return nil, err
 	}
 
 	q.Main.Statement = parsed
@@ -85,66 +81,57 @@ func Execute(statement string, cfg *config.Config) (IntegratedResultSet, error) 
 		err = q.SelectMapper()
 		if err != nil {
 			hlog.Debug("Error mapping select statement", q)
-			return IntegratedResultSet{}, err
+			return nil, err
 		}
-		go qr.CollectResults(q.Results)
-		q.ParseColumns()
-		q.SelectReducer()
+		go q.CollectResults(q.Results.ResultsChan)
+		q.Main.ParseColumns()
 	default:
 		err = errors.New("unsupported sql statement. please provide a select statement")
-		return IntegratedResultSet{}, err
+		return nil, err
+	}
+	q.Results.Columns = q.Main.OrderedColumns
+	err = duckdb.Query(q.OriginalQueryStatement, q.Results.ResultsChan)
+
+	if err != nil {
+		return nil, err
 	}
 
-	qr.Columns = q.Main.OrderedColumns
-
-	return qr, nil
+	return &q.Results, nil
 }
 
 func (q *Query) SelectMapper() error {
 	q.MainParser()
 	for idx, source := range q.Cfg.Sources {
 		q.Nodes[idx].Source = source
+		q.Nodes[idx].Columns = make(map[string]Column)
 		q.Nodes[idx].Statement, _ = sqlparser.Parse(q.OriginalQueryStatement)
 
-		err := q.Nodes[idx].qPrepareIndividualQueryForExecution(idx, q)
+		err := q.Nodes[idx].PrepareNodeQuery(idx, q)
 
 		if err != nil {
 			return err
 		}
 
-		err = q.Nodes[idx].ExecuteFederatedQueryComponent(q.Cfg)
+		if !q.QueryContext.Valid {
+			err := q.BuildContext()
 
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (q *Query) SelectReducer() error {
-	// TODO - connect all reducers to a parent class that will handle collection of results with common methods
-	// For now, just grab OrderedColumns from the first node, which sucks
-	q.Main.OrderedColumns = q.Nodes[0].OrderedColumns
-
-	if q.ReducerRequired {
-		q.Reduce()
-	} else {
-		for idx := range q.Nodes {
-			if len(q.Nodes[idx].NodeResults) != 0 {
-				keys := reflect.ValueOf(q.Nodes[idx].NodeResults).MapKeys()
-				firstKey := keys[0].String()
-				for _, row := range q.Nodes[idx].NodeResults[firstKey] {
-					q.Results <- row
-				}
+			if err != nil {
+				hlog.Error("Error building context: ", err)
 			}
 		}
+
+		err = q.Nodes[idx].ExecuteNodeQuery(q.Cfg)
+
+		if err != nil {
+			hlog.Error("Error executing node query: ", err)
+		}
 	}
 	return nil
 }
 
-// CollectResults collects results from the individual result set channel and appends them to the IntegratedResultSet
-func (qr *IntegratedResultSet) CollectResults(c chan map[string]any) {
+func (q *Query) CollectResults(c chan map[string]any) error {
 	for row := range c {
-		qr.Rows = append(qr.Rows, row)
+		q.Results.Rows = append(q.Results.Rows, row)
 	}
+	return nil
 }

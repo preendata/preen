@@ -33,7 +33,7 @@ func Query(c *cli.Context) error {
 	}
 
 	// TODO flag for JSON vs table output
-	// err = utils.WriteToTable(qr.Rows, qr.Columns)
+	err = utils.WriteToTable(qr.Rows, qr.Columns)
 	err = utils.PrintPrettyJSON(qr.Rows)
 	if err != nil {
 		return fmt.Errorf("error writing to table %w", err)

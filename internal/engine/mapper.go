@@ -6,16 +6,13 @@ import (
 	"github.com/xwb1989/sqlparser"
 )
 
-// PrepareIndividualQueryForExecution coordinates all preparation of the individual nodes,
-// or federated query components, for execution.
-func (p *ParsedQuery) qPrepareIndividualQueryForExecution(sourceIdx int, query *Query) error {
+func (p *ParsedQuery) PrepareNodeQuery(sourceIdx int, query *Query) error {
 	switch stmt := p.Statement.(type) {
 	case *sqlparser.Select:
 		p.Select = stmt
 	}
 	p.NodeParser(sourceIdx, len(config.GlobalConfig.Sources))
 
-	// What is the point of this?
 	if p.Statement != nil && query.JoinDetails.JoinExpr == nil {
 		p.QueryString = make([]string, 0)
 		p.QueryString = append(p.QueryString, sqlparser.String(p.Statement))
@@ -24,9 +21,8 @@ func (p *ParsedQuery) qPrepareIndividualQueryForExecution(sourceIdx int, query *
 	return nil
 }
 
-// ExecuteFederatedQueryComponent is the adapter between the query parsing engine and the database layer.
-func (p *ParsedQuery) ExecuteFederatedQueryComponent(cfg *config.Config) error {
-	p.NodeResults = make(map[string][]map[string]any)
+// ExecuteNodeQuery is the adapter between the query parsing engine and the database layer.
+func (p *ParsedQuery) ExecuteNodeQuery(cfg *config.Config) error {
 	if p.Source.Engine == "postgres" {
 		for _, query := range p.QueryString {
 			if query != "no-op" {
@@ -37,15 +33,17 @@ func (p *ParsedQuery) ExecuteFederatedQueryComponent(cfg *config.Config) error {
 				}
 
 				tableName := sqlparser.String(nodeParsed.(*sqlparser.Select).From[0])
-				p.NodeResults[tableName] = make([]map[string]any, 0)
 				result, err := pg.ExecuteRaw(query, cfg, p.Source)
 
 				if err != nil {
 					return err
 				}
 
-				p.NodeResults[tableName] = append(p.NodeResults[tableName], result.Rows...)
-				p.OrderedColumns = result.Columns
+				err = p.InsertResults(tableName, result.Rows)
+
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}

@@ -21,21 +21,21 @@ services:
   #     - ./trino/config/pg2.properties:/etc/trino/catalog/pg2.properties
   #     - ./trino/config/pg3.properties:/etc/trino/catalog/pg3.properties
 
-  hyphadb-api:
-    image: hyphadb-api
-    build:
-      context: ..
-      dockerfile: .docker/hyphadb.Dockerfile
-    ports:
-      - "5051:5051"
-    working_dir: /home/hyphadb
-    command: go run cmd/api/main.go
-    volumes:
-      - ../:/home/hyphadb
-    depends_on:
-      - postgres-1
-      - postgres-2
-      - postgres-3
+  # hyphadb-api:
+  #   image: hyphadb-api
+  #   build:
+  #     context: ..
+  #     dockerfile: .docker/hyphadb.Dockerfile
+  #   ports:
+  #     - "5051:5051"
+  #   working_dir: /home/hyphadb
+  #   command: go run cmd/api/main.go
+  #   volumes:
+  #     - ../:/home/hyphadb
+  #   depends_on:
+  #     - postgres-1
+  #     - postgres-2
+  #     - postgres-3
 
   postgres-1:
     image: postgres:16

@@ -119,3 +119,6 @@ venv.bak/
 *.tfvars
 **plugins
 *.tfstate*
+
+# Hypha
+*hyphaContext.db*

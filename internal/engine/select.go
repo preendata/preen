@@ -18,7 +18,6 @@ func (q *Query) MainParser() error {
 	switch tableList := table.(type) {
 	case *sqlparser.JoinTableExpr:
 		q.JoinDetails.JoinExpr = tableList
-		q.ReducerRequired = true
 		q.JoinNodeQuery()
 	}
 
@@ -26,6 +25,8 @@ func (q *Query) MainParser() error {
 }
 
 func (p *ParsedQuery) NodeParser(sourceIndex int, nSources int) {
+	p.ParseColumns()
+
 	if p.Select.Limit != nil {
 		p.UpdateLimit(sourceIndex, nSources)
 	}
