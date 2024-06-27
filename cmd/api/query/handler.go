@@ -53,7 +53,6 @@ func Handler(c *gin.Context) {
 
 	err = engine.Execute(request.Query, config)
 
-	//response.Rows = qr.Rows
 
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
