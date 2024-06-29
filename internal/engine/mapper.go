@@ -39,7 +39,7 @@ func (p *ParsedQuery) ExecuteNodeQuery(cfg *config.Config) error {
 					return err
 				}
 
-				err = p.InsertResults(tableName, result.Rows)
+				err = p.InsertResults(p.Source.Name, tableName, result.Rows)
 
 				if err != nil {
 					return err

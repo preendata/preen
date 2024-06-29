@@ -57,17 +57,23 @@ func (q *Query) BuildTables() error {
 			sourceDataType := q.QueryContext.Validator.ColumnTypes[tableName][columnName].MajorityType
 			duckDbDataType := duckdb.PgTypeMap[sourceDataType]
 			if len(tables[tableName]) == 0 {
-				tables[tableName] += columnName + " " + duckDbDataType
-			} else {
-				tables[tableName] += ", " + columnName + " " + duckDbDataType
+				tables[tableName] += "hypha_source_name string"
 			}
+			tables[tableName] += ", " + columnName + " " + duckDbDataType
 		}
 	}
 
 	for tableName, columnString := range tables {
-		statement := fmt.Sprintf("create table if not exists main.%s (%s)", tableName, columnString)
-		hlog.Debug("Creating table in DuckDB: ", statement)
-		_, err := db.Exec(statement)
+		dropTableStatement := fmt.Sprintf("drop table if exists main.%s", tableName)
+		createTableStatement := fmt.Sprintf("create table if not exists main.%s (%s)", tableName, columnString)
+		hlog.Debug("Dropping table in DuckDB: ", dropTableStatement)
+		_, err := db.Exec(dropTableStatement)
+
+		if err != nil {
+			return err
+		}
+		hlog.Debug("Creating table in DuckDB: ", createTableStatement)
+		_, err = db.Exec(createTableStatement)
 
 		if err != nil {
 			return err
