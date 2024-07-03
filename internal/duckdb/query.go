@@ -2,7 +2,6 @@ package duckdb
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/hyphadb/hyphadb/internal/hlog"
 )
@@ -56,7 +55,6 @@ func ReadRows(rows *sql.Rows, c chan map[string]any) error {
 		for i, column := range columns {
 			dest[column] = *(values[i].(*interface{}))
 		}
-		fmt.Println(dest)
 		c <- dest
 	}
 
