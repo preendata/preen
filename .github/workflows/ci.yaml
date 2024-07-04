@@ -44,11 +44,11 @@ jobs:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
         run: |
-          go build -o output/${{ matrix.os }}_${{ matrix.arch }}/myapp
+          go build ./cmd/cli -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb
           echo "Built for $GOOS $GOARCH"
           
       - name: Upload binaries
         uses: actions/upload-artifact@v2
         with:
-          name: myapp-${{ matrix.os }}-${{ matrix.arch }}
-          path: output/${{ matrix.os }}_${{ matrix.arch }}/myapp
+          name: hyphadb-${{ matrix.os }}-${{ matrix.arch }}
+          path: output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb
