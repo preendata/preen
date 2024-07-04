@@ -44,7 +44,7 @@ jobs:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
         run: |
-          go build ./cmd/cli -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb
+          go build -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb ./cmd/cli 
           echo "Built for $GOOS $GOARCH"
           
       - name: Upload binaries
