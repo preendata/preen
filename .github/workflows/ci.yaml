@@ -3,10 +3,12 @@ name: Main CI Flow
 on:
   push:
     branches:
-      - main | *goreleaser*
+      - main
+      - gor*
   pull_request:
     branches:
-      - main | *goreleaser*
+      - main
+      - gor*
 
 jobs:
   build:
