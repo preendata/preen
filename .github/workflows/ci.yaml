@@ -33,6 +33,12 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
 
+      # Experimental
+      - name: Install Arrow and DuckDB C libraries
+        if: matrix.os == 'darwin'
+        run: |
+          brew install apache-arrow duckdb
+
       - name: Lint
         run: go install golang.org/x/lint/golint@latest && golint ./...
 
@@ -43,6 +49,9 @@ jobs:
         env:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
+          CGO_ENABLED: 1
+          CGO_CFLAGS: "-I/usr/local/include"
+          CGO_LDFLAGS: "-L/usr/local/lib"
         run: |
           go build -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb ./cmd/cli 
           echo "Built for $GOOS $GOARCH"
