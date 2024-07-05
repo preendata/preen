@@ -12,14 +12,14 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     strategy:
       matrix:
         go-version: [1.21.1]
-        os: [linux]
+        os: [darwin]
         # os: [darwin, linux]
-        arch: [amd64]
+        arch: [arm64]
         # arch: [arm64, amd64]
 
     steps:
