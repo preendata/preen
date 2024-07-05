@@ -17,8 +17,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.21.1]
-        os: [darwin]
-        # os: [darwin, linux, windows]
+        os: [darwin, linux]
         arch: [arm64]
 
     steps:
@@ -33,36 +32,16 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
 
-      - name: Download and build DuckDB
-        run: |
-          git clone https://github.com/duckdb/duckdb.git
-          cd duckdb
-          make static
-          export DUCKDB_CFLAGS="-I$(pwd)/build/release/src/include"
-          export DUCKDB_LDFLAGS="-L$(pwd)/build/release/src -lduckdb -static"
-          echo "DUCKDB_CFLAGS=$DUCKDB_CFLAGS" >> $GITHUB_ENV
-          echo "DUCKDB_LDFLAGS=$DUCKDB_LDFLAGS" >> $GITHUB_ENV
-
-      - name: Set CGO environment variables
-        run: |
-          echo "CGO_CFLAGS=$DUCKDB_CFLAGS" >> $GITHUB_ENV
-          echo "CGO_LDFLAGS=$DUCKDB_LDFLAGS" >> $GITHUB_ENV
-
-      - name: Lint
-        run: go install golang.org/x/lint/golint@latest && golint ./...
-
-      # - name: Test
-      #   run: go test ./...
+      # - name: Lint
+      #   run: go install golang.org/x/lint/golint@latest && golint ./...
 
       - name: Build
         env:
           GOOS: ${{ matrix.os }}
           GOARCH: ${{ matrix.arch }}
           CGO_ENABLED: 1
-          CGO_CFLAGS: ${{ env.DUCKDB_CFLAGS }}
-          CGO_LDFLAGS: ${{ env.DUCKDB_LDFLAGS }}
         run: |
-          go build -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb ./cmd/cli 
+          go build -ldflags '-extldflags "-static"' -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb ./cmd/cli 
           echo "Built for $GOOS $GOARCH"
           
       - name: Upload binaries
