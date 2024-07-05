@@ -43,11 +43,12 @@ jobs:
           GOARCH: ${{ matrix.arch }}
           CGO_ENABLED: 1
         run: |
-          CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb --ldflags="-extldflags=-static" -tags osusergo,netgo ./cmd/cli 
+          CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb  ./cmd/cli 
           echo "Built for $GOOS $GOARCH"
         # run: |
-        #   go build -ldflags '-extldflags "-static"' -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb ./cmd/cli 
+        #   CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb --ldflags="-extldflags=-static" -tags osusergo,netgo ./cmd/cli 
         #   echo "Built for $GOOS $GOARCH"
+     
           
       - name: Upload binaries
         uses: actions/upload-artifact@v2
