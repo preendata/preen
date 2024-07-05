@@ -19,7 +19,7 @@ jobs:
         go-version: [1.21.1]
         os: [darwin, linux]
         # os: [darwin, linux]
-        arch: [arm64]
+        arch: [arm64, amd64]
 
     steps:
       - name: Checkout code
