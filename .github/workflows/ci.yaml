@@ -45,6 +45,8 @@ jobs:
         run: |
           CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb --ldflags="-extldflags=-static" -tags osusergo,netgo ./cmd/cli 
           echo "Built for $GOOS $GOARCH"
+          touch .env
+          output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb
         # run: |
         #   go build -ldflags '-extldflags "-static"' -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb ./cmd/cli 
         #   echo "Built for $GOOS $GOARCH"
