@@ -17,7 +17,8 @@ jobs:
     strategy:
       matrix:
         go-version: [1.21.1]
-        os: [darwin, linux]
+        os: [linux]
+        # os: [darwin, linux]
         arch: [arm64]
 
     steps:
@@ -37,12 +38,15 @@ jobs:
 
       - name: Build
         env:
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
+          # GOOS: ${{ matrix.os }}
+          # GOARCH: ${{ matrix.arch }}
           CGO_ENABLED: 1
         run: |
-          go build -ldflags '-extldflags "-static"' -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb ./cmd/cli 
+          CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build --ldflags="-extldflags=-static" -tags osusergo,netgo ./cmd/cli 
           echo "Built for $GOOS $GOARCH"
+        # run: |
+        #   go build -ldflags '-extldflags "-static"' -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb ./cmd/cli 
+        #   echo "Built for $GOOS $GOARCH"
           
       - name: Upload binaries
         uses: actions/upload-artifact@v2
