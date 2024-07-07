@@ -34,37 +34,13 @@ func Query(c *cli.Context) error {
 
 	// TODO flag for JSON vs table output
 	err = utils.WriteToTable(qr.Rows, qr.Columns)
-	err = utils.PrintPrettyJSON(qr.Rows)
 	if err != nil {
 		return fmt.Errorf("error writing to table %w", err)
 	}
-
-	return nil
-}
-
-func Stats(c *cli.Context) error {
-	hlog.Debug("Executing cli.stats")
-
-	conf, err := config.GetConfig()
-
-	if err != nil {
-		return fmt.Errorf("error getting config %w", err)
-	}
-
-	stats, err := pg.GetStats(&conf)
-
-	if err != nil {
-		hlog.Debug("error getting stats", err)
-		return fmt.Errorf("error getting stats %w", err)
-	}
-
-	err = utils.PrintPrettyStruct(stats)
+	err = utils.PrintPrettyJSON(qr.Rows)
 	if err != nil {
 		return fmt.Errorf("error pretty printing JSON %w", err)
 	}
-
-	//TODO allow for output to file
-
 	return nil
 }
 

@@ -2,11 +2,13 @@ package config
 
 import (
 	"fmt"
-	"github.com/hyphadb/hyphadb/internal/hlog"
 	"os"
 	"os/user"
 	"path/filepath"
 	"regexp"
+
+	"github.com/hyphadb/hyphadb/internal/hlog"
+	yaml "gopkg.in/yaml.v3"
 )
 
 var envRegex = regexp.MustCompile(`^\${(\w+)}$`)
@@ -62,10 +64,84 @@ func ensureConfigExists(configDirectoryPath string) error {
 	}
 
 	// If no database config, create
-	// TODO
+	filePath := filepath.Join(configDirectoryPath, "config.yaml")
+	_, err := os.Stat(filePath)
+	if os.IsNotExist(err) {
+		sampleConfig := createSampleConfig()
+		err := writeConfigToFile(sampleConfig, filePath)
+		if err != nil {
+			return fmt.Errorf("failed to create config file: %w", err)
+		}
 
-	// If no DDL config, create
-	// TODO
+		hlog.Debugf("%s created with sample data", filePath)
+		fmt.Println("\n===========================================================")
+		fmt.Println("A sample configuration file for HyphaDB has been generated for you at:", filePath)
+		fmt.Println(">>>>> Please edit this file to match your database configuration. <<<<<")
+		fmt.Print("===========================================================\n\n")
+	} else if err != nil {
+		return fmt.Errorf("error checking config file: %w", err)
+	} else {
+		hlog.Debug("config.yaml already exists.")
+	}
 
 	return nil
+}
+
+// writeConfigToFile writes a sample config to config.yaml
+func writeConfigToFile(config Config, filePath string) error {
+	data, err := yaml.Marshal(&config)
+	if err != nil {
+		return err
+	}
+
+	comment := "# This is a sample config file. Modify the values as needed.\n"
+	fileContent := comment + string(data)
+
+	err = os.WriteFile(filePath, []byte(fileContent), 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createSampleConfig() Config {
+	return Config{
+		Sources: []Source{
+			{
+				Name:   "ExampleSource1",
+				Engine: "postgresql",
+				Connection: Connection{
+					Host:     "localhost",
+					Port:     5432,
+					Database: "exampledb1",
+					Username: "exampleuser",
+					Password: "examplepassword",
+				},
+			},
+			{
+				Name:   "ExampleSource2",
+				Engine: "postgresql",
+				Connection: Connection{
+					Host:     "localhost",
+					Port:     5432,
+					Database: "exampledb2",
+					Username: "exampleuser",
+					Password: "examplepassword",
+				},
+			},
+		},
+		Tables: []Table{
+			{
+				Name:    "users",
+				Schema:  "public",
+				Columns: []string{"user_id", "email"},
+			},
+			{
+				Name:    "transactions",
+				Schema:  "public",
+				Columns: []string{"user_id", "product_id"},
+			},
+		},
+	}
 }
