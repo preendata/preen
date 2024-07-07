@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+
 	"github.com/hyphadb/hyphadb/internal/cli_commands"
 	"github.com/hyphadb/hyphadb/internal/hlog"
 
@@ -31,11 +32,6 @@ func NewApp() *cli.App {
 				Aliases: []string{"r"},
 				Usage:   "Initiate interactive query session",
 				Action:  cli_commands.Repl,
-			}, {
-				Name:    "stats",
-				Aliases: []string{"s"},
-				Usage:   "Wtf does this do?",
-				Action:  cli_commands.Stats,
 			},
 			{
 				Name:    "query",
