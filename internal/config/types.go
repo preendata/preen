@@ -45,6 +45,4 @@ type Method struct {
 type Config struct {
 	Sources []Source `yaml:"sources"`
 	Tables  []Table  `yaml:"tables"`
-	Method  Method   `yaml:"method"`
-	Target  Target   `yaml:"target"`
 }

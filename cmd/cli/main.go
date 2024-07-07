@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/hyphadb/hyphadb/internal/hlog"
 	"log"
 	"os"
+
+	"github.com/hyphadb/hyphadb/internal/hlog"
 
 	"github.com/hyphadb/hyphadb/pkg/cli"
 	"github.com/joho/godotenv"
@@ -12,7 +13,7 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("warn: error loading .env file", err)
+		log.Print("warn: error loading .env file", err)
 	}
 
 	app := cli.NewApp()
