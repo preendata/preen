@@ -74,8 +74,10 @@ func ensureConfigExists(configDirectoryPath string) error {
 		}
 
 		hlog.Debugf("%s created with sample data", filePath)
-		fmt.Println("A sample configuration file for HyphaDB has been generated for you at: ", filePath)
-		fmt.Println("Please edit this file to match your database configuration. \n")
+		fmt.Println("\n===========================================================")
+		fmt.Println("A sample configuration file for HyphaDB has been generated for you at:", filePath)
+		fmt.Println(">>>>> Please edit this file to match your database configuration. <<<<<")
+		fmt.Print("===========================================================\n\n")
 	} else if err != nil {
 		return fmt.Errorf("error checking config file: %w", err)
 	} else {
