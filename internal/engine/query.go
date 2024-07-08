@@ -91,10 +91,6 @@ func Execute(statement string, cfg *config.Config) (*QueryResults, error) {
 			return nil, err
 		}
 		go q.CollectResults(q.Results.ResultsChan)
-		if err != nil {
-			hlog.Debug("Error parsing columns", q)
-			return nil, err
-		}
 	default:
 		err = errors.New("unsupported sql statement. please provide a select statement")
 		return nil, err
