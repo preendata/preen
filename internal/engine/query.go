@@ -78,13 +78,23 @@ func Execute(statement string, cfg *config.Config) (*QueryResults, error) {
 	switch stmt := q.Main.Statement.(type) {
 	case *sqlparser.Select:
 		q.Main.Select = stmt
+
+		err := q.Main.ParseColumns()
+		if err != nil {
+			hlog.Debug("Error parsing columns", q)
+			return nil, err
+		}
+
 		err = q.SelectMapper()
 		if err != nil {
 			hlog.Debug("Error mapping select statement", q)
 			return nil, err
 		}
 		go q.CollectResults(q.Results.ResultsChan)
-		q.Main.ParseColumns()
+		if err != nil {
+			hlog.Debug("Error parsing columns", q)
+			return nil, err
+		}
 	default:
 		err = errors.New("unsupported sql statement. please provide a select statement")
 		return nil, err

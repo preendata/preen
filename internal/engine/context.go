@@ -50,6 +50,7 @@ func (q *Query) BuildTables() error {
 	defer db.Close()
 
 	for key := range q.Nodes[0].Columns {
+		fmt.Println(key)
 		split := strings.Split(key, ".")
 		tableName := split[0]
 		columnName := split[1]
