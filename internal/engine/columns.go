@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/xwb1989/sqlparser"
@@ -12,6 +13,9 @@ func (p *ParsedQuery) ParseColumns() error {
 		case *sqlparser.AliasedExpr:
 			switch expr.Expr.(type) {
 			case *sqlparser.ColName:
+				if expr.Expr.(*sqlparser.ColName).Qualifier.Name.String() == "" {
+					return errors.New("Column names must be fully qualified, e.g. table.column")
+				}
 				table := expr.Expr.(*sqlparser.ColName).Qualifier.Name.String()
 				col := Column{
 					Table:    &table,
