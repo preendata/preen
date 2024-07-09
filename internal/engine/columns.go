@@ -28,6 +28,8 @@ func (p *ParsedQuery) ParseColumns() error {
 			case *sqlparser.FuncExpr:
 				p.ParseFunctionColumns(expr, idx)
 			}
+		case *sqlparser.StarExpr:
+			return errors.New("star expressions are not supported. please specify columns explicitly")
 		}
 	}
 
