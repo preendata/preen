@@ -48,15 +48,17 @@ func (q *Query) BuildTables() error {
 	}
 
 	defer db.Close()
-
-	for key := range q.Nodes[0].Columns {
-		fmt.Println(key)
+	for key := range q.Main.Columns {
 		split := strings.Split(key, ".")
 		tableName := split[0]
 		columnName := split[1]
 		if tableName != "results" {
-			sourceDataType := q.QueryContext.Validator.ColumnTypes[tableName][columnName].MajorityType
-			duckDbDataType := duckdb.PgTypeMap[sourceDataType]
+			sourceDataType, ok := q.QueryContext.Validator.ColumnTypes[tableName][columnName]
+			if !ok {
+				hlog.Debug(fmt.Sprintf("column %s does not exist in table %s", columnName, tableName))
+				continue
+			}
+			duckDbDataType := duckdb.PgTypeMap[sourceDataType.MajorityType]
 			if len(tables[tableName]) == 0 {
 				tables[tableName] += "hypha_source_name string"
 			}
@@ -65,6 +67,17 @@ func (q *Query) BuildTables() error {
 	}
 
 	for tableName, columnString := range tables {
+		var tableExists bool
+		for table := range q.Cfg.Tables {
+			if q.Cfg.Tables[table].Name == tableName {
+				tableExists = true
+			}
+		}
+		if !tableExists {
+			hlog.Debug("Table does not exist in config: ", tableName)
+			continue
+		}
+
 		dropTableStatement := fmt.Sprintf("drop table if exists main.%s", tableName)
 		createTableStatement := fmt.Sprintf("create table if not exists main.%s (%s)", tableName, columnString)
 		hlog.Debug("Dropping table in DuckDB: ", dropTableStatement)

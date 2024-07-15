@@ -15,7 +15,6 @@ type Join struct {
 	LeftTableName  string
 	RightTableName string
 	Condition      *sqlparser.JoinCondition
-	ReturnJoinCols bool
 }
 
 type ParsedQuery struct {
@@ -54,6 +53,7 @@ type Query struct {
 
 // Execute executes a prepared statement on all sources in the config
 func Execute(statement string, cfg *config.Config) (*QueryResults, error) {
+	hlog.Info("Executing query...")
 	q := Query{
 		OriginalQueryStatement: statement,
 		Cfg:                    cfg,

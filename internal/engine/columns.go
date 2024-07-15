@@ -36,46 +36,6 @@ func (p *ParsedQuery) ParseColumns() error {
 	return nil
 }
 
-func (q *Query) ParseJoinColumns() (string, string) {
-	leftColumns := q.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Left.(*sqlparser.ColName).Name.String()
-	rightColumns := q.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Right.(*sqlparser.ColName).Name.String()
-
-	leftTableAlias := q.JoinDetails.JoinExpr.LeftExpr.(*sqlparser.AliasedTableExpr).As.String()
-	rightTableAlias := q.JoinDetails.JoinExpr.RightExpr.(*sqlparser.AliasedTableExpr).As.String()
-
-	for _, expr := range q.Main.Select.SelectExprs {
-		switch expr.(type) {
-		case *sqlparser.AliasedExpr:
-			switch expr.(*sqlparser.AliasedExpr).Expr.(type) {
-			case *sqlparser.ColName:
-				colName := expr.(*sqlparser.AliasedExpr).Expr.(*sqlparser.ColName).Name.String()
-				tableName := expr.(*sqlparser.AliasedExpr).Expr.(*sqlparser.ColName).Qualifier.Name.String()
-
-				// If the column is part of the join condition, skip it
-				if (tableName == q.JoinDetails.LeftTableName || tableName == leftTableAlias) &&
-					(colName == q.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Left.(*sqlparser.ColName).Name.String() ||
-						colName == q.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Right.(*sqlparser.ColName).Name.String()) {
-					continue
-					// If the column is NOT part of the join condition, add it to the query, but mark it as not to be returned
-				} else if tableName == q.JoinDetails.LeftTableName || tableName == leftTableAlias {
-					leftColumns += "," + colName
-					q.JoinDetails.ReturnJoinCols = false
-				}
-
-				// Same things as above, but for the right table
-				if (tableName == q.JoinDetails.RightTableName || tableName == rightTableAlias) &&
-					(colName == q.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Right.(*sqlparser.ColName).Name.String() ||
-						colName == q.JoinDetails.Condition.On.(*sqlparser.ComparisonExpr).Left.(*sqlparser.ColName).Name.String()) {
-					continue
-				} else if tableName == q.JoinDetails.RightTableName || tableName == rightTableAlias {
-					rightColumns += "," + colName
-				}
-			}
-		}
-	}
-	return leftColumns, rightColumns
-}
-
 func (p *ParsedQuery) ParseFunctionColumns(expr *sqlparser.AliasedExpr, idx int) error {
 	table := "results"
 	col := Column{
@@ -94,6 +54,75 @@ func (p *ParsedQuery) ParseFunctionColumns(expr *sqlparser.AliasedExpr, idx int)
 		p.OrderedColumns = append(p.OrderedColumns, colName)
 		p.Columns[colHashKey] = col
 	}
+
+	return nil
+}
+
+func (q *Query) ParseJoinColumns(j *sqlparser.JoinTableExpr) (*sqlparser.JoinTableExpr, error) {
+	rightTable := j.RightExpr.(*sqlparser.AliasedTableExpr).Expr.(sqlparser.TableName).Name.String()
+
+	switch col := j.Condition.On.(type) {
+	case *sqlparser.ComparisonExpr:
+		leftTable := col.Left.(*sqlparser.ColName).Qualifier.Name.String()
+		rightCol := col.Right.(*sqlparser.ColName).Name.String()
+		leftCol := col.Left.(*sqlparser.ColName).Name.String()
+		q.processColumn(rightTable, rightCol)
+		q.processColumn(leftTable, leftCol)
+	case *sqlparser.AndExpr:
+		q.joinConditionFlatten(rightTable, col)
+	}
+	switch left := j.LeftExpr.(type) {
+	case *sqlparser.JoinTableExpr:
+		switch col := left.Condition.On.(type) {
+		case *sqlparser.ComparisonExpr:
+			leftTable := col.Left.(*sqlparser.ColName).Qualifier.Name.String()
+			rightCol := col.Right.(*sqlparser.ColName).Name.String()
+			leftCol := col.Left.(*sqlparser.ColName).Name.String()
+			q.processColumn(rightTable, rightCol)
+			q.processColumn(leftTable, leftCol)
+		case *sqlparser.AndExpr:
+			q.joinConditionFlatten(rightTable, col)
+		}
+		return q.ParseJoinColumns(left)
+	case *sqlparser.AliasedTableExpr:
+		leftTable := left.Expr.(sqlparser.TableName).Name.String()
+		switch col := j.Condition.On.(type) {
+		case *sqlparser.ComparisonExpr:
+			rightCol := col.Right.(*sqlparser.ColName).Name.String()
+			leftCol := col.Left.(*sqlparser.ColName).Name.String()
+			q.processColumn(rightTable, rightCol)
+			q.processColumn(leftTable, leftCol)
+		case *sqlparser.AndExpr:
+			q.joinConditionFlatten(rightTable, col)
+		}
+	}
+	return nil, nil
+}
+
+func (q *Query) joinConditionFlatten(rightTable string, a *sqlparser.AndExpr) (*sqlparser.AndExpr, error) {
+	switch col := a.Left.(type) {
+	case *sqlparser.ComparisonExpr:
+		colName := col.Right.(*sqlparser.ColName).Name.String()
+		q.processColumn(rightTable, colName)
+	case *sqlparser.AndExpr:
+		return q.joinConditionFlatten(rightTable, col)
+	}
+	return nil, nil
+}
+
+func (q *Query) processColumn(tableName string, columnName string) error {
+	colHashKey := fmt.Sprintf("%s.%s", tableName, columnName)
+	_, ok := q.Main.Columns[colHashKey]
+	if ok {
+		return errors.New("column already exists")
+	}
+
+	column := Column{
+		Table:    &tableName,
+		Position: len(q.Main.Columns) + 1,
+	}
+
+	q.Main.Columns[colHashKey] = column
 
 	return nil
 }

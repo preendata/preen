@@ -15,8 +15,12 @@ func Initialize(logLevels ...string) error {
 	logger = logrus.New()
 	logger.Out = os.Stdout
 
-	// Default log level to error
-	logLevel := "ERROR"
+	logger.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+
+	// Default log level to info
+	logLevel := "INFO"
 
 	// If log level in environment, use it
 	if l := os.Getenv("HYPHADB_LOG_LEVEL"); l != "" {
