@@ -31,10 +31,11 @@ func Repl(c *cli.Context) error {
 	defer rl.Close()
 
 	fmt.Println("REPL started. Type 'exit' to quit.")
+	var cmds []string
 	for {
-		input, err := rl.Readline()
+		line, err := rl.Readline()
 		if err == readline.ErrInterrupt {
-			if len(input) == 0 {
+			if len(line) == 0 {
 				break
 			} else {
 				continue
@@ -45,16 +46,27 @@ func Repl(c *cli.Context) error {
 			return fmt.Errorf("failed to read input: %w", err)
 		}
 
-		input = strings.TrimSpace(input)
+		line = strings.TrimSpace(line)
 
 		// Handle exit command
-		if input == "exit" || input == "quit" {
+		if line == "exit" || line == "quit" {
 			fmt.Println("Exiting REPL.")
 			break
 		}
 
+		cmds = append(cmds, line)
+		if !strings.HasSuffix(line, ";") {
+			rl.SetPrompt(">")
+			continue
+		}
+
+		cmd := strings.Join(cmds, " ")
+		cmds = cmds[:0]
+		rl.SetPrompt("hyphadb> ")
+		rl.SaveHistory(cmd)
+
 		// Execute the input as a query
-		qr, err := engine.Execute(input, &conf)
+		qr, err := engine.Execute(cmd, &conf)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			continue

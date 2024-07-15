@@ -25,7 +25,7 @@ func (p *ParsedQuery) InsertResults(sourceName string, tableName string, rows []
 	if err != nil {
 		return err
 	}
-	fmt.Println(columns)
+
 	for _, row := range rows {
 		duckDbRow := make([]driver.Value, len(columns))
 		for i, column := range columns {
