@@ -39,10 +39,9 @@ func (q *Query) BuildContext() error {
 	defer db.Close()
 
 	tables := q.generateTableDDL()
-	if err = q.dropTableIfDDLHasChanged(db, tables); err != nil {
+	if err = q.generateTableIfDDLHasChanged(db, tables); err != nil {
 		return err
 	}
-	err = q.BuildTables(db, tables)
 
 	if err != nil {
 		return err
@@ -92,7 +91,7 @@ func (q *Query) generateTableDDL() map[string]string {
 	return tables
 }
 
-func (q *Query) dropTableIfDDLHasChanged(db *sql.DB, tables map[string]string) error {
+func (q *Query) generateTableIfDDLHasChanged(db *sql.DB, tables map[string]string) error {
 	for tableName, columnString := range tables {
 		var tableExists bool
 		for table := range q.Cfg.Tables {
@@ -129,7 +128,11 @@ func (q *Query) dropTableIfDDLHasChanged(db *sql.DB, tables map[string]string) e
 				hlog.Debug("Table DDL has changed for table ", tableName)
 				dropTableStatement := fmt.Sprintf("drop table if exists main.%s", tableName)
 				hlog.Debug("Dropping table in DuckDB: ", dropTableStatement)
-				_, err := db.Exec(dropTableStatement)
+				if _, err := db.Exec(dropTableStatement); err != nil {
+					return err
+				}
+
+				err = q.BuildTables(db, tables)
 
 				return err
 			}
