@@ -38,6 +38,21 @@ func NewApp() *cli.App {
 				Aliases: []string{"q"},
 				Usage:   "Execute a query",
 				Action:  cli_commands.Query,
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:        "format",
+						Aliases:     []string{"f"},
+						Usage:       "Set output format. Options are 'table' or 'json'",
+						DefaultText: "table",
+						Action: func(c *cli.Context, v string) error {
+							format := c.String("format")
+							if format != "table" && format != "json" {
+								return fmt.Errorf("invalid format: %s. Allowed values are 'table' or 'json'", format)
+							}
+							return nil
+						},
+					},
+				},
 			},
 			{
 				Name:   "validate",
