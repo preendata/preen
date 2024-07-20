@@ -23,6 +23,7 @@ func validateLicenseKey(licenseKey string) error {
 
 	// Validate the license for the current fingerprint
 	license, err := keygen.Validate(ctx, fingerprint)
+
 	switch {
 	case err == keygen.ErrLicenseNotActivated:
 		// Activate the current fingerprint
@@ -34,9 +35,11 @@ func validateLicenseKey(licenseKey string) error {
 			return fmt.Errorf("machine license activation failed")
 		}
 	case err == keygen.ErrLicenseExpired:
-		return fmt.Errorf("snowguard license is expired")
+		return fmt.Errorf("hyphadb license is expired")
+	case err == keygen.ErrLicenseSuspended:
+		return fmt.Errorf("hyphadb license is suspended")
 	case err != nil:
-		return fmt.Errorf("snowguard license is invalid %v", err)
+		return fmt.Errorf("hyphadb license is invalid %v", err)
 	}
 
 	return nil
