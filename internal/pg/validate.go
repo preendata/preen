@@ -2,7 +2,6 @@ package pg
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -63,17 +62,17 @@ func Validate(cfg *config.Config) (*Validator, error) {
 		}
 	}
 
-	validatorJSON, err := json.Marshal(v)
+	// validatorJSON, err := json.Marshal(v)
 
-	if err != nil {
-		slog.Error(
-			fmt.Sprintf("Failed to marshal sources: %v", err),
-		)
-		return nil, err
-	}
+	// if err != nil {
+	// 	slog.Error(
+	// 		fmt.Sprintf("Failed to marshal sources: %v", err),
+	// 	)
+	// 	return nil, err
+	// }
 
 	hlog.Info("Source table and data type validation completed successfully!")
-	hlog.Debug(string(validatorJSON))
+	// hlog.Debug(string(validatorJSON))
 
 	return &v, nil
 

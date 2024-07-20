@@ -1,7 +1,7 @@
 package duckdb
 
 var PgTypeMap = map[string]string{
-	"integer":           "integer",
-	"character varying": "string",
-	"boolean":           "boolean",
+	"integer":           "INTEGER",
+	"character varying": "VARCHAR",
+	"boolean":           "BOOLEAN",
 }
