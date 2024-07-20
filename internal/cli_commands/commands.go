@@ -15,7 +15,7 @@ import (
 
 func Query(c *cli.Context) error {
 	hlog.Debug("Executing cli.query")
-
+	format := c.String("format")
 	stmt := c.Args().First()
 	hlog.Debug("Query: ", stmt)
 
@@ -31,16 +31,16 @@ func Query(c *cli.Context) error {
 		hlog.Debug("error executing query", err)
 		return fmt.Errorf("error executing query %w", err)
 	}
+	if format == "json" {
+		if err := utils.PrintPrettyJSON(qr.Rows); err != nil {
+			return fmt.Errorf("error pretty printing JSON: %w", err)
+		}
+	} else {
+		if err := utils.WriteToTable(qr.Rows, qr.Columns); err != nil {
+			return fmt.Errorf("error writing to table: %w", err)
+		}
+	}
 
-	// TODO flag for JSON vs table output
-	err = utils.WriteToTable(qr.Rows, qr.Columns)
-	if err != nil {
-		return fmt.Errorf("error writing to table %w", err)
-	}
-	err = utils.PrintPrettyJSON(qr.Rows)
-	if err != nil {
-		return fmt.Errorf("error pretty printing JSON %w", err)
-	}
 	return nil
 }
 
