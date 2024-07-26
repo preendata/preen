@@ -7,14 +7,24 @@ import (
 	"github.com/xwb1989/sqlparser"
 )
 
-func (p *ParsedQuery) ParseColumns() error {
-	for idx := range p.Select.SelectExprs {
-		switch expr := p.Select.SelectExprs[idx].(type) {
+type Column struct {
+	Table    *string
+	FuncName string
+	IsJoin   bool
+	Position int
+}
+
+func ParseColumns(s *sqlparser.Select) ([]string, map[string]Column, error) {
+	columns := make(map[string]Column)
+	orderedColumns := make([]string, 0)
+
+	for idx := range s.SelectExprs {
+		switch expr := s.SelectExprs[idx].(type) {
 		case *sqlparser.AliasedExpr:
 			switch expr.Expr.(type) {
 			case *sqlparser.ColName:
 				if expr.Expr.(*sqlparser.ColName).Qualifier.Name.String() == "" {
-					return errors.New("Column names must be fully qualified, e.g. table.column")
+					return nil, nil, errors.New("Column names must be fully qualified, e.g. table.column")
 				}
 				table := expr.Expr.(*sqlparser.ColName).Qualifier.Name.String()
 				col := Column{
@@ -22,43 +32,38 @@ func (p *ParsedQuery) ParseColumns() error {
 					Position: idx,
 				}
 				colName := expr.Expr.(*sqlparser.ColName).Name.String()
-				p.OrderedColumns = append(p.OrderedColumns, colName)
+				orderedColumns = append(orderedColumns, colName)
 				colHashKey := fmt.Sprintf("%s.%s", table, colName)
-				p.Columns[colHashKey] = col
+				columns[colHashKey] = col
 			case *sqlparser.FuncExpr:
-				p.ParseFunctionColumns(expr, idx)
+				table := "results"
+				col := Column{
+					Table:    &table,
+					FuncName: expr.Expr.(*sqlparser.FuncExpr).Name.String(),
+					Position: idx,
+				}
+				if expr.As.String() != "" {
+					colName := expr.As.String()
+					colHashKey := fmt.Sprintf("%s.%s", table, colName)
+					orderedColumns = append(orderedColumns, colName)
+					columns[colHashKey] = col
+				} else {
+					colName := expr.Expr.(*sqlparser.FuncExpr).Name.String()
+					colHashKey := fmt.Sprintf("%s.%s", table, colName)
+					orderedColumns = append(orderedColumns, colName)
+					columns[colHashKey] = col
+				}
+
 			}
 		case *sqlparser.StarExpr:
-			return errors.New("star expressions are not supported. please specify columns explicitly")
+			return nil, nil, errors.New("star expressions are not supported. please specify columns explicitly")
 		}
 	}
 
-	return nil
+	return orderedColumns, columns, nil
 }
 
-func (p *ParsedQuery) ParseFunctionColumns(expr *sqlparser.AliasedExpr, idx int) error {
-	table := "results"
-	col := Column{
-		Table:    &table,
-		FuncName: expr.Expr.(*sqlparser.FuncExpr).Name.String(),
-		Position: idx,
-	}
-	if expr.As.String() != "" {
-		colName := expr.As.String()
-		colHashKey := fmt.Sprintf("%s.%s", table, colName)
-		p.OrderedColumns = append(p.OrderedColumns, colName)
-		p.Columns[colHashKey] = col
-	} else {
-		colName := expr.Expr.(*sqlparser.FuncExpr).Name.String()
-		colHashKey := fmt.Sprintf("%s.%s", table, colName)
-		p.OrderedColumns = append(p.OrderedColumns, colName)
-		p.Columns[colHashKey] = col
-	}
-
-	return nil
-}
-
-func (q *Query) ParseJoinColumns(j *sqlparser.JoinTableExpr) (*sqlparser.JoinTableExpr, error) {
+func ParseJoinColumns(j *sqlparser.JoinTableExpr) (*sqlparser.JoinTableExpr, error) {
 	rightTable := j.RightExpr.(*sqlparser.AliasedTableExpr).Expr.(sqlparser.TableName).Name.String()
 
 	switch col := j.Condition.On.(type) {
@@ -99,7 +104,7 @@ func (q *Query) ParseJoinColumns(j *sqlparser.JoinTableExpr) (*sqlparser.JoinTab
 	return nil, nil
 }
 
-func (q *Query) joinConditionFlatten(rightTable string, a *sqlparser.AndExpr) (*sqlparser.AndExpr, error) {
+func joinConditionFlatten(rightTable string, a *sqlparser.AndExpr) (*sqlparser.AndExpr, error) {
 	switch col := a.Left.(type) {
 	case *sqlparser.ComparisonExpr:
 		colName := col.Right.(*sqlparser.ColName).Name.String()
@@ -110,19 +115,19 @@ func (q *Query) joinConditionFlatten(rightTable string, a *sqlparser.AndExpr) (*
 	return nil, nil
 }
 
-func (q *Query) processColumn(tableName string, columnName string) error {
+func processColumn(tableName string, columnName string) error {
 	colHashKey := fmt.Sprintf("%s.%s", tableName, columnName)
-	_, ok := q.Main.Columns[colHashKey]
+	_, ok := q.Columns[colHashKey]
 	if ok {
 		return errors.New("column already exists")
 	}
 
 	column := Column{
 		Table:    &tableName,
-		Position: len(q.Main.Columns) + 1,
+		Position: len(q.Columns) + 1,
 	}
 
-	q.Main.Columns[colHashKey] = column
+	q.Columns[colHashKey] = column
 
 	return nil
 }

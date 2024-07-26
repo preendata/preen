@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/hyphadb/hyphadb/internal/hlog"
+	"github.com/hyphadb/hyphadb/internal/utils"
 	yaml "gopkg.in/yaml.v3"
 )
 
@@ -29,7 +29,7 @@ func Initialize() error {
 		configDirectoryPath = filepath.Join(usr.HomeDir, ".hyphadb") // fallback to default path
 	}
 
-	hlog.Debugf("Ensuring configuration exists: %s", configDirectoryPath)
+	utils.Debugf("Ensuring configuration exists: %s", configDirectoryPath)
 	err = ensureConfigExists(configDirectoryPath)
 
 	if err != nil {
@@ -47,11 +47,11 @@ func Initialize() error {
 }
 
 func ensureConfigExists(configDirectoryPath string) error {
-	hlog.Debugf("Checking if directory exists: %s", configDirectoryPath)
+	utils.Debugf("Checking if directory exists: %s", configDirectoryPath)
 
 	// If no directory, create
 	if _, err := os.Stat(configDirectoryPath); os.IsNotExist(err) {
-		hlog.Debugf("Config directory does not exist, creating it: %s", configDirectoryPath)
+		utils.Debugf("Config directory does not exist, creating it: %s", configDirectoryPath)
 		err = os.MkdirAll(configDirectoryPath, 0755)
 
 		if err != nil {
@@ -60,7 +60,7 @@ func ensureConfigExists(configDirectoryPath string) error {
 	} else if err != nil {
 		return fmt.Errorf("error checking directory: %w", err)
 	} else {
-		hlog.Debugf("Directory already exists: %s", configDirectoryPath)
+		utils.Debugf("Directory already exists: %s", configDirectoryPath)
 	}
 
 	// If no database config, create
@@ -73,7 +73,7 @@ func ensureConfigExists(configDirectoryPath string) error {
 			return fmt.Errorf("failed to create config file: %w", err)
 		}
 
-		hlog.Debugf("%s created with sample data", filePath)
+		utils.Debugf("%s created with sample data", filePath)
 		fmt.Println("\n===========================================================")
 		fmt.Println("A sample configuration file for HyphaDB has been generated for you at:", filePath)
 		fmt.Println(">>>>> Please edit this file to match your database configuration. <<<<<")
@@ -81,7 +81,7 @@ func ensureConfigExists(configDirectoryPath string) error {
 	} else if err != nil {
 		return fmt.Errorf("error checking config file: %w", err)
 	} else {
-		hlog.Debug("config.yaml already exists.")
+		utils.Debug("config.yaml already exists.")
 	}
 
 	return nil

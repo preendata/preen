@@ -3,10 +3,8 @@ package cli
 import (
 	"fmt"
 
-	"github.com/hyphadb/hyphadb/internal/cli_commands"
-	"github.com/hyphadb/hyphadb/internal/hlog"
-
 	"github.com/hyphadb/hyphadb/internal/config"
+	"github.com/hyphadb/hyphadb/internal/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -31,13 +29,13 @@ func NewApp() *cli.App {
 				Name:    "repl",
 				Aliases: []string{"r"},
 				Usage:   "Initiate interactive query session",
-				Action:  cli_commands.Repl,
+				Action:  Repl,
 			},
 			{
 				Name:    "query",
 				Aliases: []string{"q"},
 				Usage:   "Execute a query",
-				Action:  cli_commands.Query,
+				Action:  Query,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:        "format",
@@ -57,19 +55,19 @@ func NewApp() *cli.App {
 			{
 				Name:   "validate",
 				Usage:  "Validate config file",
-				Action: cli_commands.Validate,
+				Action: Validate,
 			},
 			{
 				Name:    "list-connections",
 				Aliases: []string{"lc"},
 				Usage:   "Print stored connection credentials",
-				Action:  cli_commands.ListConnections,
+				Action:  ListConnections,
 			},
 			{
 				Name:    "save-connection",
 				Aliases: []string{"sc"},
 				Usage:   "Save new connection to config",
-				Action:  cli_commands.SaveConnection,
+				Action:  SaveConnection,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    "name",
@@ -97,13 +95,13 @@ func NewApp() *cli.App {
 				logLevel = "DEBUG"
 			}
 
-			err := hlog.IsValidLogLevel(logLevel)
+			err := utils.IsValidLogLevel(logLevel)
 			if logLevel != "" && err != nil {
 				return fmt.Errorf("invalid log level: %s. Allowed values are: DEBUG, INFO, WARN, ERROR, FATAL, PANIC", logLevel)
 			}
 
 			// Initialize logger, passes empty string if no flag set which is handled by variadic Intialize function
-			if err := hlog.Initialize(logLevel); err != nil {
+			if err := utils.Initialize(logLevel); err != nil {
 				return err
 			}
 

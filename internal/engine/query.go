@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/hyphadb/hyphadb/internal/duckdb"
-	"github.com/hyphadb/hyphadb/internal/hlog"
+	"github.com/hyphadb/hyphadb/internal/utils"
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/xwb1989/sqlparser"
@@ -17,23 +17,6 @@ type Join struct {
 	Condition      *sqlparser.JoinCondition
 }
 
-type ParsedQuery struct {
-	Statement      sqlparser.Statement
-	Select         *sqlparser.Select
-	QueryString    []string
-	Source         config.Source
-	Columns        map[string]Column
-	OrderedColumns []string
-	Limit          *int
-}
-
-type Column struct {
-	Table    *string
-	FuncName string
-	IsJoin   bool
-	Position int
-}
-
 type QueryResults struct {
 	Rows        []map[string]any
 	Columns     []string
@@ -43,23 +26,23 @@ type QueryResults struct {
 type Query struct {
 	OriginalQueryStatement string
 	OrderedColumns         []string
+	Columns                map[string]Column
+	Statement              sqlparser.Statement
+	Select                 *sqlparser.Select
 	QueryContext           QueryContext
 	Cfg                    *config.Config
-	Main                   ParsedQuery
 	JoinDetails            Join
-	Nodes                  []ParsedQuery
 	Results                QueryResults
 }
 
 // Execute executes a prepared statement on all sources in the config
 func Execute(statement string, cfg *config.Config) (*QueryResults, error) {
-	hlog.Info("Executing query...")
+	utils.Info("Executing query...")
 	q := Query{
 		OriginalQueryStatement: statement,
 		Cfg:                    cfg,
-		Nodes:                  make([]ParsedQuery, len(cfg.Sources)),
 	}
-	q.Main.Columns = make(map[string]Column)
+	q.Columns = make(map[string]Column)
 
 	q.Results = QueryResults{
 		Rows:        nil,
@@ -73,21 +56,21 @@ func Execute(statement string, cfg *config.Config) (*QueryResults, error) {
 		return nil, err
 	}
 
-	q.Main.Statement = parsed
+	q.Statement = parsed
 
-	switch stmt := q.Main.Statement.(type) {
+	switch stmt := q.Statement.(type) {
 	case *sqlparser.Select:
-		q.Main.Select = stmt
+		q.Select = stmt
 
-		err := q.Main.ParseColumns()
+		q.OrderedColumns, q.Columns, err = ParseColumns(q.Select)
 		if err != nil {
-			hlog.Debug("Error parsing columns", q)
+			utils.Debug("Error parsing columns", q)
 			return nil, err
 		}
 
 		err = q.SelectMapper()
 		if err != nil {
-			hlog.Debug("Error mapping select statement", q)
+			utils.Debug("Error mapping select statement", q)
 			return nil, err
 		}
 		go q.CollectResults(q.Results.ResultsChan)
@@ -95,7 +78,7 @@ func Execute(statement string, cfg *config.Config) (*QueryResults, error) {
 		err = errors.New("unsupported sql statement. please provide a select statement")
 		return nil, err
 	}
-	q.Results.Columns = q.Main.OrderedColumns
+	q.Results.Columns = q.OrderedColumns
 	err = duckdb.Query(q.OriginalQueryStatement, q.Results.ResultsChan)
 
 	if err != nil {
@@ -122,14 +105,14 @@ func (q *Query) SelectMapper() error {
 			err := q.BuildContext()
 
 			if err != nil {
-				hlog.Error("Error building context: ", err)
+				utils.Error("Error building context: ", err)
 			}
 		}
 
 		err = q.Nodes[idx].ExecuteNodeQuery(q.Cfg)
 
 		if err != nil {
-			hlog.Error("Error executing node query: ", err)
+			utils.Error("Error executing node query: ", err)
 		}
 	}
 	return nil

@@ -1,10 +1,9 @@
-package cli_commands
+package cli
 
 import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/hyphadb/hyphadb/internal/hlog"
 	"github.com/hyphadb/hyphadb/internal/utils"
 
 	"github.com/hyphadb/hyphadb/internal/config"
@@ -14,10 +13,10 @@ import (
 )
 
 func Query(c *cli.Context) error {
-	hlog.Debug("Executing cli.query")
+	utils.Debug("Executing cli.query")
 	format := c.String("format")
 	stmt := c.Args().First()
-	hlog.Debug("Query: ", stmt)
+	utils.Debug("Query: ", stmt)
 
 	conf, err := config.GetConfig()
 
@@ -28,7 +27,7 @@ func Query(c *cli.Context) error {
 	qr, err := engine.Execute(stmt, &conf)
 
 	if err != nil {
-		hlog.Debug("error executing query", err)
+		utils.Debug("error executing query", err)
 		return fmt.Errorf("error executing query %w", err)
 	}
 	if format == "json" {
@@ -45,7 +44,7 @@ func Query(c *cli.Context) error {
 }
 
 func Validate(c *cli.Context) error {
-	hlog.Debug("Executing cli.stats")
+	utils.Debug("Executing cli.stats")
 
 	conf, err := config.GetConfig()
 
@@ -56,7 +55,7 @@ func Validate(c *cli.Context) error {
 	validator, err := pg.Validate(&conf)
 
 	if err != nil {
-		hlog.Debug("error validating config", err)
+		utils.Debug("error validating config", err)
 		return fmt.Errorf("error validating config %w", err)
 	}
 
@@ -71,7 +70,7 @@ func Validate(c *cli.Context) error {
 }
 
 func ListConnections(c *cli.Context) error {
-	hlog.Debug("Executing cli.listConnections")
+	utils.Debug("Executing cli.listConnections")
 	conf, err := config.GetConfig()
 
 	if err != nil {
@@ -92,7 +91,7 @@ func ListConnections(c *cli.Context) error {
 
 // BROKEN - this is hardcoded and incomplete for now.
 func SaveConnection(c *cli.Context) error {
-	hlog.Debug("Executing cli.saveConnection")
+	utils.Debug("Executing cli.saveConnection")
 	filename := config.SingleConfigPath
 	newSource := config.Source{
 		Name:   "users-db-us-east-3",

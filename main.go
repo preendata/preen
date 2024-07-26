@@ -4,9 +4,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/hyphadb/hyphadb/internal/hlog"
+	"github.com/hyphadb/hyphadb/internal/utils"
 
-	"github.com/hyphadb/hyphadb/pkg/cli"
+	"github.com/hyphadb/hyphadb/internal/cli"
 	"github.com/joho/godotenv"
 )
 
@@ -18,6 +18,6 @@ func main() {
 
 	app := cli.NewApp()
 	if err := app.Run(os.Args); err != nil {
-		hlog.Fatal(err)
+		utils.Fatal(err)
 	}
 }

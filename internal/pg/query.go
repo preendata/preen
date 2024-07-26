@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hyphadb/hyphadb/internal/config"
-	"github.com/hyphadb/hyphadb/internal/hlog"
+	"github.com/hyphadb/hyphadb/internal/utils"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -33,7 +33,7 @@ func ExecuteRaw(statement string, cfg *config.Config, source config.Source) (Que
 	}
 
 	defer dbpool.Close()
-	hlog.Debug("Executing query against Postgres: ", statement)
+	utils.Debug("Executing query against Postgres: ", statement)
 	result, err := dbpool.Query(
 		context.Background(),
 		statement,

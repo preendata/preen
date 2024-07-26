@@ -5,11 +5,11 @@ import (
 	"fmt"
 
 	"github.com/hyphadb/hyphadb/internal/duckdb"
-	"github.com/hyphadb/hyphadb/internal/hlog"
+	"github.com/hyphadb/hyphadb/internal/utils"
 )
 
 func (p *ParsedQuery) InsertResults(sourceName string, tableName string, rows []map[string]any) error {
-	hlog.Debug(fmt.Sprintf("Inserting %d rows into %s", len(rows), tableName))
+	utils.Debug(fmt.Sprintf("Inserting %d rows into %s", len(rows), tableName))
 	connector, err := duckdb.CreateConnector()
 	if err != nil {
 		return err

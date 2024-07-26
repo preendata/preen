@@ -3,7 +3,7 @@ package duckdb
 import (
 	"database/sql"
 
-	"github.com/hyphadb/hyphadb/internal/hlog"
+	"github.com/hyphadb/hyphadb/internal/utils"
 )
 
 func Query(queryString string, c chan map[string]any) error {
@@ -18,7 +18,7 @@ func Query(queryString string, c chan map[string]any) error {
 	}
 
 	defer db.Close()
-	hlog.Debug("querying duckdb database with query: ", queryString)
+	utils.Debug("querying duckdb database with query: ", queryString)
 	rows, err := db.Query(queryString)
 	if err != nil {
 		return err

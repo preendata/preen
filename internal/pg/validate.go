@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/hyphadb/hyphadb/internal/config"
-	"github.com/hyphadb/hyphadb/internal/hlog"
+	"github.com/hyphadb/hyphadb/internal/utils"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -71,7 +71,7 @@ func Validate(cfg *config.Config) (*Validator, error) {
 	// 	return nil, err
 	// }
 
-	hlog.Info("Source table and data type validation completed successfully!")
+	utils.Info("Source table and data type validation completed successfully!")
 	// hlog.Debug(string(validatorJSON))
 
 	return &v, nil

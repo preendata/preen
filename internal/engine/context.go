@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/hyphadb/hyphadb/internal/duckdb"
-	"github.com/hyphadb/hyphadb/internal/hlog"
 	"github.com/hyphadb/hyphadb/internal/pg"
+	"github.com/hyphadb/hyphadb/internal/utils"
 )
 
 type QueryContext struct {
@@ -55,7 +55,7 @@ func (q *Query) BuildTables(db *sql.DB, tables map[string]string) error {
 
 		createTableStatement := fmt.Sprintf("create table if not exists main.%s (%s)", tableName, columnString)
 
-		hlog.Debug("Creating table in DuckDB: ", createTableStatement)
+		utils.Debug("Creating table in DuckDB: ", createTableStatement)
 		_, err := db.Exec(createTableStatement)
 
 		if err != nil {
@@ -78,7 +78,7 @@ func (q *Query) generateTableDDL() map[string]string {
 		if tableName != "results" {
 			sourceDataType, ok := q.QueryContext.Validator.ColumnTypes[tableName][columnName]
 			if !ok {
-				hlog.Debug(fmt.Sprintf("column %s does not exist in table %s", columnName, tableName))
+				utils.Debug(fmt.Sprintf("column %s does not exist in table %s", columnName, tableName))
 				continue
 			}
 			duckDbDataType := duckdb.PgTypeMap[sourceDataType.MajorityType]
@@ -100,13 +100,13 @@ func (q *Query) generateTableIfDDLHasChanged(db *sql.DB, tables map[string]strin
 			}
 		}
 		if !tableExists {
-			hlog.Debug("Table does not exist in config: ", tableName)
+			utils.Debug("Table does not exist in config: ", tableName)
 			continue
 		}
 
 		rows, err := db.Query(fmt.Sprintf("select column_name, data_type from information_schema.columns where table_name = '%s'", tableName))
 		if err != nil {
-			hlog.Debug("Error querying information_schema.columns: ", err)
+			utils.Debug("Error querying information_schema.columns: ", err)
 			return err
 		}
 		defer rows.Close()
@@ -115,7 +115,7 @@ func (q *Query) generateTableIfDDLHasChanged(db *sql.DB, tables map[string]strin
 			var columnName, dataType string
 			err = rows.Scan(&columnName, &dataType)
 			if err != nil {
-				hlog.Debug("Error scanning rows: ", err)
+				utils.Debug("Error scanning rows: ", err)
 				return err
 			}
 			columns = append(columns, columnName+" "+dataType)
@@ -125,9 +125,9 @@ func (q *Query) generateTableIfDDLHasChanged(db *sql.DB, tables map[string]strin
 
 		for _, column := range columns {
 			if !strings.Contains(columnString, column) || len(columnParts) != len(columns) {
-				hlog.Debug("Table DDL has changed for table ", tableName)
+				utils.Debug("Table DDL has changed for table ", tableName)
 				dropTableStatement := fmt.Sprintf("drop table if exists main.%s", tableName)
-				hlog.Debug("Dropping table in DuckDB: ", dropTableStatement)
+				utils.Debug("Dropping table in DuckDB: ", dropTableStatement)
 				if _, err := db.Exec(dropTableStatement); err != nil {
 					return err
 				}

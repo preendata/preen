@@ -4,21 +4,33 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"slices"
 	"strconv"
+	"strings"
 
+	"github.com/hyphadb/hyphadb/internal/config"
+	"github.com/hyphadb/hyphadb/internal/utils"
 	"github.com/xwb1989/sqlparser"
 )
 
-// MainParser handles coordination of actions that must be determined from the input statement and applied across
-// the entire batch of queries or result sets. For example, joins require the join condition to be parsed and applied
-// to all queries in the batch and can not be handled in isolation.
-func (q *Query) MainParser() error {
-	table := q.Main.Select.From[0]
+type DecomposedQuery struct {
+	Statement sqlparser.Statement
+	Select    *sqlparser.Select
+	// A single input can be decomposed into multiple queries
+	QueryStrings   []string
+	Source         config.Source
+	Columns        map[string]Column
+	OrderedColumns []string
+	Limit          *int
+}
+
+func Decompose(s *sqlparser.Select) error {
+	table := s.From[0]
 
 	switch tableList := table.(type) {
 	case *sqlparser.JoinTableExpr:
-		q.JoinDetails.JoinExpr = tableList
-		q.JoinNodeQuery()
+		joinExpr = tableList
+		decomposeJoinQuery()
 	}
 
 	return nil
@@ -63,4 +75,44 @@ func parseLimit(s *sqlparser.Select) (*int, error) {
 	}
 
 	return &iLimit, err
+}
+
+func decomposeJoinQuery(j *sqlparser.JoinTableExpr) error {
+	_, err := q.ParseJoinColumns(join)
+
+	if err != nil {
+		return err
+	}
+
+	baseQuery := "select %s from %s;"
+
+	sourceTables := make([]string, 0)
+	queries := make(map[string]string, 0)
+
+	for _, table := range q.Cfg.Tables {
+		sourceTables = append(sourceTables, table.Name)
+	}
+
+	for key := range q.Main.Columns {
+		split := strings.Split(key, ".")
+		tableName := split[0]
+		columnName := split[1]
+		if slices.Contains(sourceTables, tableName) {
+			if colString, ok := queries[tableName]; !ok {
+				queries[tableName] = columnName
+			} else {
+				queries[tableName] = colString + ", " + columnName
+			}
+		} else {
+			utils.Debug(fmt.Sprintf("table %s does not exist in the config", tableName))
+		}
+	}
+
+	for idx := range q.Nodes {
+		for table, query := range queries {
+			q.Nodes[idx].QueryString = append(q.Nodes[idx].QueryString, fmt.Sprintf(baseQuery, query, table))
+		}
+	}
+
+	return nil
 }
