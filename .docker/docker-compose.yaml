@@ -20,23 +20,7 @@ services:
   #     - ./trino/config/pg1.properties:/etc/trino/catalog/pg1.properties
   #     - ./trino/config/pg2.properties:/etc/trino/catalog/pg2.properties
   #     - ./trino/config/pg3.properties:/etc/trino/catalog/pg3.properties
-
-  # hyphadb-api:
-  #   image: hyphadb-api
-  #   build:
-  #     context: ..
-  #     dockerfile: .docker/hyphadb.Dockerfile
-  #   ports:
-  #     - "5051:5051"
-  #   working_dir: /home/hyphadb
-  #   command: go run cmd/api/main.go
-  #   volumes:
-  #     - ../:/home/hyphadb
-  #   depends_on:
-  #     - postgres-1
-  #     - postgres-2
-  #     - postgres-3
-
+  
   postgres-1:
     image: postgres:16
     ports: 
@@ -47,8 +31,8 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - ./db/scripts/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
-      - ./db/data/users/mock-user-data-4.csv:/home/data/mock-user-data.csv
-      - ./db/data/transactions/mock-transaction-data-4.csv:/home/data/mock-transaction-data.csv
+      - ./db/data/users/mock-user-data-1.csv:/home/data/mock-user-data.csv
+      - ./db/data/transactions/mock-transaction-data-1.csv:/home/data/mock-transaction-data.csv
     command: ["postgres", "-c", "log_statement=all"]
 
   postgres-2:
@@ -61,8 +45,8 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - ./db/scripts/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
-      - ./db/data/users/mock-user-data-5.csv:/home/data/mock-user-data.csv
-      - ./db/data/transactions/mock-transaction-data-5.csv:/home/data/mock-transaction-data.csv
+      - ./db/data/users/mock-user-data-2.csv:/home/data/mock-user-data.csv
+      - ./db/data/transactions/mock-transaction-data-2.csv:/home/data/mock-transaction-data.csv
     command: ["postgres", "-c", "log_statement=all"]
 
   postgres-3:
@@ -75,6 +59,19 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - ./db/scripts/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
-      - ./db/data/users/mock-user-data-6.csv:/home/data/mock-user-data.csv
-      - ./db/data/transactions/mock-transaction-data-6.csv:/home/data/mock-transaction-data.csv
+      - ./db/data/users/mock-user-data-3.csv:/home/data/mock-user-data.csv
+      - ./db/data/transactions/mock-transaction-data-3.csv:/home/data/mock-transaction-data.csv
     command: ["postgres", "-c", "log_statement=all"]
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: thisisnotarealpassword
+      MONGO_INITDB_DATABASE: mongo_db_1
+    volumes:
+      - ./db/scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - ./db/data/users/mock-user-data-1.json:/home/data/mock-user-data-1.json
+      - ./db/data/transactions/mock-transaction-data-1.json:/home/data/mock-transaction-data-1.json
