@@ -3,6 +3,15 @@ contexts: &contexts
   - transactions
   - users
 sources:
+  - name: users-db-us-east-2
+    engine: postgres
+    connection:
+      host: localhost
+      port: 54323
+      database: postgres
+      username: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+    contexts: *contexts
   - name: users-db-us-east-1
     engine: postgres
     connection:
@@ -17,15 +26,6 @@ sources:
     connection:
       host: localhost
       port: 54322
-      database: postgres
-      username: ${POSTGRES_USER}
-      password: ${POSTGRES_PASSWORD}
-    contexts: *contexts
-  - name: users-db-us-east-2
-    engine: postgres
-    connection:
-      host: localhost
-      port: 54323
       database: postgres
       username: ${POSTGRES_USER}
       password: ${POSTGRES_PASSWORD}

@@ -26,8 +26,10 @@ func Retrieve(cfg *config.Config, c Context) error {
 		if err != nil {
 			return err
 		}
+		defer pool.Close()
 		if source.Engine == "postgres" {
 			for _, contextName := range source.Contexts {
+				rowCounter := 0
 				query := c.ContextQueries[contextName].Query
 				rows, err := pool.Query(context.Background(), query)
 				if err != nil {
@@ -45,6 +47,7 @@ func Retrieve(cfg *config.Config, c Context) error {
 					if err != nil {
 						return err
 					}
+					rowCounter++
 					driverRow := make([]driver.Value, len(values)+1)
 					driverRow[0] = source.Name
 					for i, value := range values {
@@ -61,20 +64,18 @@ func Retrieve(cfg *config.Config, c Context) error {
 					}
 					err = appender.AppendRow(driverRow...)
 					if err != nil {
-						fmt.Println(err)
 						return err
 					}
 				}
 				err = appender.Close()
 				if err != nil {
-					fmt.Println(err)
 					return err
 				}
 				err = rows.Err()
 				if err != nil {
-					fmt.Println(err)
 					return err
 				}
+				fmt.Printf("%s %s rows inserted: %d \n", source.Name, contextName, rowCounter)
 			}
 		}
 	}
