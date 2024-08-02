@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hyphadb/hyphadb/internal/config"
-	"github.com/hyphadb/hyphadb/internal/hlog"
+	"github.com/hyphadb/hyphadb/internal/utils"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -15,7 +15,7 @@ type QueryResult struct {
 }
 
 // Execute a raw statement on all sources in the config.
-func ExecuteRaw(statement string, cfg *config.Config, source config.Source) (QueryResult, error) {
+func ExecuteRaw(statement string, cfg *config.Config, source config.Source) (pgx.Rows, error) {
 
 	url := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s",
@@ -26,49 +26,19 @@ func ExecuteRaw(statement string, cfg *config.Config, source config.Source) (Que
 		source.Connection.Database,
 	)
 
-	dbpool, err := dbpool(url)
+	dbpool, err := pool(url)
 
 	if err != nil {
-		return QueryResult{}, err
+		return nil, err
 	}
 
 	defer dbpool.Close()
-	hlog.Debug("Executing query against Postgres: ", statement)
-	result, err := dbpool.Query(
-		context.Background(),
-		statement,
-	)
+	utils.Debug("Executing query against Postgres: ", statement)
 
+	rows, err := dbpool.Query(context.Background(), statement)
 	if err != nil {
-		return QueryResult{}, err
+		return nil, err
 	}
 
-	qr, err := buildResultSet(result)
-	if err != nil {
-		return QueryResult{}, err
-	}
-
-	return qr, nil
-}
-
-func buildResultSet(result pgx.Rows) (QueryResult, error) {
-	// Pull out the column names in order to preserve the order specified in the DB schema.
-	fieldDescriptions := result.FieldDescriptions()
-	columns := make([]string, len(fieldDescriptions))
-	for i, fd := range fieldDescriptions {
-		columns[i] = string(fd.Name)
-	}
-
-	rows, err := pgx.CollectRows(result, pgx.RowToMap)
-	if err != nil {
-		return QueryResult{}, err
-	}
-
-	rv := QueryResult{
-		Rows:    rows,
-		Columns: columns,
-	}
-
-	return rv, nil
-
+	return rows, nil
 }

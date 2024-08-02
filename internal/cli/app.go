@@ -3,10 +3,8 @@ package cli
 import (
 	"fmt"
 
-	"github.com/hyphadb/hyphadb/internal/cli_commands"
-	"github.com/hyphadb/hyphadb/internal/hlog"
-
 	"github.com/hyphadb/hyphadb/internal/config"
+	"github.com/hyphadb/hyphadb/internal/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -31,13 +29,13 @@ func NewApp() *cli.App {
 				Name:    "repl",
 				Aliases: []string{"r"},
 				Usage:   "Initiate interactive query session",
-				Action:  cli_commands.Repl,
+				Action:  Repl,
 			},
 			{
 				Name:    "query",
 				Aliases: []string{"q"},
 				Usage:   "Execute a query",
-				Action:  cli_commands.Query,
+				Action:  Query,
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:        "format",
@@ -55,33 +53,22 @@ func NewApp() *cli.App {
 				},
 			},
 			{
-				Name:   "validate",
-				Usage:  "Validate config file",
-				Action: cli_commands.Validate,
+				Name:    "build-context",
+				Aliases: []string{"bc"},
+				Usage:   "Retrieve data from sources and load it for local queries",
+				Action:  BuildContext,
+			},
+			{
+				Name:    "validate",
+				Aliases: []string{"v"},
+				Usage:   "Validate config file",
+				Action:  Validate,
 			},
 			{
 				Name:    "list-connections",
 				Aliases: []string{"lc"},
 				Usage:   "Print stored connection credentials",
-				Action:  cli_commands.ListConnections,
-			},
-			{
-				Name:    "save-connection",
-				Aliases: []string{"sc"},
-				Usage:   "Save new connection to config",
-				Action:  cli_commands.SaveConnection,
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "name",
-						Aliases: []string{"n"},
-						Usage:   "Assign a name to your connection. This is for reference only and does not impact the connection string.",
-					},
-					&cli.StringFlag{
-						Name:    "engine",
-						Aliases: []string{"e"},
-						Usage:   "Options are 'postgres' or 'mysql'",
-					},
-				},
+				Action:  ListConnections,
 			},
 		},
 		Before: func(c *cli.Context) error {
@@ -97,18 +84,18 @@ func NewApp() *cli.App {
 				logLevel = "DEBUG"
 			}
 
-			err := hlog.IsValidLogLevel(logLevel)
+			err := utils.IsValidLogLevel(logLevel)
 			if logLevel != "" && err != nil {
 				return fmt.Errorf("invalid log level: %s. Allowed values are: DEBUG, INFO, WARN, ERROR, FATAL, PANIC", logLevel)
 			}
 
 			// Initialize logger, passes empty string if no flag set which is handled by variadic Intialize function
-			if err := hlog.Initialize(logLevel); err != nil {
+			if err := utils.Initialize(logLevel); err != nil {
 				return err
 			}
 
 			// Initialize config
-			if err := config.Initialize(); err != nil {
+			if _, err := config.GetConfig(); err != nil {
 				return err
 			}
 			return nil

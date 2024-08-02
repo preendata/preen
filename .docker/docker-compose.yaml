@@ -31,7 +31,7 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - ./db/scripts/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
-      - ./db/data/users/mock-user-data-1.csv:/home/data/mock-user-data.csv
+      - ./db/data/users/mock-user-data-4.csv:/home/data/mock-user-data.csv
       - ./db/data/transactions/mock-transaction-data-1.csv:/home/data/mock-transaction-data.csv
     command: ["postgres", "-c", "log_statement=all"]
 
@@ -45,7 +45,7 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - ./db/scripts/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
-      - ./db/data/users/mock-user-data-2.csv:/home/data/mock-user-data.csv
+      - ./db/data/users/mock-user-data-5.csv:/home/data/mock-user-data.csv
       - ./db/data/transactions/mock-transaction-data-2.csv:/home/data/mock-transaction-data.csv
     command: ["postgres", "-c", "log_statement=all"]
 
@@ -59,7 +59,7 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - ./db/scripts/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
-      - ./db/data/users/mock-user-data-3.csv:/home/data/mock-user-data.csv
+      - ./db/data/users/mock-user-data-6.csv:/home/data/mock-user-data.csv
       - ./db/data/transactions/mock-transaction-data-3.csv:/home/data/mock-transaction-data.csv
     command: ["postgres", "-c", "log_statement=all"]
 

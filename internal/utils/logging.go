@@ -1,8 +1,9 @@
-package hlog
+package utils
 
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/sirupsen/logrus"
 )
@@ -42,6 +43,15 @@ func Initialize(logLevels ...string) error {
 	Debugf("Log level set to %s", level)
 
 	return nil
+}
+
+func getCaller() (string, int) {
+	_, file, line, ok := runtime.Caller(2)
+	if !ok {
+		return "unknown", 0
+	}
+
+	return file, line
 }
 
 func IsValidLogLevel(logLevel string) error {

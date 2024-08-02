@@ -1,4 +1,4 @@
-package cli_commands
+package cli
 
 import (
 	"fmt"
@@ -66,7 +66,7 @@ func Repl(c *cli.Context) error {
 		rl.SaveHistory(cmd)
 
 		// Execute the input as a query
-		qr, err := engine.Execute(cmd, &conf)
+		qr, err := engine.Execute(cmd, conf)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			continue

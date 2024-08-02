@@ -4,9 +4,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/hyphadb/hyphadb/internal/hlog"
+	"github.com/hyphadb/hyphadb/internal/utils"
 
-	"github.com/hyphadb/hyphadb/pkg/cli"
+	"github.com/hyphadb/hyphadb/internal/cli"
 	"github.com/joho/godotenv"
 )
 
@@ -16,8 +16,13 @@ func main() {
 		log.Print("warn: error loading .env file", err)
 	}
 
+	err = utils.Initialize()
+	if err != nil {
+		log.Print("error initializing logging", err)
+	}
+
 	app := cli.NewApp()
 	if err := app.Run(os.Args); err != nil {
-		hlog.Fatal(err)
+		utils.Fatal(err)
 	}
 }

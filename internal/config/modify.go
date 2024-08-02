@@ -2,20 +2,21 @@ package config
 
 import (
 	"fmt"
-	"github.com/hyphadb/hyphadb/internal/hlog"
 	"os"
+
+	"github.com/hyphadb/hyphadb/internal/utils"
 
 	"gopkg.in/yaml.v3"
 )
 
 func AddSource(filename string, newSource Source) error {
-	hlog.WithFields(hlog.Fields{
+	utils.WithFields(utils.Fields{
 		"filename":  filename,
 		"newSource": newSource,
 	}).Debug("Executing config.AddSource with arguments")
 
 	// Read the YAML file
-	hlog.Debugf("Attempting to read in file %s", filename)
+	utils.Debugf("Attempting to read in file %s", filename)
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return fmt.Errorf("could not read file: %v", err)

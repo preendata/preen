@@ -1,10 +1,9 @@
-package cli_commands
+package cli
 
 import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/hyphadb/hyphadb/internal/hlog"
 	"github.com/hyphadb/hyphadb/internal/utils"
 
 	"github.com/hyphadb/hyphadb/internal/config"
@@ -14,10 +13,10 @@ import (
 )
 
 func Query(c *cli.Context) error {
-	hlog.Debug("Executing cli.query")
+	utils.Debug("Executing cli.query")
 	format := c.String("format")
 	stmt := c.Args().First()
-	hlog.Debug("Query: ", stmt)
+	utils.Debug("Query: ", stmt)
 
 	conf, err := config.GetConfig()
 
@@ -25,10 +24,10 @@ func Query(c *cli.Context) error {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	qr, err := engine.Execute(stmt, &conf)
+	qr, err := engine.Execute(stmt, conf)
 
 	if err != nil {
-		hlog.Debug("error executing query", err)
+		utils.Debug("error executing query", err)
 		return fmt.Errorf("error executing query %w", err)
 	}
 	if format == "json" {
@@ -44,8 +43,8 @@ func Query(c *cli.Context) error {
 	return nil
 }
 
-func Validate(c *cli.Context) error {
-	hlog.Debug("Executing cli.stats")
+func BuildContext(c *cli.Context) error {
+	utils.Debug("Executing cli.buildcontext")
 
 	conf, err := config.GetConfig()
 
@@ -53,25 +52,35 @@ func Validate(c *cli.Context) error {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	validator, err := pg.Validate(&conf)
+	err = engine.BuildContext(conf)
+	if err != nil {
+		return fmt.Errorf("error building context %w", err)
+	}
+
+	return nil
+}
+
+func Validate(c *cli.Context) error {
+	utils.Debug("Executing cli.validate")
+
+	conf, err := config.GetConfig()
 
 	if err != nil {
-		hlog.Debug("error validating config", err)
+		return fmt.Errorf("error getting config %w", err)
+	}
+
+	_, err = pg.Validate(conf)
+
+	if err != nil {
+		utils.Debug("error validating config", err)
 		return fmt.Errorf("error validating config %w", err)
 	}
-
-	err = utils.PrintPrettyStruct(validator)
-	if err != nil {
-		return fmt.Errorf("error pretty printing JSON %w", err)
-	}
-
-	//TODO allow for output to file
 
 	return nil
 }
 
 func ListConnections(c *cli.Context) error {
-	hlog.Debug("Executing cli.listConnections")
+	utils.Debug("Executing cli.listConnections")
 	conf, err := config.GetConfig()
 
 	if err != nil {
@@ -87,30 +96,5 @@ func ListConnections(c *cli.Context) error {
 
 		fmt.Println(string(c))
 	}
-	return nil
-}
-
-// BROKEN - this is hardcoded and incomplete for now.
-func SaveConnection(c *cli.Context) error {
-	hlog.Debug("Executing cli.saveConnection")
-	filename := config.SingleConfigPath
-	newSource := config.Source{
-		Name:   "users-db-us-east-3",
-		Engine: "postgres",
-		Connection: config.Connection{
-			Host:     "127.0.0.1",
-			Port:     54329,
-			Database: "postgres",
-			Username: "${POSTGRES_USER}",
-			Password: "${POSTGRES_PASSWORD}",
-		},
-	}
-
-	err := config.AddSource(filename, newSource)
-
-	if err != nil {
-		return fmt.Errorf("error saving new connection: %w", err)
-	}
-
 	return nil
 }
