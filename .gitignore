@@ -122,3 +122,4 @@ venv.bak/
 
 # Hypha
 *hyphaContext.db*
+.docker/db/data/**
