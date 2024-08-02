@@ -1,47 +1,78 @@
 package engine
 
 import (
+	"context"
+	"database/sql/driver"
+	"fmt"
+	"math"
+	"reflect"
+
 	"github.com/hyphadb/hyphadb/internal/config"
+	duckdbInternal "github.com/hyphadb/hyphadb/internal/duckdb"
 	"github.com/hyphadb/hyphadb/internal/pg"
-	"github.com/xwb1989/sqlparser"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/marcboeker/go-duckdb"
 )
 
-func (p *ParsedQuery) PrepareNodeQuery(sourceIdx int, query *Query) error {
-	switch stmt := p.Statement.(type) {
-	case *sqlparser.Select:
-		p.Select = stmt
-	}
-	p.NodeParser(sourceIdx, len(config.GlobalConfig.Sources))
-
-	if p.Statement != nil && query.JoinDetails.JoinExpr == nil {
-		p.QueryString = make([]string, 0)
-		p.QueryString = append(p.QueryString, sqlparser.String(p.Statement))
+// This needs to be broken up into smaller functions and add goroutines
+func Retrieve(cfg *config.Config, c Context) error {
+	connector, err := duckdbInternal.CreateConnector()
+	if err != nil {
+		return err
 	}
 
-	return nil
-}
+	for _, source := range cfg.Sources {
+		pool, err := pg.PoolFromSource(source)
+		if err != nil {
+			return err
+		}
+		if source.Engine == "postgres" {
+			for _, contextName := range source.Contexts {
+				query := c.ContextQueries[contextName].Query
+				rows, err := pool.Query(context.Background(), query)
+				if err != nil {
+					return err
+				}
+				defer rows.Close()
 
-// ExecuteNodeQuery is the adapter between the query parsing engine and the database layer.
-func (p *ParsedQuery) ExecuteNodeQuery(cfg *config.Config) error {
-	if p.Source.Engine == "postgres" {
-		for _, query := range p.QueryString {
-			if query != "no-op" {
-				nodeParsed, err := sqlparser.Parse(query)
-
+				appender, err := duckdbInternal.NewAppender(connector, "main", contextName)
 				if err != nil {
 					return err
 				}
 
-				tableName := sqlparser.String(nodeParsed.(*sqlparser.Select).From[0])
-				result, err := pg.ExecuteRaw(query, cfg, p.Source)
-
+				for rows.Next() {
+					values, err := rows.Values()
+					if err != nil {
+						return err
+					}
+					driverRow := make([]driver.Value, len(values)+1)
+					driverRow[0] = source.Name
+					for i, value := range values {
+						if value == nil {
+							driverRow[i+1] = nil
+							continue
+						}
+						if reflect.TypeOf(value).String() == "pgtype.Numeric" {
+							val := duckdb.Decimal{Value: value.(pgtype.Numeric).Int, Scale: uint8(math.Abs(float64(value.(pgtype.Numeric).Exp)))}
+							driverRow[i+1] = val.Float64()
+						} else {
+							driverRow[i+1] = value
+						}
+					}
+					err = appender.AppendRow(driverRow...)
+					if err != nil {
+						fmt.Println(err)
+						return err
+					}
+				}
+				err = appender.Close()
 				if err != nil {
+					fmt.Println(err)
 					return err
 				}
-
-				err = p.InsertResults(p.Source.Name, tableName, result.Rows)
-
+				err = rows.Err()
 				if err != nil {
+					fmt.Println(err)
 					return err
 				}
 			}

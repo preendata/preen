@@ -3,141 +3,112 @@ package engine
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"strings"
 
+	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/duckdb"
 	"github.com/hyphadb/hyphadb/internal/pg"
 	"github.com/hyphadb/hyphadb/internal/utils"
+	"github.com/xwb1989/sqlparser"
 )
 
-type QueryContext struct {
-	Validator *pg.Validator
-	Valid     bool
+type ContextQuery struct {
+	Query     string
+	Parsed    sqlparser.Statement
+	DDLString string
+	Columns   map[string]map[string]Column
 }
 
-func (q *Query) BuildContext() error {
-	q.QueryContext = QueryContext{}
-	validator, err := pg.Validate(q.Cfg)
+type Context struct {
+	ContextQueries map[string]ContextQuery
+}
 
+func BuildContext(cfg *config.Config) error {
+	validator, err := pg.Validate(cfg)
 	if err != nil {
-		return err
+		return fmt.Errorf("error validating data sources: %w", err)
 	}
 
-	q.QueryContext.Validator = validator
+	context := Context{}
+
+	utils.Debug("Building context")
+	context.ContextQueries, err = readContextFiles(cfg)
+	if err != nil {
+		return fmt.Errorf("error reading context files: %w", err)
+	}
+
+	context.ContextQueries, err = ParseContextColumns(context.ContextQueries, *validator)
+	if err != nil {
+		return fmt.Errorf("error parsing columns: %w", err)
+	}
 
 	connector, err := duckdb.CreateConnector()
-
 	if err != nil {
 		return err
 	}
 
 	db, err := duckdb.OpenDatabase(connector)
-
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	tables := q.generateTableDDL()
-	if err = q.generateTableIfDDLHasChanged(db, tables); err != nil {
-		return err
-	}
-
+	err = buildTables(db, context.ContextQueries)
 	if err != nil {
-		return err
+		return fmt.Errorf("error building context tables: %w", err)
+	}
+
+	err = Retrieve(cfg, context)
+	if err != nil {
+		return fmt.Errorf("error retrieving data: %w", err)
 	}
 
 	return nil
 }
 
-func (q *Query) BuildTables(db *sql.DB, tables map[string]string) error {
-	for tableName, columnString := range tables {
-
-		createTableStatement := fmt.Sprintf("create table if not exists main.%s (%s)", tableName, columnString)
-
-		utils.Debug("Creating table in DuckDB: ", createTableStatement)
-		_, err := db.Exec(createTableStatement)
-
-		if err != nil {
-			return err
-		}
+func readContextFiles(cfg *config.Config) (map[string]ContextQuery, error) {
+	contextQueries := make(map[string]ContextQuery, 0)
+	files, err := os.ReadDir(cfg.Env.HyphaConfigPath)
+	if err != nil {
+		return nil, err
 	}
 
-	q.QueryContext.Valid = true
-
-	return nil
-}
-
-func (q *Query) generateTableDDL() map[string]string {
-	tables := make(map[string]string)
-
-	for key := range q.Main.Columns {
-		split := strings.Split(key, ".")
-		tableName := split[0]
-		columnName := split[1]
-		if tableName != "results" {
-			sourceDataType, ok := q.QueryContext.Validator.ColumnTypes[tableName][columnName]
-			if !ok {
-				utils.Debug(fmt.Sprintf("column %s does not exist in table %s", columnName, tableName))
-				continue
-			}
-			duckDbDataType := duckdb.PgTypeMap[sourceDataType.MajorityType]
-			if len(tables[tableName]) == 0 {
-				tables[tableName] += "hypha_source_name VARCHAR"
-			}
-			tables[tableName] += ", " + columnName + " " + duckDbDataType
-		}
-	}
-	return tables
-}
-
-func (q *Query) generateTableIfDDLHasChanged(db *sql.DB, tables map[string]string) error {
-	for tableName, columnString := range tables {
-		var tableExists bool
-		for table := range q.Cfg.Tables {
-			if q.Cfg.Tables[table].Name == tableName {
-				tableExists = true
-			}
-		}
-		if !tableExists {
-			utils.Debug("Table does not exist in config: ", tableName)
-			continue
-		}
-
-		rows, err := db.Query(fmt.Sprintf("select column_name, data_type from information_schema.columns where table_name = '%s'", tableName))
-		if err != nil {
-			utils.Debug("Error querying information_schema.columns: ", err)
-			return err
-		}
-		defer rows.Close()
-		var columns []string
-		for rows.Next() {
-			var columnName, dataType string
-			err = rows.Scan(&columnName, &dataType)
+	for _, file := range files {
+		if strings.HasSuffix(file.Name(), ".context.sql") {
+			utils.Debug("Loading ", file.Name())
+			bytes, err := os.ReadFile(cfg.Env.HyphaConfigPath + "/" + file.Name())
 			if err != nil {
-				utils.Debug("Error scanning rows: ", err)
-				return err
+				return nil, err
 			}
-			columns = append(columns, columnName+" "+dataType)
-		}
-
-		columnParts := strings.Split(columnString, ",")
-
-		for _, column := range columns {
-			if !strings.Contains(columnString, column) || len(columnParts) != len(columns) {
-				utils.Debug("Table DDL has changed for table ", tableName)
-				dropTableStatement := fmt.Sprintf("drop table if exists main.%s", tableName)
-				utils.Debug("Dropping table in DuckDB: ", dropTableStatement)
-				if _, err := db.Exec(dropTableStatement); err != nil {
-					return err
-				}
-
-				err = q.BuildTables(db, tables)
-
-				return err
+			cq := ContextQuery{
+				Query: string(bytes),
 			}
+			utils.Debug("Parsing query: ", cq.Query)
+			parsedQuery, err := sqlparser.Parse(cq.Query)
+			if err != nil {
+				return nil, err
+			}
+			cq.Parsed = parsedQuery
+			contextQueries[strings.TrimSuffix(file.Name(), ".context.sql")] = cq
 		}
 	}
 
+	return contextQueries, nil
+}
+
+func buildTables(db *sql.DB, contextQueries map[string]ContextQuery) error {
+	for contextName, contextQuery := range contextQueries {
+		dropTable := fmt.Sprintf("drop table if exists main.%s;", contextName)
+		_, err := db.Exec(dropTable)
+		if err != nil {
+			return err
+		}
+		createTable := fmt.Sprintf("create table main.%s (%s);", contextName, contextQuery.DDLString)
+		_, err = db.Exec(createTable)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

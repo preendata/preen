@@ -16,6 +16,11 @@ func main() {
 		log.Print("warn: error loading .env file", err)
 	}
 
+	err = utils.Initialize()
+	if err != nil {
+		log.Print("error initializing logging", err)
+	}
+
 	app := cli.NewApp()
 	if err := app.Run(os.Args); err != nil {
 		utils.Fatal(err)

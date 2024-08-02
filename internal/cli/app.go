@@ -53,33 +53,22 @@ func NewApp() *cli.App {
 				},
 			},
 			{
-				Name:   "validate",
-				Usage:  "Validate config file",
-				Action: Validate,
+				Name:    "build-context",
+				Aliases: []string{"bc"},
+				Usage:   "Retrieve data from sources and load it for local queries",
+				Action:  BuildContext,
+			},
+			{
+				Name:    "validate",
+				Aliases: []string{"v"},
+				Usage:   "Validate config file",
+				Action:  Validate,
 			},
 			{
 				Name:    "list-connections",
 				Aliases: []string{"lc"},
 				Usage:   "Print stored connection credentials",
 				Action:  ListConnections,
-			},
-			{
-				Name:    "save-connection",
-				Aliases: []string{"sc"},
-				Usage:   "Save new connection to config",
-				Action:  SaveConnection,
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "name",
-						Aliases: []string{"n"},
-						Usage:   "Assign a name to your connection. This is for reference only and does not impact the connection string.",
-					},
-					&cli.StringFlag{
-						Name:    "engine",
-						Aliases: []string{"e"},
-						Usage:   "Options are 'postgres' or 'mysql'",
-					},
-				},
 			},
 		},
 		Before: func(c *cli.Context) error {
@@ -106,7 +95,7 @@ func NewApp() *cli.App {
 			}
 
 			// Initialize config
-			if err := config.Initialize(); err != nil {
+			if _, err := config.GetConfig(); err != nil {
 				return err
 			}
 			return nil

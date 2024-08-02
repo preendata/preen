@@ -13,6 +13,7 @@ import (
 type Table struct {
 	Columns map[string]string `json:"columns"`
 	Schema  string            `json:"schema"`
+	Name    string            `json:"name"`
 }
 
 type ColumnType struct {
@@ -49,8 +50,12 @@ func Validate(cfg *config.Config) (*Validator, error) {
 			),
 			Tables: make(map[string]Table),
 		}
-		err := v.getDataTypes(v.Sources[source.Name], sourceIdx)
+		err := v.getTables(v.Sources[source.Name])
+		if err != nil {
+			return nil, err
+		}
 
+		err = v.getDataTypes(v.Sources[source.Name], sourceIdx)
 		if err != nil {
 			return nil, err
 		}
@@ -62,20 +67,50 @@ func Validate(cfg *config.Config) (*Validator, error) {
 		}
 	}
 
-	// validatorJSON, err := json.Marshal(v)
-
-	// if err != nil {
-	// 	slog.Error(
-	// 		fmt.Sprintf("Failed to marshal sources: %v", err),
-	// 	)
-	// 	return nil, err
-	// }
-
 	utils.Info("Source table and data type validation completed successfully!")
-	// hlog.Debug(string(validatorJSON))
 
 	return &v, nil
 
+}
+
+func (v *Validator) getTables(source Source) error {
+	conn, err := connect(source.Url)
+
+	if err != nil {
+		return err
+	}
+
+	query := `
+		select table_schema, table_name from information_schema.tables
+		where table_schema not in ('information_schema', 'pg_catalog');
+	`
+
+	reader := conn.Exec(context.Background(), query)
+	result, err := reader.ReadAll()
+
+	if err != nil {
+		return err
+	}
+
+	if len(result[0].Rows) == 0 {
+		utils.Warn(
+			fmt.Sprintf("No tables found for source '%s'\n", source.Url),
+		)
+	}
+
+	for _, res := range result {
+		for _, row := range res.Rows {
+			tableName := string(row[1])
+			tableSchema := string(row[0])
+			source.Tables[tableName] = Table{
+				Schema:  tableSchema,
+				Name:    tableName,
+				Columns: make(map[string]string),
+			}
+		}
+	}
+
+	return nil
 }
 
 func (v *Validator) getDataTypes(source Source, sourceIdx int) error {
@@ -92,9 +127,9 @@ func (v *Validator) getDataTypes(source Source, sourceIdx int) error {
 		where table_schema = '%s' and table_name = '%s';
 	`
 
-	for tableIdx, table := range v.cfg.Tables {
-		if v.ColumnTypes[table.Name] == nil {
-			v.ColumnTypes[table.Name] = make(map[string]ColumnType)
+	for name, table := range source.Tables {
+		if v.ColumnTypes[name] == nil {
+			v.ColumnTypes[name] = make(map[string]ColumnType)
 		}
 		source.Tables[table.Name] = Table{
 			Schema:  table.Schema,
@@ -118,7 +153,7 @@ func (v *Validator) getDataTypes(source Source, sourceIdx int) error {
 			)
 		}
 		v.parseQueryResult(result, source.Tables[table.Name])
-		v.collectDataTypes(tableIdx, source.Tables[table.Name], table.Name, sourceIdx)
+		v.collectDataTypes(source, table.Name, sourceIdx)
 	}
 
 	return nil
@@ -132,15 +167,15 @@ func (v *Validator) parseQueryResult(result []*pgconn.Result, table Table) {
 	}
 }
 
-func (v *Validator) collectDataTypes(tableIdx int, table Table, tableName string, sourceIdx int) {
-	for _, column := range v.cfg.Tables[tableIdx].Columns {
+func (v *Validator) collectDataTypes(source Source, tableName string, sourceIdx int) {
+	for colName, colType := range source.Tables[tableName].Columns {
 		if sourceIdx == 0 {
-			v.ColumnTypes[tableName][column] = ColumnType{
+			v.ColumnTypes[tableName][colName] = ColumnType{
 				Types:        make([]string, len(v.cfg.Sources)),
 				MajorityType: "unknown",
 			}
 		}
-		v.ColumnTypes[tableName][column].Types[sourceIdx] = table.Columns[column]
+		v.ColumnTypes[tableName][colName].Types[sourceIdx] = colType
 	}
 }
 
