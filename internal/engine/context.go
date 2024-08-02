@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"strings"
@@ -43,24 +42,11 @@ func BuildContext(cfg *config.Config) error {
 		return fmt.Errorf("error parsing columns: %w", err)
 	}
 
-	connector, err := duckdb.CreateConnector()
-	if err != nil {
-		return err
-	}
-
-	db, err := duckdb.OpenDatabase(connector)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	err = buildTables(db, context.ContextQueries)
-	if err != nil {
+	if err = buildTables(context.ContextQueries); err != nil {
 		return fmt.Errorf("error building context tables: %w", err)
 	}
 
-	err = Retrieve(cfg, context)
-	if err != nil {
+	if err = Retrieve(cfg, context); err != nil {
 		return fmt.Errorf("error retrieving data: %w", err)
 	}
 
@@ -97,7 +83,22 @@ func readContextFiles(cfg *config.Config) (map[string]ContextQuery, error) {
 	return contextQueries, nil
 }
 
-func buildTables(db *sql.DB, contextQueries map[string]ContextQuery) error {
+func buildTables(contextQueries map[string]ContextQuery) error {
+	connector, err := duckdb.CreateConnector()
+	if err != nil {
+		return err
+	}
+
+	db, err := duckdb.OpenDatabase(connector)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
 	for contextName, contextQuery := range contextQueries {
 		dropTable := fmt.Sprintf("drop table if exists main.%s;", contextName)
 		_, err := db.Exec(dropTable)
@@ -110,5 +111,9 @@ func buildTables(db *sql.DB, contextQueries map[string]ContextQuery) error {
 			return err
 		}
 	}
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
 	return nil
 }
