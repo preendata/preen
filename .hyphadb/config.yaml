@@ -11,7 +11,9 @@ sources:
       database: postgres
       username: ${POSTGRES_USER}
       password: ${POSTGRES_PASSWORD}
-    contexts: *contexts
+    contexts:
+      - transactions
+      - users
   - name: users-db-us-east-1
     engine: postgres
     connection:
