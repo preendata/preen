@@ -14,6 +14,7 @@ type Column struct {
 	FuncName string
 	IsJoin   bool
 	Position int
+	Alias    string
 }
 
 type columnParser struct {
@@ -32,13 +33,15 @@ func ParseContextColumns(contextQueries map[string]ContextQuery, v pg.Validator)
 	for contextName, contextQuery := range contextQueries {
 		cp.ddlString = "hypha_source_name varchar"
 		selectStmt := contextQuery.Parsed.(*sqlparser.Select)
-		cp.table = selectStmt.From[0].(*sqlparser.AliasedTableExpr).Expr.(sqlparser.TableName).Name.String()
+		tableMap := GetContextTableAliases(selectStmt)
 		for selectIdx := range selectStmt.SelectExprs {
 			cp.selectIdx = selectIdx
 			switch expr := selectStmt.SelectExprs[selectIdx].(type) {
 			case *sqlparser.AliasedExpr:
 				switch expr.Expr.(type) {
 				case *sqlparser.ColName:
+					tableAlias := expr.Expr.(*sqlparser.ColName).Qualifier.Name.String()
+					cp.table = tableMap[tableAlias]
 					cpUpdated, err := processContextColumn(expr, &cp)
 					if err != nil {
 						return nil, err
@@ -74,6 +77,11 @@ func processContextColumn(expr *sqlparser.AliasedExpr, cp *columnParser) (*colum
 		Table:    &cp.table,
 		Position: cp.selectIdx,
 	}
+	if expr.As.String() != "" {
+		col.Alias = expr.As.String()
+	} else {
+		col.Alias = expr.Expr.(*sqlparser.ColName).Name.String()
+	}
 	colName := expr.Expr.(*sqlparser.ColName).Name.String()
 	colHashKey := fmt.Sprintf("%s.%s", cp.table, colName)
 	cp.columns[cp.table][colHashKey] = col
@@ -81,7 +89,7 @@ func processContextColumn(expr *sqlparser.AliasedExpr, cp *columnParser) (*colum
 		return nil, fmt.Errorf("column not found in table: %s.%s. check that your context query is valid", cp.table, colName)
 	}
 	colType := duckdb.PgTypeMap[cp.validator.ColumnTypes[cp.table][colName].MajorityType]
-	cp.ddlString = fmt.Sprintf("%s, %s %s", cp.ddlString, colName, colType)
+	cp.ddlString = fmt.Sprintf("%s, %s %s", cp.ddlString, col.Alias, colType)
 
 	return cp, nil
 }
