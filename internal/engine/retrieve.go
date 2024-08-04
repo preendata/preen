@@ -10,65 +10,65 @@ import (
 	"sync"
 
 	"github.com/hyphadb/hyphadb/internal/config"
-	duckdbInternal "github.com/hyphadb/hyphadb/internal/duckdb"
 	"github.com/hyphadb/hyphadb/internal/pg"
 	"github.com/hyphadb/hyphadb/internal/utils"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/marcboeker/go-duckdb"
 )
 
-var poolMutex = &sync.Mutex{}
-var rowMutex = &sync.Mutex{}
+type Retriever struct {
+	ContextName string
+	Query       string
+	Source      config.Source
+	Pool        *pgxpool.Pool
+}
 
-var rowWg = sync.WaitGroup{}
-
-// This needs to be broken up into smaller functions and add goroutines
 func Retrieve(cfg *config.Config, c Context) error {
-	connector, err := duckdbInternal.CreateConnector()
-	if err != nil {
-		return err
-	}
-
+	r := Retriever{}
 	for _, contextName := range cfg.Contexts {
-		appender, err := duckdbInternal.NewAppender(connector, "main", contextName)
+		wg := sync.WaitGroup{}
+		r.ContextName = contextName
+		r.Query = c.ContextQueries[contextName].Query
+		ic := make(chan []driver.Value, 1000)
+		dc := make(chan []int64)
+		go Insert(contextName, ic, dc)
 		if err != nil {
 			return err
 		}
-		sourceWg := sync.WaitGroup{}
-
+		var rowCounter int64
+		rowCounter = 0
 		for _, source := range cfg.Sources {
-			sourceWg.Add(1)
+			r.Source = source
+			wg.Add(1)
 			if !slices.Contains(source.Contexts, contextName) {
 				utils.Debug(fmt.Sprintf("Skipping %s for %s", contextName, source.Name))
 				continue
 			}
 			if source.Engine == "postgres" {
-				poolMap := make(map[string]*pgxpool.Pool)
-				poolMap[source.Name], err = pg.PoolFromSource(source)
+				r.Pool, err = pg.PoolFromSource(source)
 				if err != nil {
 					return err
 				}
-				defer poolMap[source.Name].Close()
-				go func(source config.Source, poolMap map[string]*pgxpool.Pool) error {
-					defer sourceWg.Done()
+				defer r.Pool.Close()
+				go func(r Retriever, ic chan []driver.Value) error {
+					defer wg.Done()
 
-					query := c.ContextQueries[contextName].Query
-					err := processPgSource(contextName, query, source, appender, poolMap)
+					contextRowCount, err := processPgSource(r, ic)
 					if err != nil {
 						return err
 					}
+					rowCounter += *contextRowCount
 					return nil
-				}(source, poolMap)
+				}(r, ic)
 			} else {
 				utils.Error(fmt.Sprintf("Engine %s not supported", source.Engine))
 			}
 		}
-		fmt.Println("before wait")
-		sourceWg.Wait()
-		fmt.Println("after wait")
-		err = appender.Close()
+		wg.Wait()
+		ic <- []driver.Value{"EOF"}
+		confirmInsert(contextName, dc, rowCounter)
+
 		if err != nil {
 			return err
 		}
@@ -76,69 +76,58 @@ func Retrieve(cfg *config.Config, c Context) error {
 	return nil
 }
 
-func processPgSource(contextName string, query string, source config.Source, appender *duckdb.Appender, poolMap map[string]*pgxpool.Pool) error {
-	utils.Info(fmt.Sprintf("Retrieving context %s for %s", contextName, source.Name))
-	pool := poolMap[source.Name]
-	rows, err := pool.Query(context.Background(), query)
+func processPgSource(r Retriever, ic chan []driver.Value) (*int64, error) {
+	utils.Info(fmt.Sprintf("Retrieving context %s for %s", r.ContextName, r.Source.Name))
+	rows, err := r.Pool.Query(context.Background(), r.Query)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
 	defer rows.Close()
-
-	if err := processPgRows(rows, appender, source); err != nil {
-		return err
+	var rowCounter int64
+	rowCounter = 0
+	for rows.Next() {
+		values, err := rows.Values()
+		if err != nil {
+			return nil, err
+		}
+		rowCounter++
+		driverRow := make([]driver.Value, len(values)+1)
+		driverRow[0] = r.Source.Name
+		for i, value := range values {
+			if value == nil {
+				driverRow[i+1] = nil
+				continue
+			}
+			if reflect.TypeOf(value).String() == "pgtype.Numeric" {
+				val := duckdb.Decimal{Value: value.(pgtype.Numeric).Int, Scale: uint8(math.Abs(float64(value.(pgtype.Numeric).Exp)))}
+				driverRow[i+1] = val.Float64()
+			} else {
+				driverRow[i+1] = value
+			}
+		}
+		ic <- driverRow
 	}
-
+	utils.Debug(fmt.Sprintf("Retrieved %d rows for %s - %s\n", rowCounter, r.Source.Name, r.ContextName))
 	err = rows.Err()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return &rowCounter, nil
 }
 
-func processPgRows(rows pgx.Rows, appender *duckdb.Appender, source config.Source) error {
-	defer poolMutex.Unlock()
-	poolMutex.Lock()
-	for rows.Next() {
-		rowWg.Add(1)
-		go func() error {
-			defer rowWg.Done()
-			if err := insertRow(rows, source.Name, appender); err != nil {
-				return err
+func confirmInsert(contextName string, dc chan []int64, rowsExpected int64) {
+	for {
+		select {
+		case message := <-dc:
+			if message[0] == rowsExpected {
+				utils.Info(fmt.Sprintf("Inserted %d rows into %s. Expected %d rows", rowsExpected, contextName, rowsExpected))
+				return
 			}
-			return nil
-		}()
-	}
-
-	rowWg.Wait()
-	return nil
-}
-
-func insertRow(rows pgx.Rows, sourceName string, appender *duckdb.Appender) error {
-	defer rowMutex.Unlock()
-	rowMutex.Lock()
-	values, err := rows.Values()
-	if err != nil {
-		return err
-	}
-	driverRow := make([]driver.Value, len(values)+1)
-	driverRow[0] = sourceName
-	for i, value := range values {
-		if value == nil {
-			driverRow[i+1] = nil
-			continue
-		}
-		if reflect.TypeOf(value).String() == "pgtype.Numeric" {
-			val := duckdb.Decimal{Value: value.(pgtype.Numeric).Int, Scale: uint8(math.Abs(float64(value.(pgtype.Numeric).Exp)))}
-			driverRow[i+1] = val.Float64()
-		} else {
-			driverRow[i+1] = value
+			if message[0] != rowsExpected {
+				utils.Warn(fmt.Sprintf("Inserted %d rows into %s. Expected %d rows", message[0], contextName, rowsExpected))
+				return
+			}
 		}
 	}
-	err = appender.AppendRow(driverRow...)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
