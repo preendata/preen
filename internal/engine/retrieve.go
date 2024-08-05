@@ -47,6 +47,7 @@ func Retrieve(cfg *config.Config, c Context) error {
 			}
 			if source.Engine == "postgres" {
 				r.Pool, err = pg.PoolFromSource(source)
+				defer r.Pool.Close()
 				if err != nil {
 					return err
 				}
@@ -121,11 +122,11 @@ func confirmInsert(contextName string, dc chan []int64, rowsExpected int64) {
 		select {
 		case message := <-dc:
 			if message[0] == rowsExpected {
-				utils.Info(fmt.Sprintf("Inserted %d rows into %s. Expected %d rows", rowsExpected, contextName, rowsExpected))
+				utils.Info(fmt.Sprintf("Inserted %d rows into context %s. Expected %d rows", rowsExpected, contextName, rowsExpected))
 				return
 			}
 			if message[0] != rowsExpected {
-				utils.Warn(fmt.Sprintf("Inserted %d rows into %s. Expected %d rows", message[0], contextName, rowsExpected))
+				utils.Warn(fmt.Sprintf("Inserted %d rows into context %s. Expected %d rows", message[0], contextName, rowsExpected))
 				return
 			}
 		}
