@@ -20,9 +20,9 @@ func Insert(contextName string, ic chan []driver.Value, dc chan []int64) error {
 		if c[0] == "EOF" {
 			break
 		}
-		// if err := appender.AppendRow(c...); err != nil {
-		// 	panic(err)
-		// }
+		if err := appender.AppendRow(c...); err != nil {
+			panic(err)
+		}
 		rowCounter++
 	}
 	err = appender.Close()
