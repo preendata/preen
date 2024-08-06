@@ -9,7 +9,7 @@ import (
 )
 
 func CreateConnector() (driver.Connector, error) {
-	connector, err := duckdb.NewConnector("./hyphaContext.db?threads=4", func(execer driver.ExecerContext) error {
+	connector, err := duckdb.NewConnector("./hyphaContext.db?threads=16", func(execer driver.ExecerContext) error {
 		bootQueries := []string{
 			"INSTALL 'json'",
 			"LOAD 'json'",

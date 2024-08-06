@@ -1,34 +1,309 @@
+# version: 3
+# contexts: &contexts
+#   - transactions
+#   - users
+# sources:
+#   - name: users-db-us-east-2
+#     engine: postgres
+#     connection:
+#       host: localhost
+#       port: 54323
+#       database: postgres
+#       username: ${POSTGRES_USER}
+#       password: ${POSTGRES_PASSWORD}
+#     contexts:
+#       - transactions
+#       - users
+#   - name: users-db-us-east-1
+#     engine: postgres
+#     connection:
+#       host: localhost
+#       port: 54321
+#       database: postgres
+#       username: ${POSTGRES_USER}
+#       password: ${POSTGRES_PASSWORD}
+#     contexts: *contexts
+#   - name: users-db-us-west-1
+#     engine: postgres
+#     connection:
+#       host: localhost
+#       port: 54322
+#       database: postgres
+#       username: ${POSTGRES_USER}
+#       password: ${POSTGRES_PASSWORD}
+#     contexts: *contexts
 version: 3
 contexts: &contexts
   - transactions
   - users
 sources:
-  - name: users-db-us-east-2
+  - name: demo-0.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
     engine: postgres
     connection:
-      host: localhost
-      port: 54323
-      database: postgres
-      username: ${POSTGRES_USER}
-      password: ${POSTGRES_PASSWORD}
-    contexts:
-      - transactions
-      - users
-  - name: users-db-us-east-1
-    engine: postgres
-    connection:
-      host: localhost
-      port: 54321
-      database: postgres
-      username: ${POSTGRES_USER}
-      password: ${POSTGRES_PASSWORD}
+      host: demo-0.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "s-}<k2brsA008?1{3J-I*Uf7Hv*p"
     contexts: *contexts
-  - name: users-db-us-west-1
+  - name: demo-1.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
     engine: postgres
     connection:
-      host: localhost
-      port: 54322
-      database: postgres
-      username: ${POSTGRES_USER}
-      password: ${POSTGRES_PASSWORD}
+      host: demo-1.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "UAB_)0RzWQLN_gXr|JSw_Td$Zfm}"
+    contexts: *contexts
+  - name: demo-10.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-10.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "o~PA5dJVBYe6jjumm1qhx1{y]s_<"
+    contexts: *contexts
+  - name: demo-11.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-11.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "XVfX*s_3|GH6utHsiu07Giz$<~]T"
+    contexts: *contexts
+  - name: demo-12.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-12.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "gInV9?]YW-Hp4}|096y>$!b1t5rl"
+    contexts: *contexts
+  - name: demo-13.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-13.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "C$1Vu6)t|Hm->(w6s2cF[eNLazLa"
+    contexts: *contexts
+  - name: demo-14.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-14.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "k$6_~:PIM99M*EizvWciw13Oa:eN"
+    contexts: *contexts
+  - name: demo-15.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-15.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "g8D7X{8IH|9Ilk}gIVO0EN?>dpd?"
+    contexts: *contexts
+  - name: demo-16.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-16.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "1CN<{$bqeE(~}8_FHQMM8D6WlNDw"
+    contexts: *contexts
+  - name: demo-17.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-17.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "{c5p8kS!rh>#WSec|SAsZkW%GuNm"
+    contexts: *contexts
+  - name: demo-18.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-18.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "W(zQtWSbc)x?S*13gr2SwSVC-|78"
+    contexts: *contexts
+  - name: demo-19.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-19.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "1xt7:|JTyvUy8>S)7rSk!gvdaZ3B"
+    contexts: *contexts
+  - name: demo-2.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-2.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "TIev?OM3+nXHKysCH[]g3[wp5z(n"
+    contexts: *contexts
+  - name: demo-20.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-20.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "a4U?$qZ7W#g%8K730rT%STn_3vD}"
+    contexts: *contexts
+  - name: demo-21.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-21.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "O%QtEsWhx]1+r)*T?XUm$L[4g(cu"
+    contexts: *contexts
+  - name: demo-22.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-22.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "*btEUiJ]Nv8Zag9lYiG]9}4.v*S?"
+    contexts: *contexts
+  - name: demo-23.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-23.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "ter]{iE$GWX8>UEmzAnQ}pbjT|6M"
+    contexts: *contexts
+  - name: demo-24.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-24.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "mXJ1*OYH$7S*9%%ZAXG_jm}ey7>D"
+    contexts: *contexts
+  - name: demo-25.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-25.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "}VJyf[.zPpK9U3dgVviov*Xvw(Oj"
+    contexts: *contexts
+  - name: demo-26.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-26.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "WcC.UlPfuK.UL<t}p_zI*n0pAwm4"
+    contexts: *contexts
+  - name: demo-27.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-27.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "-EY#3%4fj<qD2FPmPHB$pZ[_|Mfx"
+    contexts: *contexts
+  - name: demo-28.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-28.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "Y)VE0_l8aT?T)15My-0Ix2!AEdyo"
+    contexts: *contexts
+  - name: demo-29.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-29.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "M3tHNM<fKxxNxPDX+eIW0HLRvhY|"
+    contexts: *contexts
+  - name: demo-3.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-3.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "KkDI>-KZ$1rPur[n):Da#n>38Q#)"
+    contexts: *contexts
+  - name: demo-4.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-4.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "nNEg##[XmKi+B!>hr>a{An24SnZh"
+    contexts: *contexts
+  - name: demo-5.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-5.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "MICA}~mD#lQoW.g17:02~:ydQCy0"
+    contexts: *contexts
+  - name: demo-6.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-6.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "*bUR4JB8Q[[qTaN.4<][M:Vrs|Wr"
+    contexts: *contexts
+  - name: demo-7.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-7.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "QiuD98TEB2qZdt%~:y+Wde9+(P9S"
+    contexts: *contexts
+  - name: demo-8.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-8.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "-iuga8doK{[YqsYQyv9gt9dG.7gA"
+    contexts: *contexts
+  - name: demo-9.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+    engine: postgres
+    connection:
+      host: demo-9.clcgaqoyk8k8.us-west-2.rds.amazonaws.com
+      port: 5432
+      database: demo
+      username: demo
+      password: "px51an.OO))rq){p9yc-4ky3Z<*Z"
     contexts: *contexts

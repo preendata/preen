@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/utils"
@@ -43,8 +44,8 @@ func Validate(cfg *config.Config) (*Validator, error) {
 			Url: fmt.Sprintf(
 				"postgres://%s:%s@%s:%d/%s",
 				source.Connection.Username,
-				source.Connection.Password,
-				source.Connection.Host,
+				url.QueryEscape(source.Connection.Password),
+				url.QueryEscape(source.Connection.Host),
 				source.Connection.Port,
 				source.Connection.Database,
 			),

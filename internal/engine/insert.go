@@ -15,21 +15,20 @@ func Insert(contextName string, ic chan []driver.Value, dc chan []int64) error {
 	if err != nil {
 		panic(err)
 	}
-	var rowCounter int64
-	rowCounter = 0
+	rowCounter := 0
 	for c := range ic {
 		if c[0] == "EOF" {
 			break
 		}
-		if err := appender.AppendRow(c...); err != nil {
-			panic(err)
-		}
+		// if err := appender.AppendRow(c...); err != nil {
+		// 	panic(err)
+		// }
 		rowCounter++
 	}
 	err = appender.Close()
 	if err != nil {
 		panic(err)
 	}
-	dc <- []int64{rowCounter}
+	dc <- []int64{int64(rowCounter)}
 	return nil
 }

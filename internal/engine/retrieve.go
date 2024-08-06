@@ -7,7 +7,6 @@ import (
 	"math"
 	"reflect"
 	"slices"
-	"sync"
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/pg"
@@ -15,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/marcboeker/go-duckdb"
+	"golang.org/x/sync/errgroup"
 )
 
 type Retriever struct {
@@ -27,7 +27,6 @@ type Retriever struct {
 func Retrieve(cfg *config.Config, c Context) error {
 	r := Retriever{}
 	for _, contextName := range cfg.Contexts {
-		wg := sync.WaitGroup{}
 		r.ContextName = contextName
 		r.Query = c.ContextQueries[contextName].Query
 		ic := make(chan []driver.Value, 1000)
@@ -38,9 +37,10 @@ func Retrieve(cfg *config.Config, c Context) error {
 		}
 		var rowCounter int64
 		rowCounter = 0
+		g := new(errgroup.Group)
+		g.SetLimit(5)
 		for _, source := range cfg.Sources {
 			r.Source = source
-			wg.Add(1)
 			if !slices.Contains(source.Contexts, contextName) {
 				utils.Debug(fmt.Sprintf("Skipping %s for %s", contextName, source.Name))
 				continue
@@ -52,21 +52,22 @@ func Retrieve(cfg *config.Config, c Context) error {
 					return err
 				}
 				defer r.Pool.Close()
-				go func(r Retriever, ic chan []driver.Value) error {
-					defer wg.Done()
-
-					contextRowCount, err := processPgSource(r, ic)
-					if err != nil {
-						return err
-					}
-					rowCounter += *contextRowCount
+				func(r Retriever, ic chan []driver.Value) error {
+					g.Go(func() error {
+						rowCount, err := processPgSource(r, ic)
+						if err != nil {
+							return err
+						}
+						rowCounter += *rowCount
+						return nil
+					})
 					return nil
 				}(r, ic)
 			} else {
 				utils.Error(fmt.Sprintf("Engine %s not supported", source.Engine))
 			}
 		}
-		wg.Wait()
+		err = g.Wait()
 		ic <- []driver.Value{"EOF"}
 		confirmInsert(contextName, dc, rowCounter)
 

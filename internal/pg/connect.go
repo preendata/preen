@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/jackc/pgx/v5"
@@ -43,12 +44,11 @@ func PoolFromSource(source config.Source) (*pgxpool.Pool, error) {
 	url := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s",
 		source.Connection.Username,
-		source.Connection.Password,
-		source.Connection.Host,
+		url.QueryEscape(source.Connection.Password),
+		url.QueryEscape(source.Connection.Host),
 		source.Connection.Port,
 		source.Connection.Database,
 	)
-
 	dbpool, err := pool(url)
 
 	if err != nil {
@@ -63,8 +63,8 @@ func ConnFromSource(source config.Source) (*pgx.Conn, error) {
 	url := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s",
 		source.Connection.Username,
-		source.Connection.Password,
-		source.Connection.Host,
+		url.QueryEscape(source.Connection.Password),
+		url.QueryEscape(source.Connection.Host),
 		source.Connection.Port,
 		source.Connection.Database,
 	)

@@ -20,6 +20,4 @@ on
 inner join
     transactions as t2
 on
-    transactions.transaction_id = t2.transaction_id
-where
-    transactions.price < 100;
+    transactions.transaction_id = t2.transaction_id;
