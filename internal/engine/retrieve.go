@@ -29,7 +29,7 @@ func Retrieve(cfg *config.Config, c Context) error {
 	for _, contextName := range cfg.Contexts {
 		r.ContextName = contextName
 		r.Query = c.ContextQueries[contextName].Query
-		ic := make(chan []driver.Value, 1000)
+		ic := make(chan []driver.Value, 10000)
 		dc := make(chan []int64)
 		go Insert(contextName, ic, dc)
 		if err != nil {
@@ -38,7 +38,7 @@ func Retrieve(cfg *config.Config, c Context) error {
 		var rowCounter int64
 		rowCounter = 0
 		g := new(errgroup.Group)
-		g.SetLimit(1)
+		g.SetLimit(3)
 		for _, source := range cfg.Sources {
 			r.Source = source
 			if !slices.Contains(source.Contexts, contextName) {
@@ -47,11 +47,11 @@ func Retrieve(cfg *config.Config, c Context) error {
 			}
 			if source.Engine == "postgres" {
 				r.Pool, err = pg.PoolFromSource(source)
-				defer r.Pool.Close()
 				if err != nil {
 					return err
 				}
 				defer r.Pool.Close()
+				utils.Debug(fmt.Sprintf("Opened connection to %s. Pool stats: \n total conns: %d, ", source.Name, r.Pool.Stat().TotalConns()))
 				func(r Retriever, ic chan []driver.Value) error {
 					g.Go(func() error {
 						rowCount, err := processPgSource(r, ic)
@@ -84,11 +84,11 @@ func processPgSource(r Retriever, ic chan []driver.Value) (*int64, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 	var rowCounter int64
 	rowCounter = 0
 	for rows.Next() {
+		rowCounter++
 		values, err := rows.Values()
 		if err != nil {
 			return nil, err
@@ -109,6 +109,7 @@ func processPgSource(r Retriever, ic chan []driver.Value) (*int64, error) {
 			}
 		}
 		ic <- driverRow
+		utils.Debug(fmt.Sprintf("Inserted row %d for %s - %s\n", rowCounter, r.Source.Name, r.ContextName))
 	}
 	utils.Debug(fmt.Sprintf("Retrieved %d rows for %s - %s\n", rowCounter, r.Source.Name, r.ContextName))
 	err = rows.Err()

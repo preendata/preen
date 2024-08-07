@@ -24,6 +24,12 @@ func Insert(contextName string, ic chan []driver.Value, dc chan []int64) error {
 			panic(err)
 		}
 		rowCounter++
+		if rowCounter%1000000 == 0 {
+			err := appender.Flush()
+			if err != nil {
+				panic(err)
+			}
+		}
 	}
 	err = appender.Close()
 	if err != nil {
