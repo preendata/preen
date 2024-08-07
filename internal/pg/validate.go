@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
+	"sync"
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/utils"
-	"github.com/jackc/pgx/v5/pgconn"
+	"golang.org/x/sync/errgroup"
 )
 
 type Table struct {
@@ -30,6 +32,7 @@ type Validator struct {
 	Sources     map[string]Source                `json:"sources"`
 	ColumnTypes map[string]map[string]ColumnType `json:"column_types"`
 	cfg         config.Config                    `json:"-"`
+	mu          sync.Mutex
 }
 
 func Validate(cfg *config.Config) (*Validator, error) {
@@ -38,29 +41,46 @@ func Validate(cfg *config.Config) (*Validator, error) {
 	v.Sources = make(map[string]Source)
 	v.ColumnTypes = make(map[string]map[string]ColumnType)
 
+	g := new(errgroup.Group)
+
 	for sourceIdx, source := range v.cfg.Sources {
-		v.Sources[source.Name] = Source{
-			Url: fmt.Sprintf(
+		source := source
+		sourceIdx := sourceIdx
+
+		g.Go(func() error {
+			sourceUrl := fmt.Sprintf(
 				"postgres://%s:%s@%s:%d/%s",
 				source.Connection.Username,
-				source.Connection.Password,
-				source.Connection.Host,
+				url.QueryEscape(source.Connection.Password),
+				url.QueryEscape(source.Connection.Host),
 				source.Connection.Port,
 				source.Connection.Database,
-			),
-			Tables: make(map[string]Table),
-		}
-		err := v.getTables(v.Sources[source.Name])
-		if err != nil {
-			return nil, err
-		}
+			)
 
-		err = v.getDataTypes(v.Sources[source.Name], sourceIdx)
-		if err != nil {
-			return nil, err
-		}
+			v.mu.Lock()
+			v.Sources[source.Name] = Source{
+				Url:    sourceUrl,
+				Tables: make(map[string]Table),
+			}
+			v.mu.Unlock()
+
+			err := v.getTables(v.Sources[source.Name])
+			if err != nil {
+				return err
+			}
+
+			err = v.getDataTypes(v.Sources[source.Name], sourceIdx)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		})
 	}
 
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
 	for table, columns := range v.ColumnTypes {
 		for column, types := range columns {
 			v.majority(table, column, types.Types)
@@ -127,10 +147,8 @@ func (v *Validator) getDataTypes(source Source, sourceIdx int) error {
 		where table_schema = '%s' and table_name = '%s';
 	`
 
-	for name, table := range source.Tables {
-		if v.ColumnTypes[name] == nil {
-			v.ColumnTypes[name] = make(map[string]ColumnType)
-		}
+	for _, table := range source.Tables {
+
 		source.Tables[table.Name] = Table{
 			Schema:  table.Schema,
 			Columns: make(map[string]string),
@@ -152,24 +170,20 @@ func (v *Validator) getDataTypes(source Source, sourceIdx int) error {
 				fmt.Sprintf("Table '%s' not found for source '%s'\n", table.Name, source.Url),
 			)
 		}
-		v.parseQueryResult(result, source.Tables[table.Name])
+
 		v.collectDataTypes(source, table.Name, sourceIdx)
 	}
 
 	return nil
 }
 
-func (v *Validator) parseQueryResult(result []*pgconn.Result, table Table) {
-	for _, res := range result {
-		for _, row := range res.Rows {
-			table.Columns[string(row[0])] = string(row[1])
-		}
-	}
-}
-
 func (v *Validator) collectDataTypes(source Source, tableName string, sourceIdx int) {
 	for colName, colType := range source.Tables[tableName].Columns {
-		if sourceIdx == 0 {
+		if v.ColumnTypes[tableName] == nil {
+			v.ColumnTypes[tableName] = make(map[string]ColumnType)
+		}
+
+		if _, ok := v.ColumnTypes[tableName][colName]; !ok {
 			v.ColumnTypes[tableName][colName] = ColumnType{
 				Types:        make([]string, len(v.cfg.Sources)),
 				MajorityType: "unknown",
