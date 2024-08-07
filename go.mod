@@ -1,6 +1,6 @@
 module github.com/hyphadb/hyphadb
 
-go 1.21.6
+go 1.22.5
 
 require (
 	github.com/chzyer/readline v1.5.1

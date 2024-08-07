@@ -9,6 +9,7 @@ import (
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/utils"
+	"github.com/jackc/pgx/v5"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -105,29 +106,25 @@ func (v *Validator) getTables(source Source) error {
 		where table_schema not in ('information_schema', 'pg_catalog');
 	`
 
-	reader := conn.Exec(context.Background(), query)
-	result, err := reader.ReadAll()
-
+	rows, err := conn.Query(context.Background(), query)
 	if err != nil {
 		return err
 	}
 
-	if len(result[0].Rows) == 0 {
-		utils.Warn(
-			fmt.Sprintf("No tables found for source '%s'\n", source.Url),
-		)
+	for rows.Next() {
+		row := make([]string, 2)
+		if err := rows.Scan(&row[0], &row[1]); err != nil {
+			return err
+		}
+		source.Tables[row[1]] = Table{
+			Schema:  row[0],
+			Name:    row[1],
+			Columns: make(map[string]string),
+		}
 	}
 
-	for _, res := range result {
-		for _, row := range res.Rows {
-			tableName := string(row[1])
-			tableSchema := string(row[0])
-			source.Tables[tableName] = Table{
-				Schema:  tableSchema,
-				Name:    tableName,
-				Columns: make(map[string]string),
-			}
-		}
+	if err := rows.Err(); err != nil {
+		return err
 	}
 
 	return nil
@@ -153,27 +150,29 @@ func (v *Validator) getDataTypes(source Source, sourceIdx int) error {
 			Schema:  table.Schema,
 			Columns: make(map[string]string),
 		}
-		reader := conn.Exec(
+		rows, err := conn.Query(
 			context.Background(),
 			fmt.Sprintf(query, table.Schema, table.Name),
 		)
-		result, err := reader.ReadAll()
-
 		if err != nil {
-			slog.Error(
-				fmt.Sprintf("Failed to get data types: %v", err),
-			)
+			return err
 		}
 
-		if len(result[0].Rows) == 0 {
-			slog.Warn(
-				fmt.Sprintf("Table '%s' not found for source '%s'\n", table.Name, source.Url),
-			)
+		if err := v.parseQueryResult(rows, source.Tables[table.Name]); err != nil {
+			return err
 		}
-
 		v.collectDataTypes(source, table.Name, sourceIdx)
 	}
 
+	return nil
+}
+
+func (v *Validator) parseQueryResult(rows pgx.Rows, table Table) error {
+	for rows.Next() {
+		row := make([]string, 2)
+		rows.Scan(&row[0], &row[1])
+		table.Columns[row[0]] = row[1]
+	}
 	return nil
 }
 

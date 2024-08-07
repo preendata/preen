@@ -61,6 +61,7 @@ func ParseContextColumns(contextQueries map[string]ContextQuery, v pg.Validator)
 		contextQuery.Columns = cp.columns
 		contextQuery.DDLString = cp.ddlString
 		contextQueries[contextName] = contextQuery
+
 	}
 
 	return contextQueries, nil
