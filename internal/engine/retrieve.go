@@ -35,8 +35,7 @@ func Retrieve(cfg *config.Config, c Context) error {
 		if err != nil {
 			return err
 		}
-		var rowCounter int64
-		rowCounter = 0
+		var totalRows int64
 		g := new(errgroup.Group)
 		g.SetLimit(3)
 		for _, source := range cfg.Sources {
@@ -58,7 +57,7 @@ func Retrieve(cfg *config.Config, c Context) error {
 						if err != nil {
 							return err
 						}
-						rowCounter += *rowCount
+						totalRows += *rowCount
 						return nil
 					})
 					return nil
@@ -69,7 +68,7 @@ func Retrieve(cfg *config.Config, c Context) error {
 		}
 		err = g.Wait()
 		ic <- []driver.Value{"EOF"}
-		confirmInsert(contextName, dc, rowCounter)
+		confirmInsert(contextName, dc, totalRows)
 
 		if err != nil {
 			return err
@@ -86,9 +85,7 @@ func processPgSource(r Retriever, ic chan []driver.Value) (*int64, error) {
 	}
 	defer rows.Close()
 	var rowCounter int64
-	rowCounter = 0
 	for rows.Next() {
-		rowCounter++
 		values, err := rows.Values()
 		if err != nil {
 			return nil, err
@@ -109,7 +106,6 @@ func processPgSource(r Retriever, ic chan []driver.Value) (*int64, error) {
 			}
 		}
 		ic <- driverRow
-		utils.Debug(fmt.Sprintf("Inserted row %d for %s - %s\n", rowCounter, r.Source.Name, r.ContextName))
 	}
 	utils.Debug(fmt.Sprintf("Retrieved %d rows for %s - %s\n", rowCounter, r.Source.Name, r.ContextName))
 	err = rows.Err()

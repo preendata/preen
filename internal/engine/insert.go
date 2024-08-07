@@ -2,8 +2,10 @@ package engine
 
 import (
 	"database/sql/driver"
+	"fmt"
 
 	"github.com/hyphadb/hyphadb/internal/duckdb"
+	"github.com/hyphadb/hyphadb/internal/utils"
 )
 
 func Insert(contextName string, ic chan []driver.Value, dc chan []int64) error {
@@ -25,6 +27,9 @@ func Insert(contextName string, ic chan []driver.Value, dc chan []int64) error {
 		}
 		rowCounter++
 		if rowCounter%1000000 == 0 {
+			utils.Debug(fmt.Sprintf(
+				"Flushing 1M rows from appender to DuckDB for context: %s, %d", contextName, rowCounter,
+			))
 			err := appender.Flush()
 			if err != nil {
 				panic(err)
