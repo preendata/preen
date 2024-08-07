@@ -63,15 +63,15 @@ services:
       - ./db/data/transactions/mock-transaction-data-6.csv:/home/data/mock-transaction-data.csv
     command: ["postgres", "-c", "log_statement=all"]
 
-  mongodb:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: thisisnotarealpassword
-      MONGO_INITDB_DATABASE: mongo_db_1
-    volumes:
-      - ./db/scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
-      - ./db/data/users/mock-user-data-1.json:/home/data/mock-user-data-1.json
-      - ./db/data/transactions/mock-transaction-data-1.json:/home/data/mock-transaction-data-1.json
+  # mongodb:
+  #   image: mongo:latest
+  #   ports:
+  #     - "27017:27017"
+  #   environment:
+  #     MONGO_INITDB_ROOT_USERNAME: root
+  #     MONGO_INITDB_ROOT_PASSWORD: thisisnotarealpassword
+  #     MONGO_INITDB_DATABASE: mongo_db_1
+  #   volumes:
+  #     - ./db/scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+  #     - ./db/data/users/mock-user-data-1.json:/home/data/mock-user-data-1.json
+  #     - ./db/data/transactions/mock-transaction-data-1.json:/home/data/mock-transaction-data-1.json
