@@ -9,7 +9,6 @@ import (
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/utils"
-	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -43,6 +42,7 @@ func Validate(cfg *config.Config) (*Validator, error) {
 	v.ColumnTypes = make(map[string]map[string]ColumnType)
 
 	g := new(errgroup.Group)
+
 	for sourceIdx, source := range v.cfg.Sources {
 		source := source
 		sourceIdx := sourceIdx
@@ -149,10 +149,6 @@ func (v *Validator) getDataTypes(source Source, sourceIdx int) error {
 
 	for _, table := range source.Tables {
 
-		// if v.ColumnTypes[name] == nil {
-		// 	v.ColumnTypes[name] = make(map[string]ColumnType)
-		// }
-
 		source.Tables[table.Name] = Table{
 			Schema:  table.Schema,
 			Columns: make(map[string]string),
@@ -174,20 +170,11 @@ func (v *Validator) getDataTypes(source Source, sourceIdx int) error {
 				fmt.Sprintf("Table '%s' not found for source '%s'\n", table.Name, source.Url),
 			)
 		}
-		v.parseQueryResult(result, source.Tables[table.Name])
+
 		v.collectDataTypes(source, table.Name, sourceIdx)
 	}
 
 	return nil
-}
-
-// I dont think this does anything, its not operating on a pointer and doesnt return anything
-func (v *Validator) parseQueryResult(result []*pgconn.Result, table Table) {
-	for _, res := range result {
-		for _, row := range res.Rows {
-			table.Columns[string(row[0])] = string(row[1])
-		}
-	}
 }
 
 func (v *Validator) collectDataTypes(source Source, tableName string, sourceIdx int) {
@@ -196,7 +183,6 @@ func (v *Validator) collectDataTypes(source Source, tableName string, sourceIdx 
 			v.ColumnTypes[tableName] = make(map[string]ColumnType)
 		}
 
-		v.mu.Lock()
 		if _, ok := v.ColumnTypes[tableName][colName]; !ok {
 			v.ColumnTypes[tableName][colName] = ColumnType{
 				Types:        make([]string, len(v.cfg.Sources)),
@@ -204,7 +190,6 @@ func (v *Validator) collectDataTypes(source Source, tableName string, sourceIdx 
 			}
 		}
 		v.ColumnTypes[tableName][colName].Types[sourceIdx] = colType
-		v.mu.Unlock()
 	}
 }
 
