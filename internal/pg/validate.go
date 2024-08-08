@@ -3,13 +3,12 @@ package pg
 import (
 	"context"
 	"fmt"
-	"log/slog"
-	"net/url"
 	"sync"
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/utils"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -26,7 +25,6 @@ type ColumnType struct {
 
 type Source struct {
 	Tables map[string]Table `json:"tables"`
-	Url    string           `json:"url"`
 }
 
 type Validator struct {
@@ -47,34 +45,32 @@ func Validate(cfg *config.Config) (*Validator, error) {
 	for sourceIdx, source := range v.cfg.Sources {
 		source := source
 		sourceIdx := sourceIdx
+		pool, err := PoolFromSource(source)
+		if err != nil {
+			return nil, err
+		}
+
+		defer pool.Close()
+
+		utils.Debug(fmt.Sprintf("Validating data for source: %s", source.Name))
 
 		g.Go(func() error {
-			sourceUrl := fmt.Sprintf(
-				"postgres://%s:%s@%s:%d/%s",
-				source.Connection.Username,
-				url.QueryEscape(source.Connection.Password),
-				url.QueryEscape(source.Connection.Host),
-				source.Connection.Port,
-				source.Connection.Database,
-			)
 
 			v.mu.Lock()
 			v.Sources[source.Name] = Source{
-				Url:    sourceUrl,
 				Tables: make(map[string]Table),
 			}
 			v.mu.Unlock()
 
-			err := v.getTables(v.Sources[source.Name])
+			err := v.getTables(v.Sources[source.Name], pool)
 			if err != nil {
 				return err
 			}
 
-			err = v.getDataTypes(v.Sources[source.Name], sourceIdx)
+			err = v.getDataTypes(v.Sources[source.Name], sourceIdx, pool)
 			if err != nil {
 				return err
 			}
-
 			return nil
 		})
 	}
@@ -94,22 +90,19 @@ func Validate(cfg *config.Config) (*Validator, error) {
 
 }
 
-func (v *Validator) getTables(source Source) error {
-	conn, err := connect(source.Url)
-
-	if err != nil {
-		return err
-	}
+func (v *Validator) getTables(source Source, pool *pgxpool.Pool) error {
 
 	query := `
 		select table_schema, table_name from information_schema.tables
 		where table_schema not in ('information_schema', 'pg_catalog');
 	`
 
-	rows, err := conn.Query(context.Background(), query)
+	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
 		return err
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		row := make([]string, 2)
@@ -130,14 +123,7 @@ func (v *Validator) getTables(source Source) error {
 	return nil
 }
 
-func (v *Validator) getDataTypes(source Source, sourceIdx int) error {
-	conn, err := connect(source.Url)
-
-	if err != nil {
-		return err
-	}
-
-	defer conn.Close(context.Background())
+func (v *Validator) getDataTypes(source Source, sourceIdx int, pool *pgxpool.Pool) error {
 
 	query := `
 		select column_name, data_type from information_schema.columns
@@ -145,18 +131,20 @@ func (v *Validator) getDataTypes(source Source, sourceIdx int) error {
 	`
 
 	for _, table := range source.Tables {
+		utils.Debug(fmt.Sprintf("Validating data types for source index: %d table: %s", sourceIdx, table.Name))
 
 		source.Tables[table.Name] = Table{
 			Schema:  table.Schema,
 			Columns: make(map[string]string),
 		}
-		rows, err := conn.Query(
+		rows, err := pool.Query(
 			context.Background(),
 			fmt.Sprintf(query, table.Schema, table.Name),
 		)
 		if err != nil {
 			return err
 		}
+		defer rows.Close()
 
 		if err := v.parseQueryResult(rows, source.Tables[table.Name]); err != nil {
 			return err
@@ -216,13 +204,12 @@ func (v *Validator) majority(tableName string, columnName string, types []string
 			count += 1
 		}
 	}
-
 	if majority == "" {
-		slog.Warn(
+		utils.Warn(
 			fmt.Sprintf("Column: '%s' is missing from majority of tables!", columnName),
 		)
 	} else if count > len(types)/2 && count == len(types) {
-		slog.Debug(
+		utils.Debug(
 			fmt.Sprintf("Data type for column '%s' is: %s", columnName, majority),
 		)
 		if entry, ok := v.ColumnTypes[tableName][columnName]; ok {
@@ -230,11 +217,15 @@ func (v *Validator) majority(tableName string, columnName string, types []string
 			v.ColumnTypes[tableName][columnName] = entry
 		}
 	} else if count > len(types)/2 && count != len(types) {
-		slog.Warn(
-			fmt.Sprintf("Discrepancy in data types for column '%s'!", columnName),
+		utils.Warn(
+			fmt.Sprintf("Discrepancy in data types for column '%s'! Using majority data type of %s", columnName, majority),
 		)
+		if entry, ok := v.ColumnTypes[tableName][columnName]; ok {
+			entry.MajorityType = majority
+			v.ColumnTypes[tableName][columnName] = entry
+		}
 	} else {
-		slog.Warn(
+		utils.Warn(
 			fmt.Sprintf("No majority data type found for column '%s'!", columnName),
 		)
 	}

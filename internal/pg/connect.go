@@ -3,10 +3,10 @@ package pg
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/url"
 
 	"github.com/hyphadb/hyphadb/internal/config"
+	"github.com/hyphadb/hyphadb/internal/utils"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -18,7 +18,7 @@ func connect(url string) (*pgx.Conn, error) {
 	connection, err := pgx.Connect(context.Background(), url)
 
 	if err != nil {
-		slog.Error(
+		utils.Error(
 			fmt.Sprintf("Unable to connect to database: %v\n", err),
 		)
 		return nil, err
@@ -31,7 +31,7 @@ func pool(url string) (*pgxpool.Pool, error) {
 	dbpool, err := pgxpool.New(context.Background(), url)
 
 	if err != nil {
-		slog.Error(
+		utils.Error(
 			fmt.Sprintf("Unable to connect to database: %v\n", err),
 		)
 		return nil, err

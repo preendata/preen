@@ -37,7 +37,7 @@ func BuildContext(cfg *config.Config) error {
 		return fmt.Errorf("error reading context files: %w", err)
 	}
 
-	context.ContextQueries, err = ParseContextColumns(context.ContextQueries, *validator)
+	context.ContextQueries, err = ParseContextColumns(context.ContextQueries, validator)
 	if err != nil {
 		return fmt.Errorf("error parsing columns: %w", err)
 	}
@@ -70,7 +70,7 @@ func readContextFiles(cfg *config.Config) (map[string]ContextQuery, error) {
 			cq := ContextQuery{
 				Query: string(bytes),
 			}
-			utils.Debug("Parsing query: ", cq.Query)
+			utils.Debug(fmt.Sprintf("Parsing query: %s", cq.Query))
 			parsedQuery, err := sqlparser.Parse(cq.Query)
 			if err != nil {
 				return nil, err
@@ -108,6 +108,7 @@ func buildTables(contextQueries map[string]ContextQuery) error {
 		createTable := fmt.Sprintf("create table main.%s (%s);", contextName, contextQuery.DDLString)
 		_, err = db.Exec(createTable)
 		if err != nil {
+			utils.Debug(fmt.Sprintf("Error creating table %s: %s", contextName, createTable))
 			return err
 		}
 	}

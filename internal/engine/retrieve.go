@@ -37,7 +37,7 @@ func Retrieve(cfg *config.Config, c Context) error {
 		}
 		var totalRows int64
 		g := new(errgroup.Group)
-		g.SetLimit(3)
+		g.SetLimit(200)
 		for _, source := range cfg.Sources {
 			r.Source = source
 			if !slices.Contains(source.Contexts, contextName) {
