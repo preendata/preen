@@ -26,9 +26,9 @@ func Insert(contextName string, ic chan []driver.Value, dc chan []int64) error {
 			panic(err)
 		}
 		rowCounter++
-		if rowCounter%1000000 == 0 {
+		if rowCounter%10000000 == 0 {
 			utils.Debug(fmt.Sprintf(
-				"Flushing 1M rows from appender to DuckDB for context: %s, %d", contextName, rowCounter,
+				"Flushing 10M rows from appender to DuckDB for context: %s, %d", contextName, rowCounter,
 			))
 			err := appender.Flush()
 			if err != nil {

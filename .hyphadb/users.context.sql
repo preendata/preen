@@ -5,4 +5,5 @@ select
     u.ip_address,
     u.is_active
 from
-    users as u ;
+    users as u
+limit 10000;

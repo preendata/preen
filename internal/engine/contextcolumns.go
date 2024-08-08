@@ -22,10 +22,10 @@ type columnParser struct {
 	ddlString string
 	table     string
 	selectIdx int
-	validator pg.Validator
+	validator *pg.Validator
 }
 
-func ParseContextColumns(contextQueries map[string]ContextQuery, v pg.Validator) (map[string]ContextQuery, error) {
+func ParseContextColumns(contextQueries map[string]ContextQuery, v *pg.Validator) (map[string]ContextQuery, error) {
 	cp := columnParser{
 		columns:   make(map[string]map[string]Column),
 		validator: v,
