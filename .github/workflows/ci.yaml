@@ -2,11 +2,9 @@ name: Release
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    tags:
+      - '**'
+
 
 jobs:
   build-linux:
