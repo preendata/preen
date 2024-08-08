@@ -30,7 +30,7 @@ services:
       POSTGRES_PASSWORD: thisisnotarealpassword
       POSTGRES_DB: postgres
     volumes:
-      - ./db/scripts/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
+      - ./db/postgres/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
       - ./db/data/users/mock-user-data-4.csv:/home/data/mock-user-data.csv
       - ./db/data/transactions/mock-transaction-data-4.csv:/home/data/mock-transaction-data.csv
     command: ["postgres", "-c", "log_statement=all"]
@@ -44,7 +44,7 @@ services:
       POSTGRES_PASSWORD: thisisnotarealpassword
       POSTGRES_DB: postgres
     volumes:
-      - ./db/scripts/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
+      - ./db/postgres/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
       - ./db/data/users/mock-user-data-5.csv:/home/data/mock-user-data.csv
       - ./db/data/transactions/mock-transaction-data-5.csv:/home/data/mock-transaction-data.csv
     command: ["postgres", "-c", "log_statement=all"]
@@ -58,10 +58,23 @@ services:
       POSTGRES_PASSWORD: thisisnotarealpassword
       POSTGRES_DB: postgres
     volumes:
-      - ./db/scripts/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
+      - ./db/postgres/provision-db.sql:/docker-entrypoint-initdb.d/provision-db.sql
       - ./db/data/users/mock-user-data-6.csv:/home/data/mock-user-data.csv
       - ./db/data/transactions/mock-transaction-data-6.csv:/home/data/mock-transaction-data.csv
     command: ["postgres", "-c", "log_statement=all"]
+
+  # mysql-1:
+  #   image: mysql:8
+  #   ports:
+  #     - "33061:3306"
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: thisisnotarealpassword
+  #     MYSQL_DATABASE: mysql_db_1
+  #   command: --secure-file-priv=''
+  #   volumes:
+  #     - ./db/mysql/ddl.sql:/docker-entrypoint-initdb.d/ddl.sql
+  #     - ./db/data/users/mock-user-data-1.csv:/home/data/mock-user-data.csv
+  #     - ./db/data/transactions/mock-transaction-data-1.csv:/home/data/mock-transaction-data.csv
 
   # mongodb:
   #   image: mongo:latest
