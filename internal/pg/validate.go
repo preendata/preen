@@ -42,37 +42,34 @@ func Validate(cfg *config.Config) (*Validator, error) {
 
 	g := new(errgroup.Group)
 
-	for sourceIdx, source := range v.cfg.Sources {
-		source := source
-		sourceIdx := sourceIdx
-		pool, err := PoolFromSource(source)
+	for sourceIdx, cfgSource := range v.cfg.Sources {
+		pool, err := PoolFromSource(cfgSource)
 		if err != nil {
 			return nil, err
 		}
 
 		defer pool.Close()
 
-		utils.Debug(fmt.Sprintf("Validating data for source: %s", source.Name))
+		utils.Debug(fmt.Sprintf("Validating data for source: %s", cfgSource.Name))
+
+		source := Source{
+			Tables: make(map[string]Table),
+		}
 
 		g.Go(func() error {
-
-			v.mu.Lock()
-			v.Sources[source.Name] = Source{
-				Tables: make(map[string]Table),
-			}
-			v.mu.Unlock()
-
-			err := v.getTables(v.Sources[source.Name], pool)
+			source.Tables, err = getTables(pool)
 			if err != nil {
 				return err
 			}
 
-			err = v.getDataTypes(v.Sources[source.Name], sourceIdx, pool)
+			columnTypes, err := getColumnTypes(cfg, source.Tables, sourceIdx, pool)
 			if err != nil {
 				return err
 			}
 			return nil
 		})
+		v.Sources[cfgSource.Name] = source
+		v.Colu
 	}
 
 	if err := g.Wait(); err != nil {
@@ -90,8 +87,8 @@ func Validate(cfg *config.Config) (*Validator, error) {
 
 }
 
-func (v *Validator) getTables(source Source, pool *pgxpool.Pool) error {
-
+func getTables(pool *pgxpool.Pool) (map[string]Table, error) {
+	tables := make(map[string]Table)
 	query := `
 		select table_schema, table_name from information_schema.tables
 		where table_schema not in ('information_schema', 'pg_catalog');
@@ -99,7 +96,7 @@ func (v *Validator) getTables(source Source, pool *pgxpool.Pool) error {
 
 	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer rows.Close()
@@ -107,9 +104,9 @@ func (v *Validator) getTables(source Source, pool *pgxpool.Pool) error {
 	for rows.Next() {
 		row := make([]string, 2)
 		if err := rows.Scan(&row[0], &row[1]); err != nil {
-			return err
+			return nil, err
 		}
-		source.Tables[row[1]] = Table{
+		tables[row[1]] = Table{
 			Schema:  row[0],
 			Name:    row[1],
 			Columns: make(map[string]string),
@@ -117,67 +114,76 @@ func (v *Validator) getTables(source Source, pool *pgxpool.Pool) error {
 	}
 
 	if err := rows.Err(); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return tables, nil
 }
 
-func (v *Validator) getDataTypes(source Source, sourceIdx int, pool *pgxpool.Pool) error {
+func getColumnTypes(cfg *config.Config, tables map[string]Table, sourceIdx int, pool *pgxpool.Pool) (map[string]map[string]ColumnType, error) {
 
 	query := `
 		select column_name, data_type from information_schema.columns
 		where table_schema = '%s' and table_name = '%s';
 	`
+	columnTypes := make(map[string]map[string]ColumnType, 0)
 
-	for _, table := range source.Tables {
+	for _, table := range tables {
 		utils.Debug(fmt.Sprintf("Validating data types for source index: %d table: %s", sourceIdx, table.Name))
 
-		source.Tables[table.Name] = Table{
+		table = Table{
 			Schema:  table.Schema,
 			Columns: make(map[string]string),
 		}
+		columnTypes[table.Name] = make(map[string]ColumnType, 0)
 		rows, err := pool.Query(
 			context.Background(),
 			fmt.Sprintf(query, table.Schema, table.Name),
 		)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		defer rows.Close()
 
-		if err := v.parseQueryResult(rows, source.Tables[table.Name]); err != nil {
-			return err
+		columns, err := parseQueryResult(rows, table)
+		if err != nil {
+			return nil, err
 		}
-		v.collectDataTypes(source, table.Name, sourceIdx)
+		columnTypes[table.Name], err = collectColumnTypes(cfg, sourceIdx, columns)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return nil
+	return columnTypes, nil
 }
 
-func (v *Validator) parseQueryResult(rows pgx.Rows, table Table) error {
+func parseQueryResult(rows pgx.Rows, table Table) (map[string]string, error) {
+	columns := make(map[string]string)
 	for rows.Next() {
 		row := make([]string, 2)
 		rows.Scan(&row[0], &row[1])
-		table.Columns[row[0]] = row[1]
+		columns[row[0]] = row[1]
 	}
-	return nil
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return columns, nil
 }
 
-func (v *Validator) collectDataTypes(source Source, tableName string, sourceIdx int) {
-	for colName, colType := range source.Tables[tableName].Columns {
-		if v.ColumnTypes[tableName] == nil {
-			v.ColumnTypes[tableName] = make(map[string]ColumnType)
-		}
-
-		if _, ok := v.ColumnTypes[tableName][colName]; !ok {
-			v.ColumnTypes[tableName][colName] = ColumnType{
-				Types:        make([]string, len(v.cfg.Sources)),
+func collectColumnTypes(cfg *config.Config, sourceIdx int, columns map[string]string) (map[string]ColumnType, error) {
+	columnTypes := make(map[string]ColumnType, 0)
+	for colName, colType := range columns {
+		if _, ok := columnTypes[colName]; !ok {
+			columnTypes[colName] = ColumnType{
+				Types:        make([]string, len(cfg.Sources)),
 				MajorityType: "unknown",
 			}
 		}
-		v.ColumnTypes[tableName][colName].Types[sourceIdx] = colType
+		columnTypes[colName].Types[sourceIdx] = colType
 	}
+	return columnTypes, nil
 }
 
 func (v *Validator) majority(tableName string, columnName string, types []string) {
