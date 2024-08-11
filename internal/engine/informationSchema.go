@@ -6,17 +6,20 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/duckdb"
 	"github.com/hyphadb/hyphadb/internal/pg"
 	goddb "github.com/marcboeker/go-duckdb"
+	"golang.org/x/sync/errgroup"
 )
 
 type InformationSchema struct {
 	db        *sql.DB
 	connector driver.Connector
 	appender  *goddb.Appender
+	mu        sync.Mutex
 }
 
 func BuildInformationSchema(cfg *config.Config) error {
@@ -35,22 +38,36 @@ func BuildInformationSchema(cfg *config.Config) error {
 	infoSchema.appender = appender
 	defer infoSchema.appender.Close()
 
+	// Ensure info schema table exists
 	infoSchema.prepareDDBInformationSchema()
 
+	// Group sources by engine to distribute across specific engine handlers
 	hyphaSourcesByEngine := groupSourceByEngine(cfg)
 
+	g := new(errgroup.Group)
+
 	for engine, sources := range hyphaSourcesByEngine {
-		switch engine {
-		case "postgres":
-			err := infoSchema.buildPostgresInformationSchema(sources)
-			if err != nil {
-				return err
+		engine := engine
+		sources := sources
+		g.Go(func() error {
+			switch engine {
+			case "postgres":
+				err := infoSchema.buildPostgresInformationSchema(sources)
+				if err != nil {
+					return err
+				}
+			case "mysql":
+				// buildMySQLInformationSchema(sources)
+			default:
+				return fmt.Errorf("unsupported engine: %s", engine)
 			}
-		case "mysql":
-			// buildMySQLInformationSchema(sources)
-		default:
-			return fmt.Errorf("unsupported engine: %s", engine)
-		}
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return err
 	}
 
 	return nil
@@ -117,12 +134,16 @@ func groupSourceByEngine(cfg *config.Config) map[string][]config.Source {
 // openDDBConnection is a local duckDB conn creator. Eventually should be offloaded to something generic
 func (is *InformationSchema) openDDBConnection() error {
 	connector, err := duckdb.CreateConnector()
-	is.connector = connector
-	db, err := duckdb.OpenDatabase(connector)
-	is.db = db
 	if err != nil {
 		return err
 	}
+	is.connector = connector
+
+	db, err := duckdb.OpenDatabase(connector)
+	if err != nil {
+		return err
+	}
+	is.db = db
 
 	return nil
 }
