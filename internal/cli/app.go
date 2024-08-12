@@ -59,6 +59,12 @@ func NewApp() *cli.App {
 				Action:  BuildContext,
 			},
 			{
+				Name:    "build-i",
+				Aliases: []string{"bi"},
+				Usage:   "Retrieve data from sources and load it for local queries",
+				Action:  BuildInformationSchema,
+			},
+			{
 				Name:    "validate",
 				Aliases: []string{"v"},
 				Usage:   "Validate config file",

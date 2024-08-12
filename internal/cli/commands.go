@@ -60,6 +60,23 @@ func BuildContext(c *cli.Context) error {
 	return nil
 }
 
+func BuildInformationSchema(c *cli.Context) error {
+	utils.Debug("Executing cli.buildInformationSchema")
+
+	conf, err := config.GetConfig()
+
+	if err != nil {
+		return fmt.Errorf("error getting config %w", err)
+	}
+
+	err = engine.BuildInformationSchema(conf)
+	if err != nil {
+		return fmt.Errorf("error building context %w", err)
+	}
+
+	return nil
+}
+
 func Validate(c *cli.Context) error {
 	utils.Debug("Executing cli.validate")
 

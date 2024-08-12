@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"log/slog"
@@ -9,10 +8,10 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/utils"
+	"github.com/jmoiron/sqlx"
 )
 
-func ExecuteRaw(statement string, cfg *config.Config, source config.Source) (*sql.Rows, error) {
-
+func ExecuteRaw(statement string, cfg *config.Config, source config.Source) (*sqlx.Rows, error) {
 	url := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s",
 		source.Connection.Username,
@@ -31,7 +30,7 @@ func ExecuteRaw(statement string, cfg *config.Config, source config.Source) (*sq
 	defer dbpool.Close()
 	utils.Debug("Executing query against Postgres: ", statement)
 
-	rows, err := dbpool.Query(statement)
+	rows, err := dbpool.Queryx(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -39,8 +38,21 @@ func ExecuteRaw(statement string, cfg *config.Config, source config.Source) (*sq
 	return rows, nil
 }
 
-func pool(url string) (*sql.DB, error) {
-	dbPool, err := sql.Open("mysql", url)
+func connect(url string) (*sqlx.DB, error) {
+	db, err := sqlx.Open("mysql", url)
+
+	if err != nil {
+		slog.Error(
+			fmt.Sprintf("Unable to connect to database: %v\n", err),
+		)
+		return nil, err
+	}
+
+	return db, nil
+}
+
+func pool(url string) (*sqlx.DB, error) {
+	dbPool, err := sqlx.Open("mysql", url)
 
 	if err != nil {
 		slog.Error(
@@ -57,7 +69,7 @@ func main() {
 	connStr := "root:thisisnotarealpassword@tcp(127.0.0.1:33061)/mysql_db_1"
 
 	// Open the connection
-	db, err := sql.Open("mysql", connStr)
+	db, err := sqlx.Open("mysql", connStr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -93,7 +105,3 @@ func main() {
 		log.Fatal(err)
 	}
 }
-
-// func connect() {
-// 	// Database connection details
-// 	conn
