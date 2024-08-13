@@ -59,10 +59,16 @@ func NewApp() *cli.App {
 				Action:  BuildContext,
 			},
 			{
-				Name:    "build-i",
+				Name:    "build-information-schema",
 				Aliases: []string{"bi"},
-				Usage:   "Retrieve data from sources and load it for local queries",
+				Usage:   "Retrieve all tables and columns from source databases",
 				Action:  BuildInformationSchema,
+			},
+			{
+				Name:    "build-column-metadata",
+				Aliases: []string{"bcm"},
+				Usage:   "Determine majority type of columns",
+				Action:  BuildColumnMetadata,
 			},
 			{
 				Name:    "validate",

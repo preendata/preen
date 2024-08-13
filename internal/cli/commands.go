@@ -74,6 +74,26 @@ func BuildInformationSchema(c *cli.Context) error {
 		return fmt.Errorf("error building context %w", err)
 	}
 
+	// STUB FOR TESTING< REMOVE
+	engine.BuildColumnMetadata(conf)
+
+	return nil
+}
+
+func BuildColumnMetadata(c *cli.Context) error {
+	utils.Debug("Executing cli.buildInformationSchema")
+
+	conf, err := config.GetConfig()
+
+	if err != nil {
+		return fmt.Errorf("error getting config %w", err)
+	}
+
+	err = engine.BuildColumnMetadata(conf)
+	if err != nil {
+		return fmt.Errorf("error building context %w", err)
+	}
+
 	return nil
 }
 

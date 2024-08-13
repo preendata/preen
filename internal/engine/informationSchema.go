@@ -11,6 +11,7 @@ import (
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/duckdb"
 	"github.com/hyphadb/hyphadb/internal/pg"
+	"github.com/hyphadb/hyphadb/internal/utils"
 	goddb "github.com/marcboeker/go-duckdb"
 	"golang.org/x/sync/errgroup"
 )
@@ -39,7 +40,10 @@ func BuildInformationSchema(cfg *config.Config) error {
 	defer infoSchema.appender.Close()
 
 	// Ensure info schema table exists
-	infoSchema.prepareDDBInformationSchema()
+	err = infoSchema.prepareDDBInformationSchema()
+	if err != nil {
+		return err
+	}
 
 	// Group sources by engine to distribute across specific engine handlers
 	hyphaSourcesByEngine := groupSourceByEngine(cfg)
@@ -108,12 +112,11 @@ func (is *InformationSchema) buildPostgresInformationSchema(sources []config.Sou
 				}
 
 				// append rows into duck db appender
-				err = is.appender.AppendRow([]driver.Value{source.Name, values[0], values[1]}...)
+				err = is.appender.AppendRow([]driver.Value{source.Name, table, values[0], values[1]}...)
 				if err != nil {
 					fmt.Println(err)
 					return err
 				}
-
 			}
 		}
 	}
@@ -150,8 +153,9 @@ func (is *InformationSchema) openDDBConnection() error {
 
 // prepareDDBInformationSchema creates the table for the information schema in duckDB
 func (is *InformationSchema) prepareDDBInformationSchema() error {
-	informationSchemaColumnNames := []string{"source_name varchar", "column_name varchar", "data_type varchar"}
+	informationSchemaColumnNames := []string{"source_name varchar", "table_name varchar", "column_name varchar", "data_type varchar"}
 	informationSchemaTableName := "main.hypha_information_schema"
+	utils.Debug(fmt.Sprintf("Creating table %s", informationSchemaTableName))
 	_, err = is.db.Exec(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName, strings.Join(informationSchemaColumnNames, ", ")))
 	if err != nil {
 		return err
