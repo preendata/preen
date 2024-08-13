@@ -62,14 +62,14 @@ func Validate(cfg *config.Config) (*Validator, error) {
 				return err
 			}
 
-			columnTypes, err := getColumnTypes(cfg, source.Tables, sourceIdx, pool)
+			err = getColumnTypes(cfg, source.Tables, sourceIdx, pool, v)
 			if err != nil {
 				return err
 			}
 			return nil
 		})
 		v.Sources[cfgSource.Name] = source
-		v.Colu
+		v.ColumnTypes = columnTypes
 	}
 
 	if err := g.Wait(); err != nil {
@@ -120,7 +120,7 @@ func getTables(pool *pgxpool.Pool) (map[string]Table, error) {
 	return tables, nil
 }
 
-func getColumnTypes(cfg *config.Config, tables map[string]Table, sourceIdx int, pool *pgxpool.Pool) (map[string]map[string]ColumnType, error) {
+func getColumnTypes(cfg *config.Config, tables map[string]Table, sourceIdx int, pool *pgxpool.Pool, v Validator) error {
 
 	query := `
 		select column_name, data_type from information_schema.columns
@@ -141,21 +141,21 @@ func getColumnTypes(cfg *config.Config, tables map[string]Table, sourceIdx int, 
 			fmt.Sprintf(query, table.Schema, table.Name),
 		)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		defer rows.Close()
 
 		columns, err := parseQueryResult(rows, table)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		columnTypes[table.Name], err = collectColumnTypes(cfg, sourceIdx, columns)
+		err = v.collectColumnTypes(cfg, sourceIdx, columns)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return columnTypes, nil
+	return nil
 }
 
 func parseQueryResult(rows pgx.Rows, table Table) (map[string]string, error) {
@@ -172,18 +172,20 @@ func parseQueryResult(rows pgx.Rows, table Table) (map[string]string, error) {
 	return columns, nil
 }
 
-func collectColumnTypes(cfg *config.Config, sourceIdx int, columns map[string]string) (map[string]ColumnType, error) {
-	columnTypes := make(map[string]ColumnType, 0)
-	for colName, colType := range columns {
-		if _, ok := columnTypes[colName]; !ok {
-			columnTypes[colName] = ColumnType{
-				Types:        make([]string, len(cfg.Sources)),
+func (v *Validator) collectColumnTypes(source Source, tableName string, sourceIdx int) {
+	for colName, colType := range source.Tables[tableName].Columns {
+		if v.ColumnTypes[tableName] == nil {
+			v.ColumnTypes[tableName] = make(map[string]ColumnType)
+		}
+
+		if _, ok := v.ColumnTypes[tableName][colName]; !ok {
+			v.ColumnTypes[tableName][colName] = ColumnType{
+				Types:        make([]string, len(v.cfg.Sources)),
 				MajorityType: "unknown",
 			}
 		}
-		columnTypes[colName].Types[sourceIdx] = colType
+		v.ColumnTypes[tableName][colName].Types[sourceIdx] = colType
 	}
-	return columnTypes, nil
 }
 
 func (v *Validator) majority(tableName string, columnName string, types []string) {
