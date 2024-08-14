@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/hyphadb/hyphadb/internal/duckdb"
-	"github.com/hyphadb/hyphadb/internal/pg"
 	"github.com/xwb1989/sqlparser"
 )
 
@@ -18,17 +17,17 @@ type Column struct {
 }
 
 type columnParser struct {
-	columns   map[string]map[string]Column
-	ddlString string
-	table     string
-	selectIdx int
-	validator *pg.Validator
+	columns        map[string]map[string]Column
+	ddlString      string
+	table          string
+	selectIdx      int
+	columnMetadata ColumnMetadata
 }
 
-func ParseContextColumns(contextQueries map[string]ContextQuery, v *pg.Validator) (map[string]ContextQuery, error) {
+func ParseContextColumns(contextQueries map[string]ContextQuery, columnMetadata ColumnMetadata) (map[string]ContextQuery, error) {
 	cp := columnParser{
-		columns:   make(map[string]map[string]Column),
-		validator: v,
+		columns:        make(map[string]map[string]Column),
+		columnMetadata: columnMetadata,
 	}
 	for contextName, contextQuery := range contextQueries {
 		cp.ddlString = "hypha_source_name varchar"
@@ -86,10 +85,10 @@ func processContextColumn(expr *sqlparser.AliasedExpr, cp *columnParser) (*colum
 	colName := expr.Expr.(*sqlparser.ColName).Name.String()
 	colHashKey := fmt.Sprintf("%s.%s", cp.table, colName)
 	cp.columns[cp.table][colHashKey] = col
-	if _, ok := cp.validator.ColumnTypes[cp.table][colName]; !ok {
+	if _, ok := cp.columnMetadata[TableName(cp.table)][ColumnName(colName)]; !ok {
 		return nil, fmt.Errorf("column not found in table: %s.%s. check that your context query is valid", cp.table, colName)
 	}
-	colType := duckdb.PgTypeMap[cp.validator.ColumnTypes[cp.table][colName].MajorityType]
+	colType := duckdb.PgTypeMap[string(cp.columnMetadata[TableName(cp.table)][ColumnName(colName)].MajorityType)]
 	cp.ddlString = fmt.Sprintf("%s, %s %s", cp.ddlString, col.Alias, colType)
 
 	return cp, nil

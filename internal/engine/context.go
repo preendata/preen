@@ -7,7 +7,6 @@ import (
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/duckdb"
-	"github.com/hyphadb/hyphadb/internal/pg"
 	"github.com/hyphadb/hyphadb/internal/utils"
 	"github.com/xwb1989/sqlparser"
 )
@@ -24,9 +23,15 @@ type Context struct {
 }
 
 func BuildContext(cfg *config.Config) error {
-	validator, err := pg.Validate(cfg)
+	err := BuildInformationSchema(cfg)
+
 	if err != nil {
-		return fmt.Errorf("error validating data sources: %w", err)
+		return fmt.Errorf("error building information schema: %w", err)
+	}
+
+	columnMetadata, err := BuildColumnMetadata(cfg)
+	if err != nil {
+		return fmt.Errorf("error building column metadata: %w", err)
 	}
 
 	context := Context{}
@@ -37,7 +42,7 @@ func BuildContext(cfg *config.Config) error {
 		return fmt.Errorf("error reading context files: %w", err)
 	}
 
-	context.ContextQueries, err = ParseContextColumns(context.ContextQueries, validator)
+	context.ContextQueries, err = ParseContextColumns(context.ContextQueries, columnMetadata)
 	if err != nil {
 		return fmt.Errorf("error parsing columns: %w", err)
 	}

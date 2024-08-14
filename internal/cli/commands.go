@@ -8,7 +8,6 @@ import (
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/engine"
-	"github.com/hyphadb/hyphadb/internal/pg"
 	"github.com/urfave/cli/v2"
 )
 
@@ -74,6 +73,9 @@ func BuildInformationSchema(c *cli.Context) error {
 		return fmt.Errorf("error building context %w", err)
 	}
 
+	// STUB FOR TESTING< REMOVE
+	engine.BuildColumnMetadata(conf)
+
 	return nil
 }
 
@@ -86,11 +88,17 @@ func Validate(c *cli.Context) error {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	_, err = pg.Validate(conf)
+	err = engine.BuildInformationSchema(conf)
 
 	if err != nil {
-		utils.Debug("error validating config", err)
-		return fmt.Errorf("error validating config %w", err)
+		utils.Debug("error building information schema", err)
+		return fmt.Errorf("error building information schema %w", err)
+	}
+
+	_, err = engine.BuildColumnMetadata((conf))
+	if err != nil {
+		utils.Debug("error building column metadata", err)
+		return fmt.Errorf("error building column metadata %w", err)
 	}
 
 	return nil
