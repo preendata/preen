@@ -73,9 +73,6 @@ func BuildInformationSchema(c *cli.Context) error {
 		return fmt.Errorf("error building context %w", err)
 	}
 
-	// STUB FOR TESTING< REMOVE
-	engine.BuildColumnMetadata(conf)
-
 	return nil
 }
 
