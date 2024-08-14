@@ -65,12 +65,6 @@ func NewApp() *cli.App {
 				Action:  BuildInformationSchema,
 			},
 			{
-				Name:    "build-column-metadata",
-				Aliases: []string{"bcm"},
-				Usage:   "Determine majority type of columns",
-				Action:  BuildColumnMetadata,
-			},
-			{
 				Name:    "validate",
 				Aliases: []string{"v"},
 				Usage:   "Validate config file",
