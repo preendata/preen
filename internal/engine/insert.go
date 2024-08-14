@@ -8,7 +8,7 @@ import (
 	"github.com/hyphadb/hyphadb/internal/utils"
 )
 
-func Insert(contextName string, ic chan []driver.Value, dc chan []int64) error {
+func Insert(contextName string, ic <-chan []driver.Value, dc chan<- []int64) error {
 	connector, err := duckdb.CreateConnector()
 	if err != nil {
 		panic(err)
@@ -19,7 +19,7 @@ func Insert(contextName string, ic chan []driver.Value, dc chan []int64) error {
 	}
 	rowCounter := 0
 	for c := range ic {
-		if c[0] == "EOF" {
+		if c[0] == "quit" {
 			break
 		}
 		if err := appender.AppendRow(c...); err != nil {
