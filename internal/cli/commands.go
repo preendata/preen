@@ -89,7 +89,8 @@ func BuildColumnMetadata(c *cli.Context) error {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	err = engine.BuildColumnMetadata(conf)
+	_, err = engine.BuildColumnMetadata(conf)
+
 	if err != nil {
 		return fmt.Errorf("error building context %w", err)
 	}
