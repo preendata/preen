@@ -3,7 +3,6 @@ package pg
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/utils"
@@ -31,7 +30,13 @@ type Validator struct {
 	Sources     map[string]Source                `json:"sources"`
 	ColumnTypes map[string]map[string]ColumnType `json:"column_types"`
 	cfg         config.Config                    `json:"-"`
-	mu          sync.Mutex
+}
+
+type ColumnTypeMessage struct {
+	Table     string
+	Column    string
+	SourceIdx int
+	Type      string
 }
 
 func Validate(cfg *config.Config) (*Validator, error) {
@@ -39,50 +44,52 @@ func Validate(cfg *config.Config) (*Validator, error) {
 	v.cfg = *cfg
 	v.Sources = make(map[string]Source)
 	v.ColumnTypes = make(map[string]map[string]ColumnType)
+	typeChan := make(chan ColumnTypeMessage)
+	quitChan := make(chan string)
 
 	g := new(errgroup.Group)
 
-	for sourceIdx, source := range v.cfg.Sources {
-		source := source
-		sourceIdx := sourceIdx
-		pool, err := PoolFromSource(source)
+	go processTableColumnType(typeChan, quitChan, v)
+
+	for sourceIdx, cfgSource := range v.cfg.Sources {
+		pool, err := PoolFromSource(cfgSource)
 		if err != nil {
 			return nil, err
 		}
 
 		defer pool.Close()
 
-		utils.Debug(fmt.Sprintf("Validating data for source: %s", source.Name))
+		utils.Debug(fmt.Sprintf("Validating data for source: %s", cfgSource.Name))
+
+		source := Source{
+			Tables: make(map[string]Table),
+		}
 
 		g.Go(func() error {
-
-			v.mu.Lock()
-			v.Sources[source.Name] = Source{
-				Tables: make(map[string]Table),
-			}
-			v.mu.Unlock()
-
-			err := v.getTables(v.Sources[source.Name], pool)
+			source.Tables, err = getTables(pool)
 			if err != nil {
 				return err
 			}
 
-			err = v.getDataTypes(v.Sources[source.Name], sourceIdx, pool)
+			err := getColumnTypes(cfg, source.Tables, sourceIdx, pool, typeChan)
 			if err != nil {
 				return err
 			}
 			return nil
 		})
+		v.Sources[cfgSource.Name] = source
 	}
 
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
+	quitChan <- "quit"
 	for table, columns := range v.ColumnTypes {
 		for column, types := range columns {
 			v.majority(table, column, types.Types)
 		}
 	}
+	// utils.Debug(utils.PrintPrettyStruct(v.ColumnTypes))
 
 	utils.Info("Source table and data type validation completed successfully!")
 
@@ -90,8 +97,8 @@ func Validate(cfg *config.Config) (*Validator, error) {
 
 }
 
-func (v *Validator) getTables(source Source, pool *pgxpool.Pool) error {
-
+func getTables(pool *pgxpool.Pool) (map[string]Table, error) {
+	tables := make(map[string]Table)
 	query := `
 		select table_schema, table_name from information_schema.tables
 		where table_schema not in ('information_schema', 'pg_catalog');
@@ -99,7 +106,7 @@ func (v *Validator) getTables(source Source, pool *pgxpool.Pool) error {
 
 	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer rows.Close()
@@ -107,9 +114,9 @@ func (v *Validator) getTables(source Source, pool *pgxpool.Pool) error {
 	for rows.Next() {
 		row := make([]string, 2)
 		if err := rows.Scan(&row[0], &row[1]); err != nil {
-			return err
+			return nil, err
 		}
-		source.Tables[row[1]] = Table{
+		tables[row[1]] = Table{
 			Schema:  row[0],
 			Name:    row[1],
 			Columns: make(map[string]string),
@@ -117,26 +124,21 @@ func (v *Validator) getTables(source Source, pool *pgxpool.Pool) error {
 	}
 
 	if err := rows.Err(); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return tables, nil
 }
 
-func (v *Validator) getDataTypes(source Source, sourceIdx int, pool *pgxpool.Pool) error {
+func getColumnTypes(cfg *config.Config, tables map[string]Table, sourceIdx int, pool *pgxpool.Pool, c chan<- ColumnTypeMessage) error {
 
 	query := `
 		select column_name, data_type from information_schema.columns
 		where table_schema = '%s' and table_name = '%s';
 	`
 
-	for _, table := range source.Tables {
+	for _, table := range tables {
 		utils.Debug(fmt.Sprintf("Validating data types for source index: %d table: %s", sourceIdx, table.Name))
-
-		source.Tables[table.Name] = Table{
-			Schema:  table.Schema,
-			Columns: make(map[string]string),
-		}
 		rows, err := pool.Query(
 			context.Background(),
 			fmt.Sprintf(query, table.Schema, table.Name),
@@ -146,37 +148,60 @@ func (v *Validator) getDataTypes(source Source, sourceIdx int, pool *pgxpool.Poo
 		}
 		defer rows.Close()
 
-		if err := v.parseQueryResult(rows, source.Tables[table.Name]); err != nil {
+		columns, err := parseQueryResult(rows)
+		if err != nil {
 			return err
 		}
-		v.collectDataTypes(source, table.Name, sourceIdx)
+		collectColumnTypes(cfg, sourceIdx, columns, table.Name, c)
 	}
 
 	return nil
 }
 
-func (v *Validator) parseQueryResult(rows pgx.Rows, table Table) error {
+func parseQueryResult(rows pgx.Rows) (map[string]string, error) {
+	columns := make(map[string]string)
 	for rows.Next() {
 		row := make([]string, 2)
 		rows.Scan(&row[0], &row[1])
-		table.Columns[row[0]] = row[1]
+		columns[row[0]] = row[1]
 	}
-	return nil
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return columns, nil
 }
 
-func (v *Validator) collectDataTypes(source Source, tableName string, sourceIdx int) {
-	for colName, colType := range source.Tables[tableName].Columns {
-		if v.ColumnTypes[tableName] == nil {
-			v.ColumnTypes[tableName] = make(map[string]ColumnType)
+func collectColumnTypes(cfg *config.Config, sourceIdx int, columns map[string]string, tableName string, c chan<- ColumnTypeMessage) {
+	for colName, colType := range columns {
+		c <- ColumnTypeMessage{
+			Table:     tableName,
+			Column:    colName,
+			SourceIdx: sourceIdx,
+			Type:      colType,
 		}
+	}
+}
 
-		if _, ok := v.ColumnTypes[tableName][colName]; !ok {
-			v.ColumnTypes[tableName][colName] = ColumnType{
-				Types:        make([]string, len(v.cfg.Sources)),
-				MajorityType: "unknown",
+func processTableColumnType(typeChan <-chan ColumnTypeMessage, quitChan <-chan string, v Validator) {
+	for {
+		select {
+		case <-quitChan:
+			utils.Debug("Quitting table column type processing")
+			return
+		case message := <-typeChan:
+			fmt.Println(message)
+			if _, ok := v.ColumnTypes[message.Table]; !ok {
+				v.ColumnTypes[message.Table] = make(map[string]ColumnType)
 			}
+			if _, ok := v.ColumnTypes[message.Table][message.Column]; !ok {
+				v.ColumnTypes[message.Table][message.Column] = ColumnType{
+					Types:        make([]string, len(v.cfg.Sources)),
+					MajorityType: "unknown",
+				}
+			}
+			v.ColumnTypes[message.Table][message.Column].Types[message.SourceIdx] = message.Type
 		}
-		v.ColumnTypes[tableName][colName].Types[sourceIdx] = colType
 	}
 }
 
