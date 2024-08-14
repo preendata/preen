@@ -18,6 +18,12 @@ type ColumnType struct {
 
 type ColumnMetadata map[TableName]map[ColumnName]ColumnType
 
+// BuildColumnMetadata does 2 things:
+// 1) Acts as the interface between information schema data stored in DuckDB and the parts of the application that will
+// need to consume that data, in particular the context builder
+// 2) Performs type validation against each column pulled from the source databases, via the Boyer-Moore majority voting
+// algorithm. This majority type is then packaged into the ColumnMetadata and return to the caller. This is important
+// for typing the context tables created in DuckDB
 func BuildColumnMetadata(cfg *config.Config) (ColumnMetadata, error) {
 	// query data from hypha_information_schema
 	results, err := Execute("SELECT column_name, data_type, table_name FROM hypha_information_schema", cfg)
@@ -25,11 +31,15 @@ func BuildColumnMetadata(cfg *config.Config) (ColumnMetadata, error) {
 		return nil, err
 	}
 
-	columnMetadata := parseColumnMetadata(results.Rows)
+	columnMetadata := buildColumnMetadataDataStructure(results.Rows)
 
+	// For each column in each table as sourced from InformationSchema, determine the majority type
 	for tableName, tableStruct := range columnMetadata {
 		for columnName, columnStruct := range tableStruct {
-			majorityType := majority(columnName, columnStruct.Types)
+			majorityType, err := majority(columnName, columnStruct.Types)
+			if err != nil {
+				return nil, err
+			}
 			columnMetadata[tableName][columnName] = ColumnType{
 				Types:        columnStruct.Types,
 				MajorityType: majorityType,
@@ -42,7 +52,7 @@ func BuildColumnMetadata(cfg *config.Config) (ColumnMetadata, error) {
 }
 
 // Rearranges the result set from the information schema to make it easier to process for the majority type calculator
-func parseColumnMetadata(rows []map[string]any) ColumnMetadata {
+func buildColumnMetadataDataStructure(rows []map[string]any) ColumnMetadata {
 	columnMetadata := make(ColumnMetadata)
 
 	for _, row := range rows {
@@ -77,7 +87,7 @@ func parseColumnMetadata(rows []map[string]any) ColumnMetadata {
 	return columnMetadata
 }
 
-func majority(columnName ColumnName, types []string) MajorityType {
+func majority(columnName ColumnName, types []string) (MajorityType, error) {
 	// Implement Boyer-Moore majority vote algorithm
 	var majority MajorityType
 	votes := 0
@@ -110,19 +120,18 @@ func majority(columnName ColumnName, types []string) MajorityType {
 		utils.Debug(
 			fmt.Sprintf("Data type for column '%s' is: %s", columnName, majority),
 		)
-		return majority
+		return majority, nil
 
 	} else if count > len(types)/2 && count != len(types) {
 		utils.Warn(
 			fmt.Sprintf("Discrepancy in data types for column '%s'! Using majority data type of %s", columnName, majority),
 		)
-		return majority
-	} else {
-		utils.Warn(
-			fmt.Sprintf("No majority data type found for column '%s'!", columnName),
-		)
+		return majority, nil
 	}
 
+	utils.Warn(
+		fmt.Sprintf("No majority data type found for column '%s'!", columnName),
+	)
 	// This needs to be made unreachable
-	return majority
+	return "unknown", fmt.Errorf("No majority data type found for column '%s'", columnName)
 }
