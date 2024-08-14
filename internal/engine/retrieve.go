@@ -67,7 +67,7 @@ func Retrieve(cfg *config.Config, c Context) error {
 			}
 		}
 		err = g.Wait()
-		ic <- []driver.Value{"EOF"}
+		ic <- []driver.Value{"quit"}
 		confirmInsert(contextName, dc, totalRows)
 
 		if err != nil {
