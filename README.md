@@ -1,25 +1,16 @@
 # HyphaDB
 
-This is the backend for the HyphaDB project. There are several components to this project:
-
-- [REST API](./cmd/api/)
-- [CLI](./cmd/cli/)
+Entrypoint: `main.go`
 
 ## Quick Start
 
 `cp .env.example .env`
 
-Temporary: name the config file config.yaml and place it in ./.config/
-
-Running the API:
-
-```bash
-go run cmd/api/main.go
-```
+Temporary: name the config file config.yaml and place it in ./.hyphadb/
 
 CLI entrypoint: 
 
-`go run cmd/cli/main.go -h`
+`go run main.go -h`
 
 
 ## Testing
