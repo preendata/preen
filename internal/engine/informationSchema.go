@@ -6,7 +6,6 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/duckdb"
@@ -20,7 +19,6 @@ type InformationSchema struct {
 	db        *sql.DB
 	connector driver.Connector
 	appender  *goddb.Appender
-	mu        sync.Mutex
 }
 
 func BuildInformationSchema(cfg *config.Config) error {
@@ -32,18 +30,17 @@ func BuildInformationSchema(cfg *config.Config) error {
 
 	defer infoSchema.db.Close()
 
-	appender, err := duckdb.NewAppender(infoSchema.connector, "main", "hypha_information_schema")
-	if err != nil {
-		panic(err)
-	}
-	infoSchema.appender = appender
-	defer infoSchema.appender.Close()
-
 	// Ensure info schema table exists
-	err = infoSchema.prepareDDBInformationSchema()
+	if err = infoSchema.prepareDDBInformationSchema(); err != nil {
+		return err
+	}
+
+	appender, err := duckdb.NewAppender(infoSchema.connector, "main", "hypha_information_schema")
 	if err != nil {
 		return err
 	}
+	infoSchema.appender = appender
+	defer infoSchema.appender.Close()
 
 	// Group sources by engine to distribute across specific engine handlers
 	hyphaSourcesByEngine := groupSourceByEngine(cfg)
