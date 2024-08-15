@@ -51,8 +51,11 @@ func BuildContext(c *cli.Context) error {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	err = engine.BuildContext(conf)
-	if err != nil {
+	if err = engine.BuildInformationSchema(conf); err != nil {
+		return fmt.Errorf("error building context %w", err)
+	}
+
+	if err = engine.BuildContext(conf); err != nil {
 		return fmt.Errorf("error building context %w", err)
 	}
 
@@ -68,8 +71,7 @@ func BuildInformationSchema(c *cli.Context) error {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	err = engine.BuildInformationSchema(conf)
-	if err != nil {
+	if err = engine.BuildInformationSchema(conf); err != nil {
 		return fmt.Errorf("error building context %w", err)
 	}
 
@@ -80,20 +82,16 @@ func Validate(c *cli.Context) error {
 	utils.Debug("Executing cli.validate")
 
 	conf, err := config.GetConfig()
-
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	err = engine.BuildInformationSchema(conf)
-
-	if err != nil {
+	if err = engine.BuildInformationSchema(conf); err != nil {
 		utils.Debug("error building information schema", err)
 		return fmt.Errorf("error building information schema %w", err)
 	}
 
-	_, err = engine.BuildColumnMetadata((conf))
-	if err != nil {
+	if _, err = engine.BuildColumnMetadata((conf)); err != nil {
 		utils.Debug("error building column metadata", err)
 		return fmt.Errorf("error building column metadata %w", err)
 	}
@@ -104,7 +102,6 @@ func Validate(c *cli.Context) error {
 func ListConnections(c *cli.Context) error {
 	utils.Debug("Executing cli.listConnections")
 	conf, err := config.GetConfig()
-
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
