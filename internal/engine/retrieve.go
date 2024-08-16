@@ -49,7 +49,8 @@ func Retrieve(cfg *config.Config, c Context) error {
 				utils.Debug(fmt.Sprintf("Skipping %s for %s", contextName, source.Name))
 				continue
 			}
-			if source.Engine == "postgres" {
+			switch source.Engine {
+			case "postgres":
 				pool, err := pg.PoolFromSource(source)
 				if err != nil {
 					return err
@@ -73,7 +74,7 @@ func Retrieve(cfg *config.Config, c Context) error {
 					})
 					return nil
 				}(r, ic)
-			} else if source.Engine == "mongodb" {
+			case "mongodb":
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer cancel()
 				mongoClient, err := internalMongo.ConnFromSource(source, ctx)
@@ -98,7 +99,7 @@ func Retrieve(cfg *config.Config, c Context) error {
 					})
 					return nil
 				}(r, ic)
-			} else {
+			default:
 				utils.Error(fmt.Sprintf("Engine %s not supported", source.Engine))
 			}
 		}
