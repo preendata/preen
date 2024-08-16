@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/hyphadb/hyphadb/internal/config"
@@ -16,6 +17,7 @@ type ContextQuery struct {
 	Parsed    sqlparser.Statement
 	DDLString string
 	Columns   map[string]map[string]Column
+	IsSql     bool
 }
 
 type Context struct {
@@ -67,6 +69,11 @@ func readContextFiles(cfg *config.Config) (map[string]ContextQuery, error) {
 
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), ".context.sql") {
+			contextName := strings.TrimSuffix(file.Name(), ".context.sql")
+			if !slices.Contains(cfg.Contexts, contextName) {
+				utils.Debug(fmt.Sprintf("Skipping file %s", contextName))
+				continue
+			}
 			utils.Debug("Loading ", file.Name())
 			bytes, err := os.ReadFile(cfg.Env.HyphaConfigPath + "/" + file.Name())
 			if err != nil {
@@ -74,6 +81,7 @@ func readContextFiles(cfg *config.Config) (map[string]ContextQuery, error) {
 			}
 			cq := ContextQuery{
 				Query: string(bytes),
+				IsSql: true,
 			}
 			utils.Debug(fmt.Sprintf("Parsing query: %s", cq.Query))
 			parsedQuery, err := sqlparser.Parse(cq.Query)
@@ -82,6 +90,22 @@ func readContextFiles(cfg *config.Config) (map[string]ContextQuery, error) {
 			}
 			cq.Parsed = parsedQuery
 			contextQueries[strings.TrimSuffix(file.Name(), ".context.sql")] = cq
+		} else if strings.HasSuffix(file.Name(), ".context.json") {
+			contextName := strings.TrimSuffix(file.Name(), ".context.json")
+			if !slices.Contains(cfg.Contexts, contextName) {
+				utils.Debug(fmt.Sprintf("Skipping file %s", contextName))
+				continue
+			}
+			utils.Debug("Loading ", file.Name())
+			bytes, err := os.ReadFile(cfg.Env.HyphaConfigPath + "/" + file.Name())
+			if err != nil {
+				return nil, err
+			}
+			cq := ContextQuery{
+				Query: string(bytes),
+				IsSql: false,
+			}
+			contextQueries[strings.TrimSuffix(file.Name(), ".context.json")] = cq
 		}
 	}
 
@@ -105,6 +129,7 @@ func buildTables(contextQueries map[string]ContextQuery) error {
 		return err
 	}
 	for contextName, contextQuery := range contextQueries {
+		utils.Debug(fmt.Sprintf("Creating table %s", contextName))
 		dropTable := fmt.Sprintf("drop table if exists main.%s;", contextName)
 		_, err := db.Exec(dropTable)
 		if err != nil {

@@ -23,3 +23,21 @@ create table transactions (
 	discount_code varchar(50)
 );
 copy transactions from '/home/data/mock-transaction-data.csv' ( format csv, delimiter(',') );
+
+create table feature_flags (
+	feature_flag_id int primary key,
+	feature_name varchar(50),
+	is_enabled varchar(50),
+	start_date date,
+	end_date date,
+	target_audience varchar(13),
+	percentage_rollout decimal(5,2),
+	created_by varchar(50),
+	created_at date,
+	last_updated_by varchar(50),
+	last_updated_at date,
+	priority int,
+	tags varchar(11),
+	related_features varchar(8)
+);
+copy transactions from '/home/data/mock-feature-flags-data.csv' ( format csv, delimiter(',') );
