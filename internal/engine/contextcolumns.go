@@ -30,37 +30,58 @@ func ParseContextColumns(contextQueries map[string]ContextQuery, columnMetadata 
 		columnMetadata: columnMetadata,
 	}
 	for contextName, contextQuery := range contextQueries {
-		cp.ddlString = "hypha_source_name varchar"
-		selectStmt := contextQuery.Parsed.(*sqlparser.Select)
-		tableMap := GetContextTableAliases(selectStmt)
-		for selectIdx := range selectStmt.SelectExprs {
-			cp.selectIdx = selectIdx
-			switch expr := selectStmt.SelectExprs[selectIdx].(type) {
-			case *sqlparser.AliasedExpr:
-				switch expr.Expr.(type) {
-				case *sqlparser.ColName:
-					tableAlias := expr.Expr.(*sqlparser.ColName).Qualifier.Name.String()
-					cp.table = tableMap[tableAlias]
-					cpUpdated, err := processContextColumn(expr, &cp)
-					if err != nil {
-						return nil, err
+		if !contextQuery.IsSql {
+			cp.table = contextName
+			cp.ddlString = "hypha_source_name varchar, document json"
+			cp.columns[contextName] = make(map[string]Column)
+			sourceColumn := Column{
+				Table:    &contextName,
+				IsJoin:   false,
+				Position: 0,
+				Alias:    "hypha_source_name",
+			}
+			sourceColumnHashKey := fmt.Sprintf("%s.hypha_source_name", contextName)
+			cp.columns[contextName][sourceColumnHashKey] = sourceColumn
+			documentColumn := Column{
+				Table:    &contextName,
+				IsJoin:   false,
+				Position: 1,
+				Alias:    "document",
+			}
+			documentColumnHashKey := fmt.Sprintf("%s.document", contextName)
+			cp.columns[contextName][documentColumnHashKey] = documentColumn
+		} else {
+			cp.ddlString = "hypha_source_name varchar"
+			selectStmt := contextQuery.Parsed.(*sqlparser.Select)
+			tableMap := GetContextTableAliases(selectStmt)
+			for selectIdx := range selectStmt.SelectExprs {
+				cp.selectIdx = selectIdx
+				switch expr := selectStmt.SelectExprs[selectIdx].(type) {
+				case *sqlparser.AliasedExpr:
+					switch expr.Expr.(type) {
+					case *sqlparser.ColName:
+						tableAlias := expr.Expr.(*sqlparser.ColName).Qualifier.Name.String()
+						cp.table = tableMap[tableAlias]
+						cpUpdated, err := processContextColumn(expr, &cp)
+						if err != nil {
+							return nil, err
+						}
+						cp = *cpUpdated
+					case *sqlparser.FuncExpr:
+						cpUpdated, err := processFunction(expr, &cp)
+						if err != nil {
+							return nil, err
+						}
+						cp = *cpUpdated
 					}
-					cp = *cpUpdated
-				case *sqlparser.FuncExpr:
-					cpUpdated, err := processFunction(expr, &cp)
-					if err != nil {
-						return nil, err
-					}
-					cp = *cpUpdated
+				case *sqlparser.StarExpr:
+					return nil, errors.New("star expressions are not supported. please specify columns explicitly")
 				}
-			case *sqlparser.StarExpr:
-				return nil, errors.New("star expressions are not supported. please specify columns explicitly")
 			}
 		}
 		contextQuery.Columns = cp.columns
 		contextQuery.DDLString = cp.ddlString
 		contextQueries[contextName] = contextQuery
-
 	}
 
 	return contextQueries, nil

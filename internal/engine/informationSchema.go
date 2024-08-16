@@ -59,6 +59,8 @@ func BuildInformationSchema(cfg *config.Config) error {
 				}
 			case "mysql":
 				// buildMySQLInformationSchema(sources)
+			case "mongodb":
+				utils.Debug("No information schema required for MongoDB")
 			default:
 				return fmt.Errorf("unsupported engine: %s", engine)
 			}

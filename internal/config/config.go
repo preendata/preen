@@ -13,18 +13,19 @@ type Context struct {
 }
 
 type Connection struct {
-	Host     string
-	Port     int
-	Database string
-	Username string
-	Password string
+	Host       string `yaml:"host"`
+	Port       int    `yaml:"port"`
+	Database   string `yaml:"database"`
+	Username   string `yaml:"username"`
+	Password   string `yaml:"password"`
+	AuthSource string `yaml:"auth_source"`
 }
 
 type Source struct {
-	Name       string
-	Engine     string
-	Connection Connection
-	Contexts   []string
+	Name       string     `yaml:"name"`
+	Engine     string     `yaml:"engine"`
+	Connection Connection `yaml:"connection"`
+	Contexts   []string   `yaml:"contexts"`
 }
 
 type Config struct {
