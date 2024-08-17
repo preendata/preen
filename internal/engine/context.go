@@ -53,6 +53,7 @@ func BuildContext(cfg *config.Config) error {
 		return fmt.Errorf("error building context tables: %w", err)
 	}
 
+	utils.Info(fmt.Sprintf("Fetching data from %d configured sources", len(cfg.Sources)))
 	if err = Retrieve(cfg, context); err != nil {
 		return fmt.Errorf("error retrieving data: %w", err)
 	}

@@ -11,14 +11,12 @@ import (
 	"github.com/hyphadb/hyphadb/internal/duckdb"
 	"github.com/hyphadb/hyphadb/internal/pg"
 	"github.com/hyphadb/hyphadb/internal/utils"
-	goddb "github.com/marcboeker/go-duckdb"
 	"golang.org/x/sync/errgroup"
 )
 
 type InformationSchema struct {
 	db        *sql.DB
 	connector driver.Connector
-	appender  *goddb.Appender
 }
 
 func BuildInformationSchema(cfg *config.Config) error {
@@ -28,33 +26,31 @@ func BuildInformationSchema(cfg *config.Config) error {
 		return err
 	}
 
-	defer infoSchema.db.Close()
-
 	// Ensure info schema table exists
 	if err = infoSchema.prepareDDBInformationSchema(); err != nil {
 		return err
 	}
 
-	appender, err := duckdb.NewAppender(infoSchema.connector, "main", "hypha_information_schema")
-	if err != nil {
-		return err
-	}
-	infoSchema.appender = appender
-	defer infoSchema.appender.Close()
+	infoSchema.db.Close()
+
+	// Reuse the insert function to insert data to the information schema
+	ic := make(chan []driver.Value, 10)
+	dc := make(chan []int64)
+
+	go Insert("hypha_information_schema", ic, dc)
 
 	// Group sources by engine to distribute across specific engine handlers
 	hyphaSourcesByEngine := groupSourceByEngine(cfg)
 
-	g := new(errgroup.Group)
+	sourceErrGroup := new(errgroup.Group)
 
 	for engine, sources := range hyphaSourcesByEngine {
 		engine := engine
 		sources := sources
-		g.Go(func() error {
+		sourceErrGroup.Go(func() error {
 			switch engine {
 			case "postgres":
-				err := infoSchema.buildPostgresInformationSchema(sources)
-				if err != nil {
+				if err = infoSchema.buildPostgresInformationSchema(sources, ic); err != nil {
 					return err
 				}
 			case "mysql":
@@ -69,55 +65,62 @@ func BuildInformationSchema(cfg *config.Config) error {
 		})
 	}
 
-	if err := g.Wait(); err != nil {
+	if err := sourceErrGroup.Wait(); err != nil {
 		return err
 	}
+	ic <- []driver.Value{"quit"}
+	ConfirmInsert("hypha_information_schema", dc, 0)
 
 	return nil
 }
 
 // buildPostgresInformationSchema builds the information schema for all postgres sources in the config
-func (is *InformationSchema) buildPostgresInformationSchema(sources []config.Source) error {
+func (is *InformationSchema) buildPostgresInformationSchema(sources []config.Source, ic chan<- []driver.Value) error {
+	schemaErrGroup := new(errgroup.Group)
+
 	for _, source := range sources {
-		// Open new pool for every source
-		pool, err := pg.PoolFromSource(source)
-		if err != nil {
-			return err
-		}
-
-		defer pool.Close()
-
-		// Run through all contexts in the source, inserting its information schema into the local hyphaContext in raw form
-		for _, context := range source.Contexts {
-			table := context
-			schema := "public"
-
-			query := fmt.Sprintf(`
-				select column_name, data_type from information_schema.columns
-				where table_schema = '%s' and table_name = '%s';
-			`, schema, table)
-
-			rows, err := pool.Query(goContext.Background(), query)
-			if err != nil {
-				return err
-			}
-
-			defer rows.Close()
-
-			for rows.Next() {
-				values, err := rows.Values()
+		func(source config.Source) error {
+			schemaErrGroup.Go(func() error {
+				// Open new pool for every source
+				pool, err := pg.PoolFromSource(source)
 				if err != nil {
 					return err
 				}
 
-				// append rows into duck db appender
-				err = is.appender.AppendRow([]driver.Value{source.Name, table, values[0], values[1]}...)
-				if err != nil {
-					fmt.Println(err)
-					return err
+				defer pool.Close()
+
+				// Run through all contexts in the source, inserting its information schema into the local hyphaContext in raw form
+				for _, context := range source.Contexts {
+					table := context
+					schema := "public"
+
+					query := fmt.Sprintf(`
+						select column_name, data_type from information_schema.columns
+						where table_schema = '%s' and table_name = '%s';
+					`, schema, table)
+
+					rows, err := pool.Query(goContext.Background(), query)
+					if err != nil {
+						return err
+					}
+
+					defer rows.Close()
+
+					for rows.Next() {
+						values, err := rows.Values()
+						if err != nil {
+							return err
+						}
+						ic <- []driver.Value{source.Name, table, values[0], values[1]}
+					}
 				}
-			}
-		}
+				return nil
+			})
+			return nil
+		}(source)
+	}
+	if err := schemaErrGroup.Wait(); err != nil {
+		return err
 	}
 
 	return nil

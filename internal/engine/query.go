@@ -15,7 +15,7 @@ type QueryResults struct {
 var err error
 
 func Execute(statement string, cfg *config.Config) (*QueryResults, error) {
-	utils.Info("Executing query...")
+	utils.Debug("Executing query: " + statement)
 	qr := QueryResults{
 		ResultsChan: make(chan map[string]any),
 	}
