@@ -133,5 +133,5 @@ func majority(columnName ColumnName, types []string) (MajorityType, error) {
 		fmt.Sprintf("No majority data type found for column '%s'!", columnName),
 	)
 	// This needs to be made unreachable
-	return "unknown", fmt.Errorf("No majority data type found for column '%s'", columnName)
+	return "unknown", fmt.Errorf("no majority data type found for column '%s'", columnName)
 }
