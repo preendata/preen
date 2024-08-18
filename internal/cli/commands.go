@@ -34,7 +34,7 @@ func Query(c *cli.Context) error {
 			return fmt.Errorf("error pretty printing JSON: %w", err)
 		}
 	} else {
-		if err := utils.WriteToTable(qr.Rows, qr.Columns); err != nil {
+		if err := utils.WriteToTable(qr.Rows, qr.Columns, "table"); err != nil {
 			return fmt.Errorf("error writing to table: %w", err)
 		}
 	}
@@ -101,8 +101,8 @@ func Validate(c *cli.Context) error {
 	return nil
 }
 
-func ListConnections(c *cli.Context) error {
-	utils.Debug("Executing cli.listConnections")
+func ListSources(c *cli.Context) error {
+	utils.Debug("Executing cli.listSources")
 	conf, err := config.GetConfig()
 
 	if err != nil {

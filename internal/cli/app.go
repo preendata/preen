@@ -10,7 +10,7 @@ import (
 
 func NewApp() *cli.App {
 	app := &cli.App{
-		Name:  "HyphaDB CLI",
+		Name:  "HyphaDB",
 		Usage: "A command-line application for HyphaDB",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -30,6 +30,21 @@ func NewApp() *cli.App {
 				Aliases: []string{"r"},
 				Usage:   "Initiate interactive query session",
 				Action:  Repl,
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:        "output-format",
+						Aliases:     []string{"o"},
+						Usage:       "Set output format. Options are 'table', 'csv', 'markdown'",
+						DefaultText: "table",
+						Action: func(c *cli.Context, v string) error {
+							format := c.String("output-format")
+							if format != "table" && format != "csv" && format != "markdown" {
+								return fmt.Errorf("invalid format: %s. Allowed values are 'table', 'csv', 'markdown'", format)
+							}
+							return nil
+						},
+					},
+				},
 			},
 			{
 				Name:    "query",
@@ -53,28 +68,48 @@ func NewApp() *cli.App {
 				},
 			},
 			{
-				Name:    "build-context",
-				Aliases: []string{"bc"},
-				Usage:   "Retrieve data from sources and load it for local queries",
-				Action:  BuildContext,
+				Name:    "context",
+				Aliases: []string{"c"},
+				Usage:   "Commands to manage contexts",
+				Subcommands: []*cli.Command{
+					{
+						Name:    "build",
+						Action:  BuildContext,
+						Aliases: []string{"b"},
+						Usage:   "Build context",
+						Flags: []cli.Flag{
+							&cli.StringFlag{
+								Name:    "context-name",
+								Aliases: []string{"cn"},
+								Usage:   "Target a specific context",
+							},
+							&cli.BoolFlag{
+								Name:    "source-name",
+								Aliases: []string{"sn"},
+								Usage:   "Target a specific source",
+							},
+						},
+					},
+				},
 			},
 			{
-				Name:    "build-information-schema",
-				Aliases: []string{"bi"},
-				Usage:   "Retrieve all tables and columns from source databases",
-				Action:  BuildInformationSchema,
-			},
-			{
-				Name:    "validate",
-				Aliases: []string{"v"},
-				Usage:   "Validate config file",
-				Action:  Validate,
-			},
-			{
-				Name:    "list-connections",
-				Aliases: []string{"lc"},
-				Usage:   "Print stored connection credentials",
-				Action:  ListConnections,
+				Name:    "source",
+				Aliases: []string{"s"},
+				Usage:   "Commands to manage sources",
+				Subcommands: []*cli.Command{
+					{
+						Name:    "list",
+						Aliases: []string{"l"},
+						Usage:   "Print stored sources.",
+						Action:  ListSources,
+					},
+					{
+						Name:    "validate",
+						Aliases: []string{"v"},
+						Usage:   "Validate config file and retrieve source data types",
+						Action:  Validate,
+					},
+				},
 			},
 		},
 		Before: func(c *cli.Context) error {
