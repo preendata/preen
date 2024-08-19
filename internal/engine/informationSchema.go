@@ -2,7 +2,6 @@ package engine
 
 import (
 	goContext "context"
-	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"strings"
@@ -15,24 +14,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type InformationSchema struct {
-	db        *sql.DB
-	connector driver.Connector
-}
-
 func BuildInformationSchema(cfg *config.Config) error {
-	infoSchema := InformationSchema{}
-	err := infoSchema.openDDBConnection()
-	if err != nil {
-		return err
-	}
-
 	// Ensure info schema table exists
-	if err = infoSchema.prepareDDBInformationSchema(); err != nil {
+	if err := prepareDDBInformationSchema(); err != nil {
 		return err
 	}
-
-	infoSchema.db.Close()
 
 	// Reuse the insert function to insert data to the information schema
 	ic := make(chan []driver.Value, 10)
@@ -51,11 +37,11 @@ func BuildInformationSchema(cfg *config.Config) error {
 		sourceErrGroup.Go(func() error {
 			switch engine {
 			case "postgres":
-				if err = infoSchema.buildPostgresInformationSchema(sources, ic); err != nil {
+				if err = buildPostgresInformationSchema(sources, ic); err != nil {
 					return err
 				}
 			case "mysql":
-				if err = infoSchema.buildMySQLInformationSchema(sources, ic); err != nil {
+				if err = buildMySQLInformationSchema(sources, ic); err != nil {
 					return err
 				}
 			case "mongodb":
@@ -78,7 +64,7 @@ func BuildInformationSchema(cfg *config.Config) error {
 }
 
 // buildMySQLInformationSchema builds the information schema for all mysql sources in the config
-func (is *InformationSchema) buildMySQLInformationSchema(sources []config.Source, ic chan<- []driver.Value) error {
+func buildMySQLInformationSchema(sources []config.Source, ic chan<- []driver.Value) error {
 	schemaErrGroup := new(errgroup.Group)
 
 	for _, source := range sources {
@@ -135,7 +121,7 @@ func (is *InformationSchema) buildMySQLInformationSchema(sources []config.Source
 }
 
 // buildPostgresInformationSchema builds the information schema for all postgres sources in the config
-func (is *InformationSchema) buildPostgresInformationSchema(sources []config.Source, ic chan<- []driver.Value) error {
+func buildPostgresInformationSchema(sources []config.Source, ic chan<- []driver.Value) error {
 	schemaErrGroup := new(errgroup.Group)
 
 	for _, source := range sources {
@@ -196,32 +182,12 @@ func groupSourceByEngine(cfg *config.Config) map[string][]config.Source {
 	return engines
 }
 
-// openDDBConnection is a local duckDB conn creator. Eventually should be offloaded to something generic
-func (is *InformationSchema) openDDBConnection() error {
-	connector, err := duckdb.CreateConnector()
-	if err != nil {
-		return err
-	}
-	is.connector = connector
-
-	db, err := duckdb.OpenDatabase(connector)
-	if err != nil {
-		return err
-	}
-	is.db = db
-
-	return nil
-}
-
 // prepareDDBInformationSchema creates the table for the information schema in duckDB
-func (is *InformationSchema) prepareDDBInformationSchema() error {
+func prepareDDBInformationSchema() error {
 	informationSchemaColumnNames := []string{"source_name varchar", "table_name varchar", "column_name varchar", "data_type varchar"}
 	informationSchemaTableName := "main.hypha_information_schema"
 	utils.Debug(fmt.Sprintf("Creating table %s", informationSchemaTableName))
-	_, err = is.db.Exec(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName,
-		strings.Join(informationSchemaColumnNames, ", ")))
-	// err := duckdb.DMLQuery(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName, strings.Join(informationSchemaColumnNames, ", ")))
-	// fmt.Println(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName, strings.Join(informationSchemaColumnNames, ", ")))
+	err := duckdb.DMLQuery(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName, strings.Join(informationSchemaColumnNames, ", ")))
 	if err != nil {
 		return err
 	}
