@@ -147,7 +147,7 @@ func processPgSource(r Retriever[*pgxpool.Pool], ic chan []driver.Value) error {
 }
 
 func processMongoSource(r Retriever[*mongo.Client], ic chan []driver.Value) error {
-	utils.Info(fmt.Sprintf("Retrieving context %s for %s", r.ContextName, r.Source.Name))
+	utils.Debug(fmt.Sprintf("Retrieving context %s for %s", r.ContextName, r.Source.Name))
 	ctx, cancel := goContext.WithTimeout(goContext.Background(), 60*time.Second)
 	defer cancel()
 	collection := r.Client.Database(r.Source.Connection.Database).Collection(r.ContextName)

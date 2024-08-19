@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	yaml "gopkg.in/yaml.v3"
 )
-
-type Context struct {
-	Name string
-}
 
 type Connection struct {
 	Host       string `yaml:"host"`
@@ -31,7 +28,7 @@ type Source struct {
 type Config struct {
 	Sources  []Source `yaml:"sources"`
 	Env      *Env     `yaml:"-"`
-	Contexts []string `yaml:"contexts"`
+	Contexts []string `yaml:"-"`
 }
 
 var err error
@@ -62,5 +59,17 @@ func GetConfig() (*Config, error) {
 	// Override config with environment variables
 	fromEnv(&c)
 
+	gatherContexts(&c)
+
 	return &c, nil
+}
+
+func gatherContexts(config *Config) {
+	for _, source := range config.Sources {
+		for _, context := range source.Contexts {
+			if !slices.Contains(config.Contexts, context) {
+				config.Contexts = append(config.Contexts, context)
+			}
+		}
+	}
 }

@@ -45,7 +45,7 @@ func PrintPrettyStruct(v interface{}) error {
 	return nil
 }
 
-func WriteToTable(rows []map[string]any, columns []string) error {
+func WriteToTable(rows []map[string]any, columns []string, outputFormat string) error {
 	// Set up
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
@@ -67,7 +67,14 @@ func WriteToTable(rows []map[string]any, columns []string) error {
 		t.AppendRow(values)
 	}
 
-	t.Render()
+	switch outputFormat {
+	case "csv":
+		t.RenderCSV()
+	case "markdown":
+		t.RenderMarkdown()
+	default:
+		t.Render()
+	}
 
 	return nil
 }

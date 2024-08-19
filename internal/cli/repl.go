@@ -18,6 +18,9 @@ func Repl(c *cli.Context) error {
 		return fmt.Errorf("error getting config: %w", err)
 	}
 
+	outputFormat := c.String("output-format")
+	fmt.Println("Output format: ", outputFormat)
+
 	rl, err := readline.NewEx(&readline.Config{
 		Prompt:            "hyphadb> ",
 		HistoryFile:       "/tmp/readline.tmp",
@@ -72,7 +75,7 @@ func Repl(c *cli.Context) error {
 			continue
 		}
 
-		utils.WriteToTable(qr.Rows, qr.Columns)
+		utils.WriteToTable(qr.Rows, qr.Columns, outputFormat)
 	}
 
 	return nil
