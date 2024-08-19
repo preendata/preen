@@ -218,7 +218,10 @@ func (is *InformationSchema) prepareDDBInformationSchema() error {
 	informationSchemaColumnNames := []string{"source_name varchar", "table_name varchar", "column_name varchar", "data_type varchar"}
 	informationSchemaTableName := "main.hypha_information_schema"
 	utils.Debug(fmt.Sprintf("Creating table %s", informationSchemaTableName))
-	_, err = is.db.Exec(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName, strings.Join(informationSchemaColumnNames, ", ")))
+	_, err = is.db.Exec(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName,
+		strings.Join(informationSchemaColumnNames, ", ")))
+	// err := duckdb.DMLQuery(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName, strings.Join(informationSchemaColumnNames, ", ")))
+	// fmt.Println(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName, strings.Join(informationSchemaColumnNames, ", ")))
 	if err != nil {
 		return err
 	}
