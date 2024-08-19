@@ -6,6 +6,26 @@ import (
 	"github.com/hyphadb/hyphadb/internal/utils"
 )
 
+func DMLQuery(queryString string) error {
+	connector, err := CreateConnector()
+	if err != nil {
+		return err
+	}
+
+	db, err := OpenDatabase(connector)
+	if err != nil {
+		return err
+	}
+
+	defer db.Close()
+	utils.Debug("querying duckdb database with query: ", queryString)
+	_, err = db.Exec(queryString)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 func Query(queryString string, c chan map[string]any) ([]string, error) {
 	connector, err := CreateConnector()
 	if err != nil {
