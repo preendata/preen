@@ -63,7 +63,7 @@ func BuildContext(cfg *config.Config) error {
 
 func readContextFiles(cfg *config.Config) (map[string]ContextQuery, error) {
 	contextQueries := make(map[string]ContextQuery, 0)
-	files, err := os.ReadDir(cfg.Env.HyphaConfigPath)
+	files, err := os.ReadDir(cfg.Env.HyphaContextPath)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func readContextFiles(cfg *config.Config) (map[string]ContextQuery, error) {
 				continue
 			}
 			utils.Debug("Loading ", file.Name())
-			bytes, err := os.ReadFile(cfg.Env.HyphaConfigPath + "/" + file.Name())
+			bytes, err := os.ReadFile(cfg.Env.HyphaContextPath + "/" + file.Name())
 			if err != nil {
 				return nil, err
 			}
@@ -98,7 +98,7 @@ func readContextFiles(cfg *config.Config) (map[string]ContextQuery, error) {
 				continue
 			}
 			utils.Debug("Loading ", file.Name())
-			bytes, err := os.ReadFile(cfg.Env.HyphaConfigPath + "/" + file.Name())
+			bytes, err := os.ReadFile(cfg.Env.HyphaContextPath + "/" + file.Name())
 			if err != nil {
 				return nil, err
 			}
