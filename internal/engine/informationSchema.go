@@ -9,6 +9,7 @@ import (
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	"github.com/hyphadb/hyphadb/internal/duckdb"
+	"github.com/hyphadb/hyphadb/internal/mysql"
 	"github.com/hyphadb/hyphadb/internal/pg"
 	"github.com/hyphadb/hyphadb/internal/utils"
 	"golang.org/x/sync/errgroup"
@@ -54,7 +55,9 @@ func BuildInformationSchema(cfg *config.Config) error {
 					return err
 				}
 			case "mysql":
-				// buildMySQLInformationSchema(sources)
+				if err = infoSchema.buildMySQLInformationSchema(sources, ic); err != nil {
+					return err
+				}
 			case "mongodb":
 				utils.Debug("No information schema required for MongoDB")
 			default:
@@ -70,6 +73,63 @@ func BuildInformationSchema(cfg *config.Config) error {
 	}
 	ic <- []driver.Value{"quit"}
 	ConfirmInsert("hypha_information_schema", dc, 0)
+
+	return nil
+}
+
+// buildMySQLInformationSchema builds the information schema for all mysql sources in the config
+func (is *InformationSchema) buildMySQLInformationSchema(sources []config.Source, ic chan<- []driver.Value) error {
+	schemaErrGroup := new(errgroup.Group)
+
+	for _, source := range sources {
+		func(source config.Source) error {
+			schemaErrGroup.Go(func() error {
+				// Open new pool for every source
+				pool, err := mysql.PoolFromSource(source)
+				if err != nil {
+					return err
+				}
+
+				defer pool.Close()
+
+				// Run through all contexts in the source, inserting its information schema into the local hyphaContext in raw form
+				for _, context := range source.Contexts {
+					table := context
+					// MySQL does not have schemas, so we use the database name
+					schema := source.Connection.Database
+
+					query := fmt.Sprintf(`
+						SELECT column_name, data_type 
+						FROM information_schema.columns 
+						WHERE table_schema = '%s' AND table_name = '%s';
+					`, schema, table)
+
+					rows, err := pool.Query(query)
+					if err != nil {
+						return err
+					}
+
+					defer rows.Close()
+
+					for rows.Next() {
+						var column_name string
+						var data_type string
+						err = rows.Scan(&column_name, &data_type)
+
+						if err != nil {
+							return err
+						}
+						ic <- []driver.Value{source.Name, table, column_name, data_type}
+					}
+				}
+				return nil
+			})
+			return nil
+		}(source)
+	}
+	if err := schemaErrGroup.Wait(); err != nil {
+		return err
+	}
 
 	return nil
 }
