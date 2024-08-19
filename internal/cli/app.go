@@ -109,6 +109,12 @@ func NewApp() *cli.App {
 						Usage:   "Validate config file and retrieve source data types",
 						Action:  Validate,
 					},
+					{
+						Name:    "info",
+						Aliases: []string{"i"},
+						Usage:   "Build source information schema",
+						Action:  BuildInformationSchema,
+					},
 				},
 			},
 		},
