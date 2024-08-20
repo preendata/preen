@@ -41,6 +41,8 @@ hyphadb source validate
 
 The next step is to create a context. The context directory, configurable with the `HYPHADB_CONTEXT_PATH` environment variable, contains all the contexts that you want to query. We don't support `select * from table` queries. You have to define the columns that you want to query. Here are some examples of contexts for both SQL and NoSQL systems.
 
+**Example SQL Context Definition**
+
 ```sql
 select 
     transactions.transaction_id,
@@ -69,9 +71,17 @@ where
     transactions.price < 100;
 ```
 
+**Example NoSQL Context Definition**
+
 ```json
-{ "login_attempts": { "$gt": 1 } }
-```
+{
+    "login_attempts": {
+        "$gt": 1
+    },
+    "account_status": {
+        "$in": ["inactive", "suspended"]
+    }
+}
 
 You can build your context by running the following command:
 
