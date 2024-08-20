@@ -82,6 +82,7 @@ where
         "$in": ["inactive", "suspended"]
     }
 }
+```
 
 You can build your context by running the following command:
 
