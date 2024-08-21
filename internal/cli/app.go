@@ -68,20 +68,20 @@ func NewApp() *cli.App {
 				},
 			},
 			{
-				Name:    "context",
-				Aliases: []string{"c"},
-				Usage:   "Commands to manage contexts",
+				Name:    "model",
+				Aliases: []string{"m"},
+				Usage:   "Commands to manage models",
 				Subcommands: []*cli.Command{
 					{
 						Name:    "build",
-						Action:  BuildContext,
+						Action:  BuildModel,
 						Aliases: []string{"b"},
-						Usage:   "Build context",
+						Usage:   "Build model",
 						Flags: []cli.Flag{
 							&cli.StringFlag{
-								Name:    "context-name",
+								Name:    "model-name",
 								Aliases: []string{"cn"},
-								Usage:   "Target a specific context",
+								Usage:   "Target a specific model",
 							},
 							&cli.BoolFlag{
 								Name:    "source-name",

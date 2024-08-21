@@ -24,36 +24,36 @@ type columnParser struct {
 	columnMetadata ColumnMetadata
 }
 
-func ParseContextColumns(contextQueries map[string]ContextQuery, columnMetadata ColumnMetadata) (map[string]ContextQuery, error) {
+func ParseModelColumns(modelQueries map[string]ModelQuery, columnMetadata ColumnMetadata) (map[string]ModelQuery, error) {
 	cp := columnParser{
 		columns:        make(map[string]map[string]Column),
 		columnMetadata: columnMetadata,
 	}
-	for contextName, contextQuery := range contextQueries {
-		if !contextQuery.IsSql {
-			cp.table = contextName
+	for modelName, modelQuery := range modelQueries {
+		if !modelQuery.IsSql {
+			cp.table = modelName
 			cp.ddlString = "hypha_source_name varchar, document json"
-			cp.columns[contextName] = make(map[string]Column)
+			cp.columns[modelName] = make(map[string]Column)
 			sourceColumn := Column{
-				Table:    &contextName,
+				Table:    &modelName,
 				IsJoin:   false,
 				Position: 0,
 				Alias:    "hypha_source_name",
 			}
-			sourceColumnHashKey := fmt.Sprintf("%s.hypha_source_name", contextName)
-			cp.columns[contextName][sourceColumnHashKey] = sourceColumn
+			sourceColumnHashKey := fmt.Sprintf("%s.hypha_source_name", modelName)
+			cp.columns[modelName][sourceColumnHashKey] = sourceColumn
 			documentColumn := Column{
-				Table:    &contextName,
+				Table:    &modelName,
 				IsJoin:   false,
 				Position: 1,
 				Alias:    "document",
 			}
-			documentColumnHashKey := fmt.Sprintf("%s.document", contextName)
-			cp.columns[contextName][documentColumnHashKey] = documentColumn
+			documentColumnHashKey := fmt.Sprintf("%s.document", modelName)
+			cp.columns[modelName][documentColumnHashKey] = documentColumn
 		} else {
 			cp.ddlString = "hypha_source_name varchar"
-			selectStmt := contextQuery.Parsed.(*sqlparser.Select)
-			tableMap := GetContextTableAliases(selectStmt)
+			selectStmt := modelQuery.Parsed.(*sqlparser.Select)
+			tableMap := GetModelTableAliases(selectStmt)
 			for selectIdx := range selectStmt.SelectExprs {
 				cp.selectIdx = selectIdx
 				switch expr := selectStmt.SelectExprs[selectIdx].(type) {
@@ -62,7 +62,7 @@ func ParseContextColumns(contextQueries map[string]ContextQuery, columnMetadata 
 					case *sqlparser.ColName:
 						tableAlias := expr.Expr.(*sqlparser.ColName).Qualifier.Name.String()
 						cp.table = tableMap[tableAlias]
-						cpUpdated, err := processContextColumn(expr, &cp)
+						cpUpdated, err := processModelColumn(expr, &cp)
 						if err != nil {
 							return nil, err
 						}
@@ -79,15 +79,15 @@ func ParseContextColumns(contextQueries map[string]ContextQuery, columnMetadata 
 				}
 			}
 		}
-		contextQuery.Columns = cp.columns
-		contextQuery.DDLString = cp.ddlString
-		contextQueries[contextName] = contextQuery
+		modelQuery.Columns = cp.columns
+		modelQuery.DDLString = cp.ddlString
+		modelQueries[modelName] = modelQuery
 	}
 
-	return contextQueries, nil
+	return modelQueries, nil
 }
 
-func processContextColumn(expr *sqlparser.AliasedExpr, cp *columnParser) (*columnParser, error) {
+func processModelColumn(expr *sqlparser.AliasedExpr, cp *columnParser) (*columnParser, error) {
 	if expr.Expr.(*sqlparser.ColName).Qualifier.Name.String() == "" {
 		return nil, errors.New("column names must be fully qualified, e.g. table.column")
 	}
@@ -107,7 +107,7 @@ func processContextColumn(expr *sqlparser.AliasedExpr, cp *columnParser) (*colum
 	colHashKey := fmt.Sprintf("%s.%s", cp.table, colName)
 	cp.columns[cp.table][colHashKey] = col
 	if _, ok := cp.columnMetadata[TableName(cp.table)][ColumnName(colName)]; !ok {
-		return nil, fmt.Errorf("column not found in table: %s.%s. check that your context query is valid", cp.table, colName)
+		return nil, fmt.Errorf("column not found in table: %s.%s. check that your model query is valid", cp.table, colName)
 	}
 	colType := duckdb.PgTypeMap[string(cp.columnMetadata[TableName(cp.table)][ColumnName(colName)].MajorityType)]
 	cp.ddlString = fmt.Sprintf("%s, %s %s", cp.ddlString, col.Alias, colType)

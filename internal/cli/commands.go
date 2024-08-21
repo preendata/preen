@@ -42,8 +42,8 @@ func Query(c *cli.Context) error {
 	return nil
 }
 
-func BuildContext(c *cli.Context) error {
-	utils.Debug("Executing cli.buildcontext")
+func BuildModel(c *cli.Context) error {
+	utils.Debug("Executing cli.buildmodel")
 
 	conf, err := config.GetConfig()
 
@@ -51,9 +51,9 @@ func BuildContext(c *cli.Context) error {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	err = engine.BuildContext(conf)
+	err = engine.BuildModel(conf)
 	if err != nil {
-		return fmt.Errorf("error building context %w", err)
+		return fmt.Errorf("error building model %w", err)
 	}
 
 	return nil

@@ -8,12 +8,12 @@ import (
 	"github.com/hyphadb/hyphadb/internal/utils"
 )
 
-func Insert(contextName string, ic <-chan []driver.Value, dc chan<- []int64) {
+func Insert(modelName string, ic <-chan []driver.Value, dc chan<- []int64) {
 	connector, err := duckdb.CreateConnector()
 	if err != nil {
 		panic(err)
 	}
-	appender, err := duckdb.NewAppender(connector, "main", contextName)
+	appender, err := duckdb.NewAppender(connector, "main", modelName)
 	if err != nil {
 		panic(err)
 	}
@@ -28,7 +28,7 @@ func Insert(contextName string, ic <-chan []driver.Value, dc chan<- []int64) {
 		rowCounter++
 		if rowCounter%10000000 == 0 {
 			utils.Debug(fmt.Sprintf(
-				"Flushing 10M rows from appender to DuckDB for context: %s, %d", contextName, rowCounter,
+				"Flushing 10M rows from appender to DuckDB for model: %s, %d", modelName, rowCounter,
 			))
 			if err := appender.Flush(); err != nil {
 				panic(err)
@@ -41,20 +41,20 @@ func Insert(contextName string, ic <-chan []driver.Value, dc chan<- []int64) {
 	dc <- []int64{int64(rowCounter)}
 }
 
-func ConfirmInsert(contextName string, dc chan []int64, rowsExpected int64) {
+func ConfirmInsert(modelName string, dc chan []int64, rowsExpected int64) {
 	for {
 		select {
 		case message := <-dc:
 			if rowsExpected == 0 {
-				utils.Info(fmt.Sprintf("Inserted %d rows into context %s", message[0], contextName))
+				utils.Info(fmt.Sprintf("Inserted %d rows into model %s", message[0], modelName))
 				return
 			}
 			if message[0] == rowsExpected {
-				utils.Info(fmt.Sprintf("Inserted %d rows into context %s. Expected %d rows", message[0], contextName, rowsExpected))
+				utils.Info(fmt.Sprintf("Inserted %d rows into model %s. Expected %d rows", message[0], modelName, rowsExpected))
 				return
 			}
 			if message[0] != rowsExpected {
-				utils.Error(fmt.Sprintf("Inserted %d rows into context %s. Expected %d rows", message[0], contextName, rowsExpected))
+				utils.Error(fmt.Sprintf("Inserted %d rows into model %s. Expected %d rows", message[0], modelName, rowsExpected))
 				return
 			}
 		}

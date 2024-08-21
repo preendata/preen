@@ -1,7 +1,7 @@
 package engine
 
 import (
-	goContext "context"
+	"context"
 	"database/sql/driver"
 	"fmt"
 	"strings"
@@ -78,9 +78,9 @@ func buildMySQLInformationSchema(sources []config.Source, ic chan<- []driver.Val
 
 				defer pool.Close()
 
-				// Run through all contexts in the source, inserting its information schema into the local hyphaContext in raw form
-				for _, context := range source.Contexts {
-					table := context
+				// Run through all models in the source, inserting its information schema into the local hyphaContext in raw form
+				for _, model := range source.Models {
+					table := model
 					// MySQL does not have schemas, so we use the database name
 					schema := source.Connection.Database
 
@@ -135,9 +135,9 @@ func buildPostgresInformationSchema(sources []config.Source, ic chan<- []driver.
 
 				defer pool.Close()
 
-				// Run through all contexts in the source, inserting its information schema into the local hyphaContext in raw form
-				for _, context := range source.Contexts {
-					table := context
+				// Run through all models in the source, inserting its information schema into the local hyphaContext in raw form
+				for _, model := range source.Models {
+					table := model
 					schema := "public"
 
 					query := fmt.Sprintf(`
@@ -145,7 +145,7 @@ func buildPostgresInformationSchema(sources []config.Source, ic chan<- []driver.
 						where table_schema = '%s' and table_name = '%s';
 					`, schema, table)
 
-					rows, err := pool.Query(goContext.Background(), query)
+					rows, err := pool.Query(context.Background(), query)
 					if err != nil {
 						return err
 					}
