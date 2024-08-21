@@ -1,7 +1,7 @@
 package engine
 
 import (
-	goContext "context"
+	"context"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
@@ -28,25 +28,25 @@ type Database interface {
 }
 
 type Retriever[T Database] struct {
-	ContextName string
-	Query       string
-	Source      config.Source
-	Client      T
+	ModelName string
+	Query     string
+	Source    config.Source
+	Client    T
 }
 
-func Retrieve(cfg *config.Config, c Context) error {
-	for _, contextName := range cfg.Contexts {
+func Retrieve(cfg *config.Config, m Model) error {
+	for _, modelName := range cfg.Models {
 		ic := make(chan []driver.Value, 10000)
 		dc := make(chan []int64)
-		go Insert(contextName, ic, dc)
+		go Insert(modelName, ic, dc)
 		if err != nil {
 			return err
 		}
 		g := errgroup.Group{}
 		g.SetLimit(200)
 		for _, source := range cfg.Sources {
-			if !slices.Contains(source.Contexts, contextName) {
-				utils.Debug(fmt.Sprintf("Skipping %s for %s", contextName, source.Name))
+			if !slices.Contains(source.Models, modelName) {
+				utils.Debug(fmt.Sprintf("Skipping %s for %s", modelName, source.Name))
 				continue
 			}
 			switch source.Engine {
@@ -56,10 +56,10 @@ func Retrieve(cfg *config.Config, c Context) error {
 					return err
 				}
 				r := Retriever[*pgxpool.Pool]{
-					Source:      source,
-					ContextName: contextName,
-					Query:       c.ContextQueries[contextName].Query,
-					Client:      pool,
+					Source:    source,
+					ModelName: modelName,
+					Query:     m.ModelQueries[modelName].Query,
+					Client:    pool,
 				}
 				defer r.Client.Close()
 				utils.Debug(fmt.Sprintf("Opened connection to %s. Pool stats: \n total conns: %d, ", source.Name, r.Client.Stat().TotalConns()))
@@ -73,19 +73,19 @@ func Retrieve(cfg *config.Config, c Context) error {
 					return nil
 				}(r, ic)
 			case "mongodb":
-				ctx, cancel := goContext.WithTimeout(goContext.Background(), 30*time.Second)
+				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer cancel()
 				mongoClient, err := internalMongo.ConnFromSource(source, ctx)
 				if err != nil {
 					return err
 				}
 				r := Retriever[*mongo.Client]{
-					Source:      source,
-					ContextName: contextName,
-					Query:       c.ContextQueries[contextName].Query,
-					Client:      mongoClient,
+					Source:    source,
+					ModelName: modelName,
+					Query:     m.ModelQueries[modelName].Query,
+					Client:    mongoClient,
 				}
-				defer r.Client.Disconnect(goContext.Background())
+				defer r.Client.Disconnect(context.Background())
 				func(r Retriever[*mongo.Client], ic chan []driver.Value) error {
 					g.Go(func() error {
 						if err := processMongoSource(r, ic); err != nil {
@@ -104,14 +104,14 @@ func Retrieve(cfg *config.Config, c Context) error {
 		}
 
 		ic <- []driver.Value{"quit"}
-		ConfirmInsert(contextName, dc, 0)
+		ConfirmInsert(modelName, dc, 0)
 	}
 	return nil
 }
 
 func processPgSource(r Retriever[*pgxpool.Pool], ic chan []driver.Value) error {
-	utils.Debug(fmt.Sprintf("Retrieving context %s for %s", r.ContextName, r.Source.Name))
-	rows, err := r.Client.Query(goContext.Background(), r.Query)
+	utils.Debug(fmt.Sprintf("Retrieving context %s for %s", r.ModelName, r.Source.Name))
+	rows, err := r.Client.Query(context.Background(), r.Query)
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func processPgSource(r Retriever[*pgxpool.Pool], ic chan []driver.Value) error {
 		}
 		ic <- driverRow
 	}
-	utils.Debug(fmt.Sprintf("Retrieved %d rows for %s - %s\n", rowCounter, r.Source.Name, r.ContextName))
+	utils.Debug(fmt.Sprintf("Retrieved %d rows for %s - %s\n", rowCounter, r.Source.Name, r.ModelName))
 	if err = rows.Err(); err != nil {
 		return err
 	}
@@ -147,10 +147,10 @@ func processPgSource(r Retriever[*pgxpool.Pool], ic chan []driver.Value) error {
 }
 
 func processMongoSource(r Retriever[*mongo.Client], ic chan []driver.Value) error {
-	utils.Debug(fmt.Sprintf("Retrieving context %s for %s", r.ContextName, r.Source.Name))
-	ctx, cancel := goContext.WithTimeout(goContext.Background(), 60*time.Second)
+	utils.Debug(fmt.Sprintf("Retrieving context %s for %s", r.ModelName, r.Source.Name))
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	collection := r.Client.Database(r.Source.Connection.Database).Collection(r.ContextName)
+	collection := r.Client.Database(r.Source.Connection.Database).Collection(r.ModelName)
 	jsonQuery := make(map[string]interface{})
 	if err := json.Unmarshal([]byte(r.Query), &jsonQuery); err != nil {
 		utils.Errorf("Error unmarshalling json query: %s", err)
@@ -189,6 +189,6 @@ func processMongoSource(r Retriever[*mongo.Client], ic chan []driver.Value) erro
 		driverRow[1] = string(jsonBytes)
 		ic <- driverRow
 	}
-	utils.Debug(fmt.Sprintf("Retrieved %d rows for %s - %s\n", rowCounter, r.Source.Name, r.ContextName))
+	utils.Debug(fmt.Sprintf("Retrieved %d rows for %s - %s\n", rowCounter, r.Source.Name, r.ModelName))
 	return nil
 }

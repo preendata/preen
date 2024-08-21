@@ -20,10 +20,10 @@ type ColumnMetadata map[TableName]map[ColumnName]ColumnType
 
 // BuildColumnMetadata does 2 things:
 // 1) Acts as the interface between information schema data stored in DuckDB and the parts of the application that will
-// need to consume that data, in particular the context builder
+// need to consume that data, in particular the model builder
 // 2) Performs type validation against each column pulled from the source databases, via the Boyer-Moore majority voting
 // algorithm. This majority type is then packaged into the ColumnMetadata and return to the caller. This is important
-// for typing the context tables created in DuckDB
+// for typing the model tables created in DuckDB
 func BuildColumnMetadata(cfg *config.Config) (ColumnMetadata, error) {
 	// query data from hypha_information_schema
 	results, err := Execute("SELECT column_name, data_type, table_name FROM hypha_information_schema", cfg)

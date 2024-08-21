@@ -22,13 +22,13 @@ type Source struct {
 	Name       string     `yaml:"name"`
 	Engine     string     `yaml:"engine"`
 	Connection Connection `yaml:"connection"`
-	Contexts   []string   `yaml:"contexts"`
+	Models     []string   `yaml:"models"`
 }
 
 type Config struct {
-	Sources  []Source `yaml:"sources"`
-	Env      *Env     `yaml:"-"`
-	Contexts []string `yaml:"-"`
+	Sources []Source `yaml:"sources"`
+	Env     *Env     `yaml:"-"`
+	Models  []string `yaml:"-"`
 }
 
 var err error
@@ -59,16 +59,20 @@ func GetConfig() (*Config, error) {
 	// Override config with environment variables
 	fromEnv(&c)
 
-	gatherContexts(&c)
+	collectModels(&c)
+
+	if len(c.Models) == 0 {
+		return nil, fmt.Errorf("no models defined in config file")
+	}
 
 	return &c, nil
 }
 
-func gatherContexts(config *Config) {
+func collectModels(config *Config) {
 	for _, source := range config.Sources {
-		for _, context := range source.Contexts {
-			if !slices.Contains(config.Contexts, context) {
-				config.Contexts = append(config.Contexts, context)
+		for _, model := range source.Models {
+			if !slices.Contains(config.Models, model) {
+				config.Models = append(config.Models, model)
 			}
 		}
 	}

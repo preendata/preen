@@ -8,9 +8,9 @@ import (
 )
 
 type Env struct {
-	HyphaConfigPath  string
-	HyphaContextPath string
-	LicenseKey       string
+	HyphaConfigPath string
+	HyphaModelPath  string
+	LicenseKey      string
 }
 
 func EnvInit() (*Env, error) {
@@ -25,8 +25,8 @@ func EnvInit() (*Env, error) {
 	}
 
 	return &Env{
-		HyphaConfigPath:  getEnv("HYPHADB_CONFIG_PATH", filepath.Join(usr.HomeDir, ".hyphadb"), false),
-		HyphaContextPath: getEnv("HYPHADB_CONTEXT_PATH", filepath.Join(workDir, "contexts"), false),
-		LicenseKey:       getEnv("HYPHADB_LICENSE_KEY", "", true),
+		HyphaConfigPath: getEnv("HYPHADB_CONFIG_PATH", filepath.Join(usr.HomeDir, ".hyphadb"), false),
+		HyphaModelPath:  getEnv("HYPHADB_MODEL_PATH", filepath.Join(workDir, "models"), false),
+		LicenseKey:      getEnv("HYPHADB_LICENSE_KEY", "", true),
 	}, nil
 }

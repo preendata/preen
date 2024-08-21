@@ -6,7 +6,7 @@ import (
 	"github.com/xwb1989/sqlparser"
 )
 
-func GetContextTableAliases(stmt *sqlparser.Select) map[string]string {
+func GetModelTableAliases(stmt *sqlparser.Select) map[string]string {
 	tableMap := make(map[string]string)
 	table := stmt.From[0]
 	switch t := table.(type) {
