@@ -1,16 +1,16 @@
 package mysql
 
 import (
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"net/url"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/hyphadb/hyphadb/internal/config"
-	"github.com/jmoiron/sqlx"
 )
 
-func PoolFromSource(source config.Source) (*sqlx.DB, error) {
+func PoolFromSource(source config.Source) (*sql.DB, error) {
 	// Example url := "root:thisisnotarealpassword@tcp(127.0.0.1:33061)/mysql_db_1"
 	url := fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s",
@@ -29,8 +29,8 @@ func PoolFromSource(source config.Source) (*sqlx.DB, error) {
 	return dbpool, nil
 }
 
-func pool(url string) (*sqlx.DB, error) {
-	dbPool, err := sqlx.Open("mysql", url)
+func pool(url string) (*sql.DB, error) {
+	dbPool, err := sql.Open("mysql", url)
 
 	if err != nil {
 		slog.Error(

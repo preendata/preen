@@ -8,7 +8,6 @@ require (
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/jedib0t/go-pretty/v6 v6.5.9
-	github.com/jmoiron/sqlx v1.4.0
 	github.com/joho/godotenv v1.5.1
 	github.com/keygen-sh/keygen-go/v3 v3.2.0
 	github.com/marcboeker/go-duckdb v1.7.0

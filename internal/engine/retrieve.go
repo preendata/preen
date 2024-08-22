@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/hyphadb/hyphadb/internal/config"
 	internalMongo "github.com/hyphadb/hyphadb/internal/mongo"
+	"github.com/hyphadb/hyphadb/internal/mysql"
 	"github.com/hyphadb/hyphadb/internal/pg"
 	"github.com/hyphadb/hyphadb/internal/utils"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -24,7 +26,7 @@ import (
 )
 
 type Database interface {
-	*pgxpool.Pool | *mongo.Client
+	*pgxpool.Pool | *sql.DB | *mongo.Client
 }
 
 type Retriever[T Database] struct {
@@ -72,6 +74,29 @@ func Retrieve(cfg *config.Config, m Model) error {
 					})
 					return nil
 				}(r, ic)
+			case "mysql":
+				pool, err := mysql.PoolFromSource(source)
+				if err != nil {
+					return err
+				}
+				r := Retriever[*sql.DB]{
+					Source:    source,
+					ModelName: modelName,
+					Query:     m.ModelQueries[modelName].Query,
+					Client:    pool,
+				}
+
+				defer r.Client.Close()
+				func(r Retriever[*sql.DB], ic chan []driver.Value) error {
+					g.Go(func() error {
+						if err := processMysqlSource(r, ic); err != nil {
+							return err
+						}
+						return nil
+					})
+					return nil
+				}(r, ic)
+
 			case "mongodb":
 				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer cancel()
@@ -107,6 +132,53 @@ func Retrieve(cfg *config.Config, m Model) error {
 		ConfirmInsert(modelName, dc, 0)
 	}
 	return nil
+}
+
+func processMysqlSource(r Retriever[*sql.DB], ic chan []driver.Value) error {
+	utils.Debugf("In process Mysql source", r)
+	rows, err := r.Client.Query(r.Query)
+
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		values, err := scanRow(rows)
+		// cols, err := rows.Columns()
+		if err != nil {
+			return err
+		}
+		fmt.Println(values...)
+
+		// utils.Debugf("Cols pulled from processer", cols)
+	}
+
+	return nil
+}
+
+func scanRow(rows *sql.Rows) ([]any, error) {
+	// Get column types and count
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a slice of empty interfaces to hold the values
+	values := make([]any, len(columnTypes))
+	valuePtrs := make([]any, len(columnTypes))
+
+	for i := range columnTypes {
+		valuePtrs[i] = &values[i]
+	}
+
+	// Scan the row into the value pointers
+	if err := rows.Scan(valuePtrs...); err != nil {
+		return nil, err
+	}
+
+	return values, nil
 }
 
 func processPgSource(r Retriever[*pgxpool.Pool], ic chan []driver.Value) error {

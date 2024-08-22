@@ -14,4 +14,7 @@ var PgTypeMap = map[string]string{
 	"date":              "date",
 	"numeric":           "double",
 	"decimal":           "double",
+	// begin mysql types
+	"varchar": "varchar",
+	"tinyint": "smallint",
 }

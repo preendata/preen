@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hyphadb/hyphadb/internal/duckdb"
+	"github.com/hyphadb/hyphadb/internal/utils"
 	"github.com/xwb1989/sqlparser"
 )
 
@@ -109,7 +110,9 @@ func processModelColumn(expr *sqlparser.AliasedExpr, cp *columnParser) (*columnP
 	if _, ok := cp.columnMetadata[TableName(cp.table)][ColumnName(colName)]; !ok {
 		return nil, fmt.Errorf("column not found in table: %s.%s. check that your model query is valid", cp.table, colName)
 	}
+	utils.Debugf("Current columns %v", cp.columnMetadata[TableName(cp.table)][ColumnName(colName)].MajorityType)
 	colType := duckdb.PgTypeMap[string(cp.columnMetadata[TableName(cp.table)][ColumnName(colName)].MajorityType)]
+	utils.Debugf("Found coltype %v", colType)
 	cp.ddlString = fmt.Sprintf("%s, %s %s", cp.ddlString, col.Alias, colType)
 
 	return cp, nil
