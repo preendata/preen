@@ -11,7 +11,7 @@ type TableAlias string
 type TableMap map[TableAlias]TableName
 type TableSet []TableName
 
-func ParseModelTables(models map[ModelName]ModelConfig) (map[ModelName]ModelConfig, error) {
+func ParseModelTables(models map[ModelName]*ModelConfig) error {
 	for modelName, modelConfig := range models {
 		if modelConfig.IsSql {
 			selectStmt := modelConfig.Parsed.(*sqlparser.Select)
@@ -19,7 +19,7 @@ func ParseModelTables(models map[ModelName]ModelConfig) (map[ModelName]ModelConf
 		}
 		models[modelName] = modelConfig
 	}
-	return models, nil
+	return nil
 }
 
 func getModelTableAliases(stmt *sqlparser.Select) (TableMap, TableSet) {
