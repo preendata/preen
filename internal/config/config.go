@@ -40,10 +40,10 @@ func GetConfig() (*Config, error) {
 		return nil, fmt.Errorf("error initializing environment: %w", err)
 	}
 
-	err = validateLicenseKey(c.Env.LicenseKey)
-	if err != nil {
-		return nil, fmt.Errorf("error validating license key: %w", err)
-	}
+	// err = validateLicenseKey(c.Env.LicenseKey)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("error validating license key: %w", err)
+	// }
 
 	configFilePath := filepath.Join(c.Env.HyphaConfigPath, "config.yaml")
 	file, err := os.ReadFile(configFilePath)
