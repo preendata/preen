@@ -63,12 +63,16 @@ func BuildInformationSchema(c *cli.Context) error {
 	utils.Debug("Executing cli.buildInformationSchema")
 
 	conf, err := config.GetConfig()
-
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	err = engine.BuildInformationSchema(conf)
+	models, err := engine.ParseModels(conf)
+	if err != nil {
+		return fmt.Errorf("error parsing models %w", err)
+	}
+
+	err = engine.BuildInformationSchema(conf, models)
 	if err != nil {
 		return fmt.Errorf("error building context %w", err)
 	}
@@ -80,12 +84,16 @@ func Validate(c *cli.Context) error {
 	utils.Debug("Executing cli.validate")
 
 	conf, err := config.GetConfig()
-
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	err = engine.BuildInformationSchema(conf)
+	models, err := engine.ParseModels(conf)
+	if err != nil {
+		return fmt.Errorf("error parsing models %w", err)
+	}
+
+	err = engine.BuildInformationSchema(conf, models)
 
 	if err != nil {
 		utils.Debug("error building information schema", err)
