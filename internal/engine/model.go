@@ -25,7 +25,7 @@ type ModelConfig struct {
 }
 
 type Models struct {
-	Config map[ModelName]ModelConfig
+	Config map[ModelName]*ModelConfig
 }
 
 func BuildModel(cfg *config.Config) error {
@@ -44,8 +44,7 @@ func BuildModel(cfg *config.Config) error {
 		return fmt.Errorf("error building column metadata: %w", err)
 	}
 
-	models.Config, err = ParseModelColumns(models.Config, columnMetadata)
-	if err != nil {
+	if err = ParseModelColumns(models.Config, columnMetadata); err != nil {
 		return fmt.Errorf("error parsing model columns: %w", err)
 	}
 
@@ -54,29 +53,28 @@ func BuildModel(cfg *config.Config) error {
 	}
 
 	utils.Info(fmt.Sprintf("Fetching data from %d configured sources", len(cfg.Sources)))
-	if err = Retrieve(cfg, models); err != nil {
+	if err = Retrieve(cfg, *models); err != nil {
 		return fmt.Errorf("error retrieving data: %w", err)
 	}
 
 	return nil
 }
 
-func ParseModels(cfg *config.Config) (Models, error) {
+func ParseModels(cfg *config.Config) (*Models, error) {
 	models, err := readModelFiles(cfg)
 	if err != nil {
-		return Models{}, err
+		return nil, err
 	}
 
-	models, err = ParseModelTables(models)
-	if err != nil {
-		return Models{}, err
+	if err = ParseModelTables(models); err != nil {
+		return nil, err
 	}
 
-	return Models{Config: models}, nil
+	return &Models{Config: models}, nil
 }
 
-func readModelFiles(cfg *config.Config) (map[ModelName]ModelConfig, error) {
-	ModelQueries := make(map[ModelName]ModelConfig, 0)
+func readModelFiles(cfg *config.Config) (map[ModelName]*ModelConfig, error) {
+	ModelQueries := make(map[ModelName]*ModelConfig, 0)
 	files, err := os.ReadDir(cfg.Env.HyphaModelPath)
 	if err != nil {
 		return nil, err
@@ -97,7 +95,7 @@ func readModelFiles(cfg *config.Config) (map[ModelName]ModelConfig, error) {
 			if err != nil {
 				return nil, err
 			}
-			cq := ModelConfig{
+			cq := &ModelConfig{
 				Query: string(bytes),
 				IsSql: true,
 			}
@@ -120,7 +118,7 @@ func readModelFiles(cfg *config.Config) (map[ModelName]ModelConfig, error) {
 			if err != nil {
 				return nil, err
 			}
-			cq := ModelConfig{
+			cq := &ModelConfig{
 				Query: string(bytes),
 				IsSql: false,
 			}
@@ -137,7 +135,7 @@ func readModelFiles(cfg *config.Config) (map[ModelName]ModelConfig, error) {
 	return ModelQueries, nil
 }
 
-func buildTables(models map[ModelName]ModelConfig) error {
+func buildTables(models map[ModelName]*ModelConfig) error {
 	connector, err := duckdb.CreateConnector()
 	if err != nil {
 		return err

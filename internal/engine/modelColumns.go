@@ -28,7 +28,7 @@ type columnParser struct {
 	columnMetadata ColumnMetadata
 }
 
-func ParseModelColumns(models map[ModelName]ModelConfig, columnMetadata ColumnMetadata) (map[ModelName]ModelConfig, error) {
+func ParseModelColumns(models map[ModelName]*ModelConfig, columnMetadata ColumnMetadata) error {
 	cp := columnParser{
 		columns:        make(map[TableName]map[ColumnName]Column),
 		columnMetadata: columnMetadata,
@@ -70,24 +70,24 @@ func ParseModelColumns(models map[ModelName]ModelConfig, columnMetadata ColumnMe
 						tableAlias := expr.Expr.(*sqlparser.ColName).Qualifier.Name.String()
 						cp.tableName = modelConfig.TableMap[TableAlias(tableAlias)]
 						if err := processModelColumn(expr, &cp); err != nil {
-							return nil, err
+							return err
 						}
 					// Process function expression column.
 					case *sqlparser.FuncExpr:
 						cp.tableName = "model_generated"
 						if err := processFunction(expr, &cp); err != nil {
-							return nil, err
+							return err
 						}
 					// Process case expression column
 					case *sqlparser.CaseExpr:
 						cp.tableName = "model_generated"
 						if err := processCase(expr, &cp); err != nil {
-							return nil, err
+							return err
 						}
 					}
 
 				case *sqlparser.StarExpr:
-					return nil, errors.New("star expressions are not supported. please specify columns explicitly")
+					return errors.New("star expressions are not supported. please specify columns explicitly")
 				}
 			}
 		}
@@ -96,7 +96,7 @@ func ParseModelColumns(models map[ModelName]ModelConfig, columnMetadata ColumnMe
 		models[modelName] = modelConfig
 	}
 
-	return models, nil
+	return nil
 }
 
 func processModelColumn(expr *sqlparser.AliasedExpr, cp *columnParser) error {

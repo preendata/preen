@@ -14,7 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func BuildInformationSchema(cfg *config.Config, models Models) error {
+func BuildInformationSchema(cfg *config.Config, models *Models) error {
 	// Ensure info schema table exists
 	if err := prepareDDBInformationSchema(); err != nil {
 		return err
@@ -37,11 +37,11 @@ func BuildInformationSchema(cfg *config.Config, models Models) error {
 		sourceErrGroup.Go(func() error {
 			switch engine {
 			case "postgres":
-				if err = buildPostgresInformationSchema(sources, ic, models); err != nil {
+				if err = buildPostgresInformationSchema(sources, ic, *models); err != nil {
 					return err
 				}
 			case "mysql":
-				if err = buildMySQLInformationSchema(sources, ic, models); err != nil {
+				if err = buildMySQLInformationSchema(sources, ic, *models); err != nil {
 					return err
 				}
 			case "mongodb":
