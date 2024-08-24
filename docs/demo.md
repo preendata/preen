@@ -1,14 +1,14 @@
-# HyphaDB Demo
+# Hypha Demo
 
-This is guide to demonstrate how to use HyphaDB. There are a couple of concepts that we use in HyphaDB:
+This is guide to demonstrate how to use hypha. There are a couple of concepts that we use in hypha:
 
-1. **Source**: A source is a data store that we want to query. You can configure multiple sources in HyphaDB via the `config.yaml` file. Currently supported sources are MongoDB, Postgres, and MySQL.
+1. **Source**: A source is a data store that we want to query. You can configure multiple sources in hypha via the `config.yaml` file. Currently supported sources are MongoDB, Postgres, and MySQL.
 
-2. **Model**: A model is a the unit of data that we want to store in HyphaDB. It is a user defined query that we retrieve and collate from all configured sources. You define a model by creating a `*.sql` (SQL systems) or a `*.json` (NoSQL systems) file in the `models` directory.
+2. **Model**: A model is a the unit of data that we want to store in hypha. It is a user defined query that we retrieve and collate from all configured sources. You define a model by creating a `*.sql` (SQL systems) or a `*.json` (NoSQL systems) file in the `models` directory.
 
 ![Overview](overview.png)
 
-The workflow is 1) configure sources in `config.yaml`, 2) build your model to query data from these sources, and 3) query the data locally via the HyphaDB CLI.
+The workflow is 1) configure sources in `config.yaml`, 2) build your model to query data from these sources, and 3) query the data locally via the hypha CLI.
 
 ## Step 1: Configure Sources
 
@@ -21,7 +21,7 @@ sources:
     connection:
       host: localhost
       port: 27117
-      database: hyphadb
+      database: hypha
       username: root
       password: thisisnotarealpassword
       auth_source: admin
@@ -34,12 +34,12 @@ sources:
 You can validate your configuration by running the following command:
 
 ```bash
-hyphadb source validate
+hypha source validate
 ```
 
 ## Step 2: Create a Model
 
-The next step is to create a model. The model directory, configurable with the `HYPHADB_MODELS_PATH` environment variable, contains all the models that you want to query. We don't support `select * from table` queries. You have to define the columns that you want to query. Here are some examples of models for both SQL and NoSQL systems.
+The next step is to create a model. The model directory, configurable with the `HYPHA_MODELS_PATH` environment variable, contains all the models that you want to query. We don't support `select * from table` queries. You have to define the columns that you want to query. Here are some examples of models for both SQL and NoSQL systems.
 
 **Example SQL Model Definition**
 
@@ -87,7 +87,7 @@ where
 You can build your model by running the following command:
 
 ```bash
-hyphadb model build
+hypha model build
 ```
 
 ## Step 3: Query Data
@@ -95,8 +95,8 @@ hyphadb model build
 Once your model is built locally, you can query the data by opening a REPL:
 
 ```bash
-hyphadb repl
+hypha repl
 
 # You can also specify the type of output: csv, table, or markdown. Defaults to table.
-hyphadb repl --output-format csv
+hypha repl --output-format csv
 ```
