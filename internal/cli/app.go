@@ -3,15 +3,15 @@ package cli
 import (
 	"fmt"
 
-	"github.com/hyphadb/hyphadb/internal/config"
-	"github.com/hyphadb/hyphadb/internal/utils"
+	"github.com/hyphasql/hypha/internal/config"
+	"github.com/hyphasql/hypha/internal/utils"
 	"github.com/urfave/cli/v2"
 )
 
 func NewApp() *cli.App {
 	app := &cli.App{
-		Name:  "HyphaDB",
-		Usage: "A command-line application for HyphaDB",
+		Name:  "hypha",
+		Usage: "A command-line application for hypha",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "log-level",

@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/hyphadb/hyphadb/internal/utils"
+	"github.com/hyphasql/hypha/internal/utils"
 
-	"github.com/hyphadb/hyphadb/internal/config"
-	"github.com/hyphadb/hyphadb/internal/engine"
+	"github.com/hyphasql/hypha/internal/config"
+	"github.com/hyphasql/hypha/internal/engine"
 	"github.com/urfave/cli/v2"
 )
 

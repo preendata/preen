@@ -4,8 +4,8 @@ import (
 	"database/sql/driver"
 	"fmt"
 
-	"github.com/hyphadb/hyphadb/internal/duckdb"
-	"github.com/hyphadb/hyphadb/internal/utils"
+	"github.com/hyphasql/hypha/internal/duckdb"
+	"github.com/hyphasql/hypha/internal/utils"
 )
 
 func Insert(modelName string, ic <-chan []driver.Value, dc chan<- []int64) {

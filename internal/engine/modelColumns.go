@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/hyphadb/hyphadb/internal/duckdb"
+	"github.com/hyphasql/hypha/internal/duckdb"
 	"github.com/xwb1989/sqlparser"
 )
 

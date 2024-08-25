@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hyphadb/hyphadb/internal/config"
-	"github.com/hyphadb/hyphadb/internal/duckdb"
-	"github.com/hyphadb/hyphadb/internal/mysql"
-	"github.com/hyphadb/hyphadb/internal/pg"
-	"github.com/hyphadb/hyphadb/internal/utils"
+	"github.com/hyphasql/hypha/internal/config"
+	"github.com/hyphasql/hypha/internal/duckdb"
+	"github.com/hyphasql/hypha/internal/mysql"
+	"github.com/hyphasql/hypha/internal/pg"
+	"github.com/hyphasql/hypha/internal/utils"
 	"golang.org/x/sync/errgroup"
 )
 

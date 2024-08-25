@@ -6,7 +6,7 @@ import (
 	"math"
 	"reflect"
 
-	"github.com/hyphadb/hyphadb/internal/utils"
+	"github.com/hyphasql/hypha/internal/utils"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/marcboeker/go-duckdb"
 )

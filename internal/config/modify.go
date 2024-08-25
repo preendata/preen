@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hyphadb/hyphadb/internal/utils"
+	"github.com/hyphasql/hypha/internal/utils"
 
 	"gopkg.in/yaml.v3"
 )

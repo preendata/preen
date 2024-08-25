@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/hyphadb/hyphadb/internal/config"
-	"github.com/hyphadb/hyphadb/internal/duckdb"
-	"github.com/hyphadb/hyphadb/internal/utils"
+	"github.com/hyphasql/hypha/internal/config"
+	"github.com/hyphasql/hypha/internal/duckdb"
+	"github.com/hyphasql/hypha/internal/utils"
 	"github.com/xwb1989/sqlparser"
 )
 

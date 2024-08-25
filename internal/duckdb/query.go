@@ -3,7 +3,7 @@ package duckdb
 import (
 	"database/sql"
 
-	"github.com/hyphadb/hyphadb/internal/utils"
+	"github.com/hyphasql/hypha/internal/utils"
 )
 
 func DMLQuery(queryString string) error {

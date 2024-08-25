@@ -3,8 +3,8 @@ package engine
 import (
 	"fmt"
 
-	"github.com/hyphadb/hyphadb/internal/config"
-	"github.com/hyphadb/hyphadb/internal/utils"
+	"github.com/hyphasql/hypha/internal/config"
+	"github.com/hyphasql/hypha/internal/utils"
 )
 
 type TableName string
