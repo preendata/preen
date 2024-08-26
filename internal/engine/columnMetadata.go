@@ -31,12 +31,12 @@ func BuildColumnMetadata(cfg *config.Config) (ColumnMetadata, error) {
 		return nil, err
 	}
 
-	columnMetadata := buildColumnMetadataDataStructure(results.Rows)
+	columnMetadata := buildColumnMetadataDataStructure(&results.Rows)
 
 	// For each column in each table as sourced from InformationSchema, determine the majority type
 	for tableName, tableStruct := range columnMetadata {
 		for columnName, columnStruct := range tableStruct {
-			majorityType, err := majority(columnName, columnStruct.Types)
+			majorityType, err := identifyMajorityType(columnName, columnStruct.Types)
 			if err != nil {
 				return nil, err
 			}
@@ -52,10 +52,10 @@ func BuildColumnMetadata(cfg *config.Config) (ColumnMetadata, error) {
 }
 
 // Rearranges the result set from the information schema to make it easier to process for the majority type calculator
-func buildColumnMetadataDataStructure(rows []map[string]any) ColumnMetadata {
+func buildColumnMetadataDataStructure(rows *[]map[string]any) ColumnMetadata {
 	columnMetadata := make(ColumnMetadata)
 
-	for _, row := range rows {
+	for _, row := range *rows {
 
 		// Runtime panic waiting to happen. This depends on the information schema being built correctly and only with
 		// type string
@@ -87,7 +87,8 @@ func buildColumnMetadataDataStructure(rows []map[string]any) ColumnMetadata {
 	return columnMetadata
 }
 
-func majority(columnName ColumnName, types []string) (MajorityType, error) {
+// Select majority type of input column via Boyer-Moore majority vote algorithm
+func identifyMajorityType(columnName ColumnName, types []string) (MajorityType, error) {
 	// Implement Boyer-Moore majority vote algorithm
 	var majority MajorityType
 	votes := 0
