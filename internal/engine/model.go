@@ -48,7 +48,7 @@ func BuildModel(cfg *config.Config) error {
 		return fmt.Errorf("error parsing model columns: %w", err)
 	}
 
-	if err = buildTables(models.Config); err != nil {
+	if err = buildDuckDBTables(models.Config); err != nil {
 		return fmt.Errorf("error building model tables: %w", err)
 	}
 
@@ -135,39 +135,17 @@ func readModelFiles(cfg *config.Config) (map[ModelName]*ModelConfig, error) {
 	return ModelQueries, nil
 }
 
-func buildTables(models map[ModelName]*ModelConfig) error {
-	connector, err := duckdb.CreateConnector()
-	if err != nil {
-		return err
-	}
-
-	db, err := duckdb.OpenDatabase(connector)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
+// Create each model's destination table in DuckDB
+func buildDuckDBTables(models map[ModelName]*ModelConfig) error {
 	for modelName, modelConfig := range models {
 		utils.Debug(fmt.Sprintf("Creating table %s", modelName))
-		dropTable := fmt.Sprintf("drop table if exists main.%s;", modelName)
-		_, err := db.Exec(dropTable)
-		if err != nil {
-			return err
-		}
-		createTable := fmt.Sprintf("create table main.%s (%s);", modelName, modelConfig.DDLString)
-		_, err = db.Exec(createTable)
-		if err != nil {
-			utils.Debug(fmt.Sprintf("Error creating table %s: %s", modelName, createTable))
-			return err
-		}
-	}
-	if err = tx.Commit(); err != nil {
-		return err
-	}
 
+		createTableStmt := fmt.Sprintf("CREATE OR REPLACE table main.%s (%s);", modelName, modelConfig.DDLString)
+		err = duckdb.DMLQuery(createTableStmt)
+		if err != nil {
+			utils.Debug(fmt.Sprintf("Error creating table %s: %s", modelName, createTableStmt))
+			return err
+		}
+	}
 	return nil
 }

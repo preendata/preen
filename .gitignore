@@ -124,3 +124,4 @@ venv.bak/
 *hyphaContext.db*
 .docker/db/data/**
 .hyphadb/config.yaml
+models/
