@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/hyphadb/hyphadb/internal/config"
+	"github.com/hyphasql/hypha/internal/config"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )

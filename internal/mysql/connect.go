@@ -7,7 +7,8 @@ import (
 	"net/url"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/hyphadb/hyphadb/internal/config"
+	"github.com/hyphasql/hypha/internal/config"
+	"github.com/jmoiron/sqlx"
 )
 
 func PoolFromSource(source config.Source) (*sql.DB, error) {

@@ -2,46 +2,81 @@ package engine
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/xwb1989/sqlparser"
 )
 
-func GetModelTableAliases(stmt *sqlparser.Select) map[string]string {
-	tableMap := make(map[string]string)
+type TableAlias string
+type TableMap map[TableAlias]TableName
+type TableSet []TableName
+
+func ParseModelTables(models map[ModelName]*ModelConfig) error {
+	for modelName, modelConfig := range models {
+		if modelConfig.IsSql {
+			selectStmt := modelConfig.Parsed.(*sqlparser.Select)
+			modelConfig.TableMap, modelConfig.TableSet = getModelTableAliases(selectStmt)
+		}
+		models[modelName] = modelConfig
+	}
+	return nil
+}
+
+func getModelTableAliases(stmt *sqlparser.Select) (TableMap, TableSet) {
+	tableMap := make(TableMap)
+	tableSet := make(TableSet, 0)
 	table := stmt.From[0]
 	switch t := table.(type) {
 	case *sqlparser.AliasedTableExpr:
-		tableMap[t.As.String()] = t.Expr.(sqlparser.TableName).Name.String()
+		if t.As.IsEmpty() {
+			tableName := TableName(t.Expr.(sqlparser.TableName).Name.String())
+			tableMap[TableAlias(t.Expr.(sqlparser.TableName).Name.String())] = tableName
+			if !slices.Contains(tableSet, tableName) {
+				tableSet = append(tableSet, tableName)
+			}
+		} else {
+			tableName := TableName(t.Expr.(sqlparser.TableName).Name.String())
+			tableMap[TableAlias(t.As.String())] = tableName
+			if !slices.Contains(tableSet, tableName) {
+				tableSet = append(tableSet, tableName)
+			}
+		}
 	case *sqlparser.JoinTableExpr:
-		parseJoinTables(t, tableMap)
+		_, tableSet = parseJoinTables(t, tableMap, tableSet)
 	default:
 		fmt.Println("default")
 	}
 
-	return tableMap
+	return tableMap, tableSet
 }
 
-func parseJoinTables(j *sqlparser.JoinTableExpr, tableMap map[string]string) (*sqlparser.JoinTableExpr, error) {
+func parseJoinTables(j *sqlparser.JoinTableExpr, tableMap TableMap, tableSet TableSet) (*sqlparser.JoinTableExpr, TableSet) {
 	rightAlias := j.RightExpr.(*sqlparser.AliasedTableExpr).As.String()
 	rightTable := j.RightExpr.(*sqlparser.AliasedTableExpr).Expr.(sqlparser.TableName).Name.String()
 	if rightAlias != "" {
-		tableMap[rightAlias] = rightTable
+		tableMap[TableAlias(rightAlias)] = TableName(rightTable)
+		if !slices.Contains(tableSet, TableName(rightTable)) {
+			tableSet = append(tableSet, TableName(rightTable))
+		}
 	} else {
-		tableMap[rightTable] = rightTable
+		tableMap[TableAlias(rightTable)] = TableName(rightTable)
+		if !slices.Contains(tableSet, TableName(rightTable)) {
+			tableSet = append(tableSet, TableName(rightTable))
+		}
 	}
 
 	switch left := j.LeftExpr.(type) {
 	case *sqlparser.JoinTableExpr:
-		parseJoinTables(left, tableMap)
+		parseJoinTables(left, tableMap, tableSet)
 	case *sqlparser.AliasedTableExpr:
 		leftAlias := left.As.String()
 		leftTable := left.Expr.(sqlparser.TableName).Name.String()
 		if leftAlias != "" {
-			tableMap[leftAlias] = leftTable
+			tableMap[TableAlias(leftAlias)] = TableName(leftTable)
 		} else {
-			tableMap[leftTable] = leftTable
+			tableMap[TableAlias(leftTable)] = TableName(leftTable)
 		}
 	}
 
-	return j, nil
+	return j, tableSet
 }

@@ -4,9 +4,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/hyphadb/hyphadb/internal/utils"
+	"github.com/hyphasql/hypha/internal/utils"
 
-	"github.com/hyphadb/hyphadb/internal/cli"
+	"github.com/hyphasql/hypha/internal/cli"
 	"github.com/joho/godotenv"
 )
 

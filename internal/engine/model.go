@@ -6,28 +6,36 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/hyphadb/hyphadb/internal/config"
-	"github.com/hyphadb/hyphadb/internal/duckdb"
-	"github.com/hyphadb/hyphadb/internal/utils"
+	"github.com/hyphasql/hypha/internal/config"
+	"github.com/hyphasql/hypha/internal/duckdb"
+	"github.com/hyphasql/hypha/internal/utils"
 	"github.com/xwb1989/sqlparser"
 )
 
-type ModelQuery struct {
+type ModelName string
+
+type ModelConfig struct {
 	Query     string
 	Parsed    sqlparser.Statement
 	DDLString string
-	Columns   map[string]map[string]Column
+	Columns   map[TableName]map[ColumnName]Column
+	TableMap  TableMap
+	TableSet  TableSet
 	IsSql     bool
 }
 
-type Model struct {
-	ModelQueries map[string]ModelQuery
+type Models struct {
+	Config map[ModelName]*ModelConfig
 }
 
 func BuildModel(cfg *config.Config) error {
-	err := BuildInformationSchema(cfg)
 
+	models, err := ParseModels(cfg)
 	if err != nil {
+		return fmt.Errorf("error parsing models: %w", err)
+	}
+
+	if err := BuildInformationSchema(cfg, models); err != nil {
 		return fmt.Errorf("error building information schema: %w", err)
 	}
 
@@ -36,33 +44,37 @@ func BuildModel(cfg *config.Config) error {
 		return fmt.Errorf("error building column metadata: %w", err)
 	}
 
-	model := Model{}
-
-	utils.Debug("Building model")
-	model.ModelQueries, err = readModelFiles(cfg)
-	if err != nil {
-		return fmt.Errorf("error reading model files: %w", err)
+	if err = ParseModelColumns(models.Config, columnMetadata); err != nil {
+		return fmt.Errorf("error parsing model columns: %w", err)
 	}
 
-	model.ModelQueries, err = ParseModelColumns(model.ModelQueries, columnMetadata)
-	if err != nil {
-		return fmt.Errorf("error parsing columns: %w", err)
-	}
-
-	if err = buildTables(model.ModelQueries); err != nil {
+	if err = buildDuckDBTables(models.Config); err != nil {
 		return fmt.Errorf("error building model tables: %w", err)
 	}
 
 	utils.Info(fmt.Sprintf("Fetching data from %d configured sources", len(cfg.Sources)))
-	if err = Retrieve(cfg, model); err != nil {
+	if err = Retrieve(cfg, *models); err != nil {
 		return fmt.Errorf("error retrieving data: %w", err)
 	}
 
 	return nil
 }
 
-func readModelFiles(cfg *config.Config) (map[string]ModelQuery, error) {
-	ModelQueries := make(map[string]ModelQuery, 0)
+func ParseModels(cfg *config.Config) (*Models, error) {
+	models, err := readModelFiles(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = ParseModelTables(models); err != nil {
+		return nil, err
+	}
+
+	return &Models{Config: models}, nil
+}
+
+func readModelFiles(cfg *config.Config) (map[ModelName]*ModelConfig, error) {
+	ModelQueries := make(map[ModelName]*ModelConfig, 0)
 	files, err := os.ReadDir(cfg.Env.HyphaModelPath)
 	if err != nil {
 		return nil, err
@@ -83,7 +95,7 @@ func readModelFiles(cfg *config.Config) (map[string]ModelQuery, error) {
 			if err != nil {
 				return nil, err
 			}
-			cq := ModelQuery{
+			cq := &ModelConfig{
 				Query: string(bytes),
 				IsSql: true,
 			}
@@ -93,7 +105,7 @@ func readModelFiles(cfg *config.Config) (map[string]ModelQuery, error) {
 				return nil, err
 			}
 			cq.Parsed = parsedQuery
-			ModelQueries[strings.TrimSuffix(file.Name(), ".sql")] = cq
+			ModelQueries[ModelName(strings.TrimSuffix(file.Name(), ".sql"))] = cq
 		} else if strings.HasSuffix(file.Name(), ".json") {
 			modelFileCount++
 			modelName := strings.TrimSuffix(file.Name(), ".json")
@@ -106,11 +118,11 @@ func readModelFiles(cfg *config.Config) (map[string]ModelQuery, error) {
 			if err != nil {
 				return nil, err
 			}
-			cq := ModelQuery{
+			cq := &ModelConfig{
 				Query: string(bytes),
 				IsSql: false,
 			}
-			ModelQueries[strings.TrimSuffix(file.Name(), ".json")] = cq
+			ModelQueries[ModelName(strings.TrimSuffix(file.Name(), ".json"))] = cq
 		}
 	}
 
@@ -123,39 +135,17 @@ func readModelFiles(cfg *config.Config) (map[string]ModelQuery, error) {
 	return ModelQueries, nil
 }
 
-func buildTables(ModelQueries map[string]ModelQuery) error {
-	connector, err := duckdb.CreateConnector()
-	if err != nil {
-		return err
-	}
-
-	db, err := duckdb.OpenDatabase(connector)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	for modelName, ModelQuery := range ModelQueries {
+// Create each model's destination table in DuckDB
+func buildDuckDBTables(models map[ModelName]*ModelConfig) error {
+	for modelName, modelConfig := range models {
 		utils.Debug(fmt.Sprintf("Creating table %s", modelName))
-		dropTable := fmt.Sprintf("drop table if exists main.%s;", modelName)
-		_, err := db.Exec(dropTable)
-		if err != nil {
-			return err
-		}
-		createTable := fmt.Sprintf("create table main.%s (%s);", modelName, ModelQuery.DDLString)
-		_, err = db.Exec(createTable)
-		if err != nil {
-			utils.Debug(fmt.Sprintf("Error creating table %s: %s", modelName, createTable))
-			return err
-		}
-	}
-	if err = tx.Commit(); err != nil {
-		return err
-	}
 
+		createTableStmt := fmt.Sprintf("CREATE OR REPLACE table main.%s (%s);", modelName, modelConfig.DDLString)
+		err = duckdb.DMLQuery(createTableStmt)
+		if err != nil {
+			utils.Debug(fmt.Sprintf("Error creating table %s: %s", modelName, createTableStmt))
+			return err
+		}
+	}
 	return nil
 }

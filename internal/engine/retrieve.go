@@ -36,7 +36,7 @@ type Retriever[T Database] struct {
 	Client    T
 }
 
-func Retrieve(cfg *config.Config, m Model) error {
+func Retrieve(cfg *config.Config, models Models) error {
 	for _, modelName := range cfg.Models {
 		ic := make(chan []driver.Value, 10000)
 		dc := make(chan []int64)
@@ -60,7 +60,7 @@ func Retrieve(cfg *config.Config, m Model) error {
 				r := Retriever[*pgxpool.Pool]{
 					Source:    source,
 					ModelName: modelName,
-					Query:     m.ModelQueries[modelName].Query,
+					Query:     models.Config[ModelName(modelName)].Query,
 					Client:    pool,
 				}
 				defer r.Client.Close()
@@ -107,7 +107,7 @@ func Retrieve(cfg *config.Config, m Model) error {
 				r := Retriever[*mongo.Client]{
 					Source:    source,
 					ModelName: modelName,
-					Query:     m.ModelQueries[modelName].Query,
+					Query:     models.Config[ModelName(modelName)].Query,
 					Client:    mongoClient,
 				}
 				defer r.Client.Disconnect(context.Background())
