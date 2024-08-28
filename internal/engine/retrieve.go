@@ -11,11 +11,11 @@ import (
 	"slices"
 	"time"
 
-	"github.com/hyphadb/hyphadb/internal/config"
-	internalMongo "github.com/hyphadb/hyphadb/internal/mongo"
-	"github.com/hyphadb/hyphadb/internal/mysql"
-	"github.com/hyphadb/hyphadb/internal/pg"
-	"github.com/hyphadb/hyphadb/internal/utils"
+	"github.com/hyphasql/hypha/internal/config"
+	internalMongo "github.com/hyphasql/hypha/internal/mongo"
+	"github.com/hyphasql/hypha/internal/mysql"
+	"github.com/hyphasql/hypha/internal/pg"
+	"github.com/hyphasql/hypha/internal/utils"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/marcboeker/go-duckdb"
@@ -82,7 +82,7 @@ func Retrieve(cfg *config.Config, models Models) error {
 				r := Retriever[*sql.DB]{
 					Source:    source,
 					ModelName: modelName,
-					Query:     m.ModelQueries[modelName].Query,
+					Query:     models.Config[ModelName(modelName)].Query,
 					Client:    pool,
 				}
 
@@ -135,7 +135,7 @@ func Retrieve(cfg *config.Config, models Models) error {
 }
 
 func processMysqlSource(r Retriever[*sql.DB], ic chan []driver.Value) error {
-	utils.Debugf("In process Mysql source", r)
+	utils.Debug(fmt.Sprintf("Retrieving context %s for %s", r.ModelName, r.Source.Name))
 	rows, err := r.Client.Query(r.Query)
 
 	if err != nil {
@@ -143,42 +143,59 @@ func processMysqlSource(r Retriever[*sql.DB], ic chan []driver.Value) error {
 	}
 
 	defer rows.Close()
-
-	for rows.Next() {
-		values, err := scanRow(rows)
-		// cols, err := rows.Columns()
-		if err != nil {
-			return err
-		}
-		fmt.Println(values...)
-
-		// utils.Debugf("Cols pulled from processer", cols)
-	}
-
-	return nil
-}
-
-func scanRow(rows *sql.Rows) ([]any, error) {
 	// Get column types and count
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Create a slice of empty interfaces to hold the values
-	values := make([]any, len(columnTypes))
+	columnNames, _ := rows.Columns()
+
+	// Create a slice of empty interfaces
 	valuePtrs := make([]any, len(columnTypes))
 
 	for i := range columnTypes {
-		valuePtrs[i] = &values[i]
+		fmt.Println(columnNames[i], columnTypes[i].ScanType().String())
+		valueType := columnTypes[i].ScanType().String()
+		switch valueType {
+		case "sql.NullString", "string":
+			valuePtrs[i] = new(string)
+		case "sql.NullInt64", "int64":
+			valuePtrs[i] = new(int64)
+		case "sql.NullInt32", "int32":
+			valuePtrs[i] = new(int32)
+		case "sql.NullInt16", "int16":
+			valuePtrs[i] = new(int16)
+		case "sql.NullByte", "byte":
+			valuePtrs[i] = new(byte)
+		case "sql.NullFloat64", "float64":
+			valuePtrs[i] = new(float64)
+		case "sql.NullBool", "bool":
+			valuePtrs[i] = new(bool)
+		case "sql.NullTime", "time.Time":
+			valuePtrs[i] = new(time.Time)
+		default:
+			utils.Error(fmt.Sprintf("Unsupported type %s", valueType))
+		}
+
+	}
+	for rows.Next() {
+		if err = rows.Scan(valuePtrs...); err != nil {
+			return err
+		}
+		driverRow := make([]driver.Value, len(valuePtrs)+1)
+		driverRow[0] = r.Source.Name
+		for i, ptr := range valuePtrs {
+			if ptr == nil {
+				driverRow[i+1] = nil
+				continue
+			}
+			driverRow[i+1] = reflect.ValueOf(ptr).Elem().Interface()
+		}
+		ic <- driverRow
 	}
 
-	// Scan the row into the value pointers
-	if err := rows.Scan(valuePtrs...); err != nil {
-		return nil, err
-	}
-
-	return values, nil
+	return nil
 }
 
 func processPgSource(r Retriever[*pgxpool.Pool], ic chan []driver.Value) error {

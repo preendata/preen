@@ -2,11 +2,13 @@ package duckdb
 
 var PgTypeMap = map[string]string{
 	"integer":           "integer",
-	"bigint":            "int8",
+	"bigint":            "bigint",
+	"smallint":          "smallint",
+	"mediumint":         "integer",
+	"int":               "integer",
 	"double precision":  "double",
 	"real":              "real",
 	"float4":            "real",
-	"smallint":          "smallint",
 	"character varying": "varchar",
 	"text":              "varchar",
 	"character":         "varchar",
@@ -14,7 +16,8 @@ var PgTypeMap = map[string]string{
 	"date":              "date",
 	"numeric":           "double",
 	"decimal":           "double",
-	// begin mysql types
-	"varchar": "varchar",
-	"tinyint": "smallint",
+	"timestamp":         "timestamp",
+	"varchar":           "varchar",
+	"tinyint":           "tinyint",
+	"char":              "varchar",
 }

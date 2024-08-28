@@ -8,13 +8,12 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/hyphasql/hypha/internal/config"
-	"github.com/jmoiron/sqlx"
 )
 
 func PoolFromSource(source config.Source) (*sql.DB, error) {
 	// Example url := "root:thisisnotarealpassword@tcp(127.0.0.1:33061)/mysql_db_1"
 	url := fmt.Sprintf(
-		"%s:%s@tcp(%s:%d)/%s",
+		"%s:%s@tcp(%s:%d)/%s?parseTime=true",
 		source.Connection.Username,
 		url.QueryEscape(source.Connection.Password),
 		url.QueryEscape(source.Connection.Host),
