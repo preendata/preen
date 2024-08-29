@@ -202,7 +202,7 @@ func processCase(expr *sqlparser.AliasedExpr, cp *columnParser) error {
 	// will throw an error for us.
 	switch expr := whens[0].Val.(type) {
 	case sqlparser.BoolVal:
-		fmt.Println("boolean")
+		*colType = "boolean"
 	case *sqlparser.SQLVal:
 		switch expr.Type {
 		case sqlparser.IntVal:

@@ -81,11 +81,13 @@ func readModelFiles(cfg *config.Config) (map[ModelName]*ModelConfig, error) {
 	}
 
 	modelFileCount := 0
+	modelFiles := make([]string, 0)
 
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), ".sql") {
 			modelFileCount++
 			modelName := strings.TrimSuffix(file.Name(), ".sql")
+			modelFiles = append(modelFiles, modelName)
 			if !slices.Contains(cfg.Models, modelName) {
 				utils.Debug(fmt.Sprintf("Skipping file %s", modelName))
 				continue
@@ -109,6 +111,7 @@ func readModelFiles(cfg *config.Config) (map[ModelName]*ModelConfig, error) {
 		} else if strings.HasSuffix(file.Name(), ".json") {
 			modelFileCount++
 			modelName := strings.TrimSuffix(file.Name(), ".json")
+			modelFiles = append(modelFiles, modelName)
 			if !slices.Contains(cfg.Models, modelName) {
 				utils.Debug(fmt.Sprintf("Skipping file %s", modelName))
 				continue
@@ -130,6 +133,10 @@ func readModelFiles(cfg *config.Config) (map[ModelName]*ModelConfig, error) {
 		return nil, fmt.Errorf("no model files found in %s", cfg.Env.HyphaModelPath)
 	}
 
+	if err = errorOnMissingModels(cfg, modelFiles); err != nil {
+		return nil, err
+	}
+
 	utils.Debug(fmt.Sprintf("Loaded %d model files from %s", modelFileCount, cfg.Env.HyphaModelPath))
 
 	return ModelQueries, nil
@@ -139,13 +146,25 @@ func readModelFiles(cfg *config.Config) (map[ModelName]*ModelConfig, error) {
 func buildDuckDBTables(models map[ModelName]*ModelConfig) error {
 	for modelName, modelConfig := range models {
 		utils.Debug(fmt.Sprintf("Creating table %s", modelName))
-
 		createTableStmt := fmt.Sprintf("CREATE OR REPLACE table main.%s (%s);", modelName, modelConfig.DDLString)
 		err = duckdb.DMLQuery(createTableStmt)
 		if err != nil {
 			utils.Debug(fmt.Sprintf("Error creating table %s: %s", modelName, createTableStmt))
 			return err
 		}
+	}
+	return nil
+}
+
+func errorOnMissingModels(cfg *config.Config, modelFiles []string) error {
+	missingModels := make([]string, 0)
+	for _, modelName := range cfg.Models {
+		if !slices.Contains(modelFiles, modelName) {
+			missingModels = append(missingModels, modelName)
+		}
+	}
+	if len(missingModels) > 0 {
+		return fmt.Errorf("no model file detected for models: %s", strings.Join(missingModels, ", "))
 	}
 	return nil
 }

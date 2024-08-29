@@ -54,7 +54,6 @@ func GetConfig() (*Config, error) {
 	fromEnv(&c)
 
 	collectModels(&c)
-	fmt.Println(configFilePath)
 	if len(c.Models) == 0 {
 		return nil, fmt.Errorf("no models defined in config file")
 	}

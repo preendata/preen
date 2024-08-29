@@ -23,7 +23,6 @@ func Insert(modelName string, ic <-chan []driver.Value, dc chan<- []int64) {
 			break
 		}
 		if err := appender.AppendRow(c...); err != nil {
-			fmt.Println(c)
 			panic(err)
 		}
 		rowCounter++
