@@ -46,6 +46,7 @@ func pool(url string) (*sql.DB, error) {
 	return dbPool, nil
 }
 
+// Retrieve retrieves data from a MySQL source and sends it to the insert channel.
 func ingestMysqlSource(r *Retriever, ic chan []driver.Value) error {
 	utils.Debug(fmt.Sprintf("Retrieving context %s for %s", r.ModelName, r.Source.Name))
 	clientPool, err := PoolFromSource(r.Source)
@@ -66,13 +67,14 @@ func ingestMysqlSource(r *Retriever, ic chan []driver.Value) error {
 	return nil
 }
 
+// processRows processes rows from a MySQL source and sends them to the insert channel.
 func processRows(r *Retriever, ic chan []driver.Value, rows *sql.Rows) error {
+	// Get the column types from the rows and create a slice of pointers to scan into.
 	valuePtrs, err := processColumns(rows)
 	for rows.Next() {
 		if err = rows.Scan(valuePtrs...); err != nil {
 			return err
 		}
-		// fmt.Println(*valuePtrs[3].(*string))
 		driverRow := make([]driver.Value, len(valuePtrs)+1)
 		driverRow[0] = r.Source.Name
 		for i, ptr := range valuePtrs {
@@ -94,6 +96,7 @@ func processRows(r *Retriever, ic chan []driver.Value, rows *sql.Rows) error {
 					return err
 				}
 			default:
+				// If the value is not a custom type, we can just use the value as is.
 				driverRow[i+1] = reflect.ValueOf(ptr).Elem().Interface()
 			}
 		}
