@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -44,33 +43,4 @@ func GetPostgresPoolFromSource(source configSource) (*pgxpool.Pool, error) {
 	}
 
 	return dbpool, nil
-}
-
-// Execute a raw statement on all sources in the config.
-func ExecuteRaw(statement string, cfg *Config, source configSource) (pgx.Rows, error) {
-
-	url := fmt.Sprintf(
-		"postgres://%s:%s@%s:%d/%s",
-		source.Connection.Username,
-		source.Connection.Password,
-		source.Connection.Host,
-		source.Connection.Port,
-		source.Connection.Database,
-	)
-
-	dbpool, err := getPostgresPool(url)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer dbpool.Close()
-	Debug("Executing query against Postgres: ", statement)
-
-	rows, err := dbpool.Query(context.Background(), statement)
-	if err != nil {
-		return nil, err
-	}
-
-	return rows, nil
 }
