@@ -8,8 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// Implements the Scanner and Valuer interfaces for custom data types that.
-// These data types implement the Scanner interface from the database/sql package.
+// Implements the Scanner and Valuer interfaces for custom data types.
 // https://pkg.go.dev/database/sql#Scanner
 
 // duckdbDecimal is a custom type for scanning and valuing float64 values.
