@@ -23,15 +23,14 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type Database interface {
-	*pgxpool.Pool | *mongo.Client
+type Source interface {
+	ingest(r *Retriever) error
 }
 
-type Retriever[T Database] struct {
+type Retriever struct {
 	ModelName string
 	Query     string
 	Source    config.Source
-	Client    T
 }
 
 func Retrieve(cfg *config.Config, models Models) error {
@@ -55,17 +54,31 @@ func Retrieve(cfg *config.Config, models Models) error {
 				if err != nil {
 					return err
 				}
-				r := Retriever[*pgxpool.Pool]{
+				r := Retriever{
 					Source:    source,
 					ModelName: modelName,
 					Query:     models.Config[ModelName(modelName)].Query,
-					Client:    pool,
 				}
-				defer r.Client.Close()
-				utils.Debug(fmt.Sprintf("Opened connection to %s. Pool stats: \n total conns: %d, ", source.Name, r.Client.Stat().TotalConns()))
-				func(r Retriever[*pgxpool.Pool], ic chan []driver.Value) error {
+				defer pool.Close()
+				utils.Debug(fmt.Sprintf("Opened connection to %s. Pool stats: \n total conns: %d, ", source.Name, pool.Stat().TotalConns()))
+				func(r Retriever, ic chan []driver.Value) error {
 					g.Go(func() error {
-						if err := processPgSource(r, ic); err != nil {
+						if err := processPgSource(r, ic, pool); err != nil {
+							return err
+						}
+						return nil
+					})
+					return nil
+				}(r, ic)
+			case "mysql":
+				r := Retriever{
+					Source:    source,
+					ModelName: modelName,
+					Query:     models.Config[ModelName(modelName)].Query,
+				}
+				func(r Retriever, ic chan []driver.Value) error {
+					g.Go(func() error {
+						if err := ingestMysqlSource(&r, ic); err != nil {
 							return err
 						}
 						return nil
@@ -79,16 +92,15 @@ func Retrieve(cfg *config.Config, models Models) error {
 				if err != nil {
 					return err
 				}
-				r := Retriever[*mongo.Client]{
+				r := Retriever{
 					Source:    source,
 					ModelName: modelName,
 					Query:     models.Config[ModelName(modelName)].Query,
-					Client:    mongoClient,
 				}
-				defer r.Client.Disconnect(context.Background())
-				func(r Retriever[*mongo.Client], ic chan []driver.Value) error {
+				defer mongoClient.Disconnect(context.Background())
+				func(r Retriever, ic chan []driver.Value) error {
 					g.Go(func() error {
-						if err := processMongoSource(r, ic); err != nil {
+						if err := processMongoSource(r, ic, mongoClient); err != nil {
 							return err
 						}
 						return nil
@@ -109,14 +121,15 @@ func Retrieve(cfg *config.Config, models Models) error {
 	return nil
 }
 
-func processPgSource(r Retriever[*pgxpool.Pool], ic chan []driver.Value) error {
+func processPgSource(r Retriever, ic chan []driver.Value, pool *pgxpool.Pool) error {
 	utils.Debug(fmt.Sprintf("Retrieving context %s for %s", r.ModelName, r.Source.Name))
-	rows, err := r.Client.Query(context.Background(), r.Query)
+	rows, err := pool.Query(context.Background(), r.Query)
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 	var rowCounter int64
+
 	for rows.Next() {
 		values, err := rows.Values()
 		if err != nil {
@@ -146,11 +159,11 @@ func processPgSource(r Retriever[*pgxpool.Pool], ic chan []driver.Value) error {
 	return nil
 }
 
-func processMongoSource(r Retriever[*mongo.Client], ic chan []driver.Value) error {
+func processMongoSource(r Retriever, ic chan []driver.Value, mongoClient *mongo.Client) error {
 	utils.Debug(fmt.Sprintf("Retrieving context %s for %s", r.ModelName, r.Source.Name))
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	collection := r.Client.Database(r.Source.Connection.Database).Collection(r.ModelName)
+	collection := mongoClient.Database(r.Source.Connection.Database).Collection(r.ModelName)
 	jsonQuery := make(map[string]interface{})
 	if err := json.Unmarshal([]byte(r.Query), &jsonQuery); err != nil {
 		utils.Errorf("Error unmarshalling json query: %s", err)

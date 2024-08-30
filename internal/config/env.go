@@ -25,8 +25,8 @@ func EnvInit() (*Env, error) {
 	}
 
 	return &Env{
-		HyphaConfigPath: getEnv("HYPHADB_CONFIG_PATH", filepath.Join(usr.HomeDir, ".hyphadb"), false),
-		HyphaModelPath:  getEnv("HYPHADB_MODEL_PATH", filepath.Join(workDir, "models"), false),
-		LicenseKey:      getEnv("HYPHADB_LICENSE_KEY", "", true),
+		HyphaConfigPath: getEnv("HYPHA_CONFIG_PATH", filepath.Join(usr.HomeDir, ".hypha"), false),
+		HyphaModelPath:  getEnv("HYPHA_MODEL_PATH", filepath.Join(workDir, "models"), false),
+		LicenseKey:      getEnv("HYPHA_LICENSE_KEY", "", false),
 	}, nil
 }
