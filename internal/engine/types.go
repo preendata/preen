@@ -54,7 +54,7 @@ func (b mysqlBool) Value() (driver.Value, error) {
 	return false, nil
 }
 
-var PgTypeMap = map[string]string{
+var duckdbTypeMap = map[string]string{
 	"integer":           "integer",
 	"bigint":            "bigint",
 	"smallint":          "smallint",
