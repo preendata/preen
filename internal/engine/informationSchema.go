@@ -8,7 +8,6 @@ import (
 
 	"github.com/hyphasql/hypha/internal/config"
 	"github.com/hyphasql/hypha/internal/duckdb"
-	"github.com/hyphasql/hypha/internal/mysql"
 	"github.com/hyphasql/hypha/internal/pg"
 	"github.com/hyphasql/hypha/internal/utils"
 	"golang.org/x/sync/errgroup"
@@ -71,7 +70,7 @@ func buildMySQLInformationSchema(sources []config.Source, ic chan<- []driver.Val
 		func(source config.Source) error {
 			schemaErrGroup.Go(func() error {
 				// Open new pool for every source
-				pool, err := mysql.PoolFromSource(source)
+				pool, err := GetMysqlPoolFromSource(source)
 				if err != nil {
 					return err
 				}

@@ -14,7 +14,7 @@ import (
 	"github.com/hyphasql/hypha/internal/utils"
 )
 
-func PoolFromSource(source config.Source) (*sql.DB, error) {
+func GetMysqlPoolFromSource(source config.Source) (*sql.DB, error) {
 	// Example url := "root:thisisnotarealpassword@tcp(127.0.0.1:33061)/mysql_db_1"
 	url := fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?parseTime=true",
@@ -24,7 +24,7 @@ func PoolFromSource(source config.Source) (*sql.DB, error) {
 		source.Connection.Port,
 		source.Connection.Database,
 	)
-	dbpool, err := pool(url)
+	dbpool, err := getMysqlPool(url)
 
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func PoolFromSource(source config.Source) (*sql.DB, error) {
 	return dbpool, nil
 }
 
-func pool(url string) (*sql.DB, error) {
+func getMysqlPool(url string) (*sql.DB, error) {
 	dbPool, err := sql.Open("mysql", url)
 
 	if err != nil {
@@ -49,7 +49,7 @@ func pool(url string) (*sql.DB, error) {
 // Retrieve retrieves data from a MySQL source and sends it to the insert channel.
 func ingestMysqlSource(r *Retriever, ic chan []driver.Value) error {
 	utils.Debug(fmt.Sprintf("Retrieving context %s for %s", r.ModelName, r.Source.Name))
-	clientPool, err := PoolFromSource(r.Source)
+	clientPool, err := GetMysqlPoolFromSource(r.Source)
 	if err != nil {
 		return err
 	}
@@ -60,17 +60,17 @@ func ingestMysqlSource(r *Retriever, ic chan []driver.Value) error {
 	}
 	defer rows.Close()
 
-	if err = processRows(r, ic, rows); err != nil {
+	if err = processMysqlRows(r, ic, rows); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// processRows processes rows from a MySQL source and sends them to the insert channel.
-func processRows(r *Retriever, ic chan []driver.Value, rows *sql.Rows) error {
+// processMysqlRows processes rows from a MySQL source and sends them to the insert channel.
+func processMysqlRows(r *Retriever, ic chan []driver.Value, rows *sql.Rows) error {
 	// Get the column types from the rows and create a slice of pointers to scan into.
-	valuePtrs, err := processColumns(rows)
+	valuePtrs, err := processMysqlColumns(rows)
 	for rows.Next() {
 		if err = rows.Scan(valuePtrs...); err != nil {
 			return err
@@ -106,7 +106,7 @@ func processRows(r *Retriever, ic chan []driver.Value, rows *sql.Rows) error {
 	return nil
 }
 
-func processColumns(rows *sql.Rows) ([]any, error) {
+func processMysqlColumns(rows *sql.Rows) ([]any, error) {
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
 		return nil, err
