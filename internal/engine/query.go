@@ -1,11 +1,5 @@
 package engine
 
-import (
-	"github.com/hyphasql/hypha/internal/config"
-	"github.com/hyphasql/hypha/internal/duckdb"
-	"github.com/hyphasql/hypha/internal/utils"
-)
-
 type QueryResults struct {
 	Rows        []map[string]any
 	Columns     []string
@@ -14,15 +8,15 @@ type QueryResults struct {
 
 var err error
 
-func Execute(statement string, cfg *config.Config) (*QueryResults, error) {
-	utils.Debug("Executing query: " + statement)
+func Execute(statement string, cfg *Config) (*QueryResults, error) {
+	Debug("Executing query: " + statement)
 	qr := QueryResults{
 		ResultsChan: make(chan map[string]any),
 	}
 
 	go qr.collectResults(qr.ResultsChan)
 
-	qr.Columns, err = duckdb.Query(statement, qr.ResultsChan)
+	qr.Columns, err = Query(statement, qr.ResultsChan)
 	if err != nil {
 		return nil, err
 	}

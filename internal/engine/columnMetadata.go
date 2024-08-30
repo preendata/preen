@@ -2,9 +2,6 @@ package engine
 
 import (
 	"fmt"
-
-	"github.com/hyphasql/hypha/internal/config"
-	"github.com/hyphasql/hypha/internal/utils"
 )
 
 type TableName string
@@ -24,7 +21,7 @@ type ColumnMetadata map[TableName]map[ColumnName]ColumnType
 // 2) Performs type validation against each column pulled from the source databases, via the Boyer-Moore majority voting
 // algorithm. This majority type is then packaged into the ColumnMetadata and return to the caller. This is important
 // for typing the model tables created in DuckDB
-func BuildColumnMetadata(cfg *config.Config) (ColumnMetadata, error) {
+func BuildColumnMetadata(cfg *Config) (ColumnMetadata, error) {
 	// query data from hypha_information_schema
 	results, err := Execute("SELECT column_name, data_type, table_name FROM hypha_information_schema", cfg)
 	if err != nil {
@@ -114,23 +111,23 @@ func identifyMajorityType(columnName ColumnName, types []string) (MajorityType, 
 		}
 	}
 	if majority == "" {
-		utils.Warn(
+		Warn(
 			fmt.Sprintf("Column: '%s' is missing from majority of tables!", columnName),
 		)
 	} else if count > len(types)/2 && count == len(types) {
-		utils.Debug(
+		Debug(
 			fmt.Sprintf("Data type for column '%s' is: %s", columnName, majority),
 		)
 		return majority, nil
 
 	} else if count > len(types)/2 && count != len(types) {
-		utils.Warn(
+		Warn(
 			fmt.Sprintf("Discrepancy in data types for column '%s'! Using majority data type of %s", columnName, majority),
 		)
 		return majority, nil
 	}
 
-	utils.Warn(
+	Warn(
 		fmt.Sprintf("No majority data type found for column '%s'!", columnName),
 	)
 	// This needs to be made unreachable
