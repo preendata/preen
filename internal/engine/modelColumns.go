@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/hyphasql/hypha/internal/duckdb"
 	"github.com/xwb1989/sqlparser"
 )
 
@@ -128,7 +127,7 @@ func processModelColumn(expr *sqlparser.AliasedExpr, cp *columnParser) error {
 	}
 
 	// Look up the data type and append it to the table creation DDL string.
-	colType := duckdb.PgTypeMap[string(cp.columnMetadata[TableName(cp.tableName)][ColumnName(colName)].MajorityType)]
+	colType := duckdbTypeMap[string(cp.columnMetadata[TableName(cp.tableName)][ColumnName(colName)].MajorityType)]
 	cp.ddlString = fmt.Sprintf("%s, %s %s", cp.ddlString, col.Alias, colType)
 
 	return nil
@@ -169,7 +168,7 @@ func processFunction(expr *sqlparser.AliasedExpr, cp *columnParser) error {
 		if _, ok := cp.columnMetadata[tableName][ColumnName(colName)]; !ok {
 			return fmt.Errorf("column not found in table: %s.%s. check that your model query is valid", cp.tableName, colName)
 		}
-		colType := duckdb.PgTypeMap[string(cp.columnMetadata[tableName][ColumnName(colName)].MajorityType)]
+		colType := duckdbTypeMap[string(cp.columnMetadata[tableName][ColumnName(colName)].MajorityType)]
 		cp.ddlString = fmt.Sprintf("%s, %s %s", cp.ddlString, col.Alias, colType)
 	}
 

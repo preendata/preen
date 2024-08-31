@@ -6,14 +6,12 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
-	"github.com/hyphasql/hypha/internal/config"
 	"github.com/hyphasql/hypha/internal/engine"
-	"github.com/hyphasql/hypha/internal/utils"
 	"github.com/urfave/cli/v2"
 )
 
 func Repl(c *cli.Context) error {
-	conf, err := config.GetConfig()
+	conf, err := engine.GetConfig()
 	if err != nil {
 		return fmt.Errorf("error getting config: %w", err)
 	}
@@ -75,7 +73,7 @@ func Repl(c *cli.Context) error {
 			continue
 		}
 
-		utils.WriteToTable(qr.Rows, qr.Columns, outputFormat)
+		engine.WriteToTable(qr.Rows, qr.Columns, outputFormat)
 	}
 
 	return nil

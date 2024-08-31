@@ -4,20 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/hyphasql/hypha/internal/utils"
-
-	"github.com/hyphasql/hypha/internal/config"
 	"github.com/hyphasql/hypha/internal/engine"
 	"github.com/urfave/cli/v2"
 )
 
 func Query(c *cli.Context) error {
-	utils.Debug("Executing cli.query")
+	engine.Debug("Executing cli.query")
 	format := c.String("format")
 	stmt := c.Args().First()
-	utils.Debug("Query: ", stmt)
+	engine.Debug("Query: ", stmt)
 
-	conf, err := config.GetConfig()
+	conf, err := engine.GetConfig()
 
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
@@ -26,15 +23,15 @@ func Query(c *cli.Context) error {
 	qr, err := engine.Execute(stmt, conf)
 
 	if err != nil {
-		utils.Debug("error executing query", err)
+		engine.Debug("error executing query", err)
 		return fmt.Errorf("error executing query %w", err)
 	}
 	if format == "json" {
-		if err := utils.PrintPrettyJSON(qr.Rows); err != nil {
+		if err := engine.PrintPrettyJSON(qr.Rows); err != nil {
 			return fmt.Errorf("error pretty printing JSON: %w", err)
 		}
 	} else {
-		if err := utils.WriteToTable(qr.Rows, qr.Columns, "table"); err != nil {
+		if err := engine.WriteToTable(qr.Rows, qr.Columns, "table"); err != nil {
 			return fmt.Errorf("error writing to table: %w", err)
 		}
 	}
@@ -43,9 +40,9 @@ func Query(c *cli.Context) error {
 }
 
 func BuildModel(c *cli.Context) error {
-	utils.Debug("Executing cli.buildmodel")
+	engine.Debug("Executing cli.buildmodel")
 
-	conf, err := config.GetConfig()
+	conf, err := engine.GetConfig()
 
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
@@ -60,9 +57,9 @@ func BuildModel(c *cli.Context) error {
 }
 
 func BuildInformationSchema(c *cli.Context) error {
-	utils.Debug("Executing cli.buildInformationSchema")
+	engine.Debug("Executing cli.buildInformationSchema")
 
-	conf, err := config.GetConfig()
+	conf, err := engine.GetConfig()
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
@@ -81,9 +78,9 @@ func BuildInformationSchema(c *cli.Context) error {
 }
 
 func Validate(c *cli.Context) error {
-	utils.Debug("Executing cli.validate")
+	engine.Debug("Executing cli.validate")
 
-	conf, err := config.GetConfig()
+	conf, err := engine.GetConfig()
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
@@ -96,13 +93,13 @@ func Validate(c *cli.Context) error {
 	err = engine.BuildInformationSchema(conf, models)
 
 	if err != nil {
-		utils.Debug("error building information schema", err)
+		engine.Debug("error building information schema", err)
 		return fmt.Errorf("error building information schema %w", err)
 	}
 
 	_, err = engine.BuildColumnMetadata((conf))
 	if err != nil {
-		utils.Debug("error building column metadata", err)
+		engine.Debug("error building column metadata", err)
 		return fmt.Errorf("error building column metadata %w", err)
 	}
 
@@ -110,14 +107,14 @@ func Validate(c *cli.Context) error {
 }
 
 func ListSources(c *cli.Context) error {
-	utils.Debug("Executing cli.listSources")
-	conf, err := config.GetConfig()
+	engine.Debug("Executing cli.listSources")
+	conf, err := engine.GetConfig()
 
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	for _, conn := range conf.Sources {
+	for _, conn := range conf.ConfigSources {
 		c, err := json.MarshalIndent(conn, "", "  ")
 
 		if err != nil {

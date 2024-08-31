@@ -1,17 +1,16 @@
-package mongo
+package engine
 
 import (
 	"context"
 	"fmt"
 	"net/url"
 
-	"github.com/hyphasql/hypha/internal/config"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-func connect(url string, ctx context.Context) (*mongo.Client, error) {
+func mongoConnect(url string, ctx context.Context) (*mongo.Client, error) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(url))
 	if err != nil {
 		return nil, err
@@ -22,7 +21,7 @@ func connect(url string, ctx context.Context) (*mongo.Client, error) {
 	return client, nil
 }
 
-func ConnFromSource(source config.Source, ctx context.Context) (*mongo.Client, error) {
+func MongoConnFromSource(source configSource, ctx context.Context) (*mongo.Client, error) {
 
 	url := fmt.Sprintf(
 		"mongodb://%s:%s@%s:%d/?authSource=%s",

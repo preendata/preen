@@ -6,14 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hyphasql/hypha/internal/config"
-	"github.com/hyphasql/hypha/internal/duckdb"
-	"github.com/hyphasql/hypha/internal/pg"
-	"github.com/hyphasql/hypha/internal/utils"
 	"golang.org/x/sync/errgroup"
 )
 
-func BuildInformationSchema(cfg *config.Config, models *Models) error {
+func BuildInformationSchema(cfg *Config, models *Models) error {
 	// Ensure info schema table exists
 	if err := prepareDDBInformationSchema(); err != nil {
 		return err
@@ -44,7 +40,7 @@ func BuildInformationSchema(cfg *config.Config, models *Models) error {
 					return err
 				}
 			case "mongodb":
-				utils.Debug("No information schema required for MongoDB")
+				Debug("No information schema required for MongoDB")
 			default:
 				return fmt.Errorf("unsupported engine: %s", engine)
 			}
@@ -63,11 +59,11 @@ func BuildInformationSchema(cfg *config.Config, models *Models) error {
 }
 
 // buildMySQLInformationSchema builds the information schema for all mysql sources in the config
-func buildMySQLInformationSchema(sources []config.Source, ic chan<- []driver.Value, models Models) error {
+func buildMySQLInformationSchema(sources []configSource, ic chan<- []driver.Value, models Models) error {
 	schemaErrGroup := new(errgroup.Group)
 
 	for _, source := range sources {
-		func(source config.Source) error {
+		func(source configSource) error {
 			schemaErrGroup.Go(func() error {
 				// Open new pool for every source
 				pool, err := GetMysqlPoolFromSource(source)
@@ -130,14 +126,14 @@ func buildMySQLInformationSchema(sources []config.Source, ic chan<- []driver.Val
 }
 
 // buildPostgresInformationSchema builds the information schema for all postgres sources in the config
-func buildPostgresInformationSchema(sources []config.Source, ic chan<- []driver.Value, models Models) error {
+func buildPostgresInformationSchema(sources []configSource, ic chan<- []driver.Value, models Models) error {
 	schemaErrGroup := new(errgroup.Group)
 
 	for _, source := range sources {
-		func(source config.Source) error {
+		func(source configSource) error {
 			schemaErrGroup.Go(func() error {
 				// Open new pool for every source
-				pool, err := pg.PoolFromSource(source)
+				pool, err := GetPostgresPoolFromSource(source)
 				if err != nil {
 					return err
 				}
@@ -191,9 +187,9 @@ func buildPostgresInformationSchema(sources []config.Source, ic chan<- []driver.
 }
 
 // groupSourceByEngine reduces the raw config.Sources into a map of engine -> sources
-func groupSourceByEngine(cfg *config.Config) map[string][]config.Source {
-	engines := make(map[string][]config.Source)
-	for _, source := range cfg.Sources {
+func groupSourceByEngine(cfg *Config) map[string][]configSource {
+	engines := make(map[string][]configSource)
+	for _, source := range cfg.ConfigSources {
 		engines[source.Engine] = append(engines[source.Engine], source)
 	}
 
@@ -204,8 +200,8 @@ func groupSourceByEngine(cfg *config.Config) map[string][]config.Source {
 func prepareDDBInformationSchema() error {
 	informationSchemaColumnNames := []string{"source_name varchar", "model_name varchar", "table_name varchar", "column_name varchar", "data_type varchar"}
 	informationSchemaTableName := "main.hypha_information_schema"
-	utils.Debug(fmt.Sprintf("Creating table %s", informationSchemaTableName))
-	err := duckdb.DMLQuery(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName, strings.Join(informationSchemaColumnNames, ", ")))
+	Debug(fmt.Sprintf("Creating table %s", informationSchemaTableName))
+	err := DMLQuery(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName, strings.Join(informationSchemaColumnNames, ", ")))
 	if err != nil {
 		return err
 	}

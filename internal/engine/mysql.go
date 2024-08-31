@@ -10,11 +10,9 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/hyphasql/hypha/internal/config"
-	"github.com/hyphasql/hypha/internal/utils"
 )
 
-func GetMysqlPoolFromSource(source config.Source) (*sql.DB, error) {
+func GetMysqlPoolFromSource(source configSource) (*sql.DB, error) {
 	// Example url := "root:thisisnotarealpassword@tcp(127.0.0.1:33061)/mysql_db_1"
 	url := fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?parseTime=true",
@@ -48,7 +46,7 @@ func getMysqlPool(url string) (*sql.DB, error) {
 
 // Retrieve retrieves data from a MySQL source and sends it to the insert channel.
 func ingestMysqlSource(r *Retriever, ic chan []driver.Value) error {
-	utils.Debug(fmt.Sprintf("Retrieving context %s for %s", r.ModelName, r.Source.Name))
+	Debug(fmt.Sprintf("Retrieving context %s for %s", r.ModelName, r.Source.Name))
 	clientPool, err := GetMysqlPoolFromSource(r.Source)
 	if err != nil {
 		return err
