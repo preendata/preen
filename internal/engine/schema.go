@@ -133,7 +133,7 @@ func buildPostgresInformationSchema(sources []configSource, ic chan<- []driver.V
 		func(source configSource) error {
 			schemaErrGroup.Go(func() error {
 				// Open new pool for every source
-				pool, err := GetPostgresPoolFromSource(source)
+				pool, err := getPostgresPoolFromSource(source)
 				if err != nil {
 					return err
 				}

@@ -3,9 +3,11 @@ package engine
 import (
 	"database/sql/driver"
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/marcboeker/go-duckdb"
 )
 
 // Implements the Scanner and Valuer interfaces for custom data types.
@@ -31,6 +33,9 @@ func (d *duckdbDecimal) Scan(s any) error {
 		}
 	// The numeric type is from the PG driver.
 	case pgtype.Numeric:
+		numericType := s.(pgtype.Numeric)
+		decimal := duckdb.Decimal{Value: numericType.Int, Scale: uint8(math.Abs(float64(numericType.Exp)))}
+		*d = duckdbDecimal(decimal.Float64())
 	}
 	return nil
 }
