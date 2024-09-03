@@ -3,8 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/hyphasql/hypha/internal/config"
-	"github.com/hyphasql/hypha/internal/utils"
+	"github.com/hyphasql/hypha/internal/engine"
 	"github.com/urfave/cli/v2"
 )
 
@@ -131,18 +130,18 @@ func NewApp() *cli.App {
 				logLevel = "DEBUG"
 			}
 
-			err := utils.IsValidLogLevel(logLevel)
+			err := engine.IsValidLogLevel(logLevel)
 			if logLevel != "" && err != nil {
 				return fmt.Errorf("invalid log level: %s. Allowed values are: DEBUG, INFO, WARN, ERROR, FATAL, PANIC", logLevel)
 			}
 
 			// Initialize logger, passes empty string if no flag set which is handled by variadic Intialize function
-			if err := utils.Initialize(logLevel); err != nil {
+			if err := engine.Initialize(logLevel); err != nil {
 				return err
 			}
 
 			// Initialize config
-			if _, err := config.GetConfig(); err != nil {
+			if _, err := engine.GetConfig(); err != nil {
 				return err
 			}
 			return nil

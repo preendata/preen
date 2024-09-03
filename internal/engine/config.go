@@ -1,4 +1,4 @@
-package config
+package engine
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ type Connection struct {
 	AuthSource string `yaml:"auth_source"`
 }
 
-type Source struct {
+type configSource struct {
 	Name       string     `yaml:"name"`
 	Engine     string     `yaml:"engine"`
 	Connection Connection `yaml:"connection"`
@@ -26,12 +26,10 @@ type Source struct {
 }
 
 type Config struct {
-	Sources []Source `yaml:"sources"`
-	Env     *Env     `yaml:"-"`
-	Models  []string `yaml:"-"`
+	ConfigSources []configSource `yaml:"sources"`
+	Env           *Env           `yaml:"-"`
+	Models        []string       `yaml:"-"`
 }
-
-var err error
 
 func GetConfig() (*Config, error) {
 	c := Config{}
@@ -54,7 +52,6 @@ func GetConfig() (*Config, error) {
 	fromEnv(&c)
 
 	collectModels(&c)
-
 	if len(c.Models) == 0 {
 		return nil, fmt.Errorf("no models defined in config file")
 	}
@@ -63,8 +60,8 @@ func GetConfig() (*Config, error) {
 }
 
 func collectModels(config *Config) {
-	for _, source := range config.Sources {
-		for _, model := range source.Models {
+	for _, configSource := range config.ConfigSources {
+		for _, model := range configSource.Models {
 			if !slices.Contains(config.Models, model) {
 				config.Models = append(config.Models, model)
 			}

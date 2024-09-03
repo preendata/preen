@@ -3,17 +3,14 @@ package engine
 import (
 	"database/sql/driver"
 	"fmt"
-
-	"github.com/hyphasql/hypha/internal/duckdb"
-	"github.com/hyphasql/hypha/internal/utils"
 )
 
 func Insert(modelName string, ic <-chan []driver.Value, dc chan<- []int64) {
-	connector, err := duckdb.CreateConnector()
+	connector, err := CreateConnector()
 	if err != nil {
 		panic(err)
 	}
-	appender, err := duckdb.NewAppender(connector, "main", modelName)
+	appender, err := NewAppender(connector, "main", modelName)
 	if err != nil {
 		panic(err)
 	}
@@ -27,7 +24,7 @@ func Insert(modelName string, ic <-chan []driver.Value, dc chan<- []int64) {
 		}
 		rowCounter++
 		if rowCounter%10000000 == 0 {
-			utils.Debug(fmt.Sprintf(
+			Debug(fmt.Sprintf(
 				"Flushing 10M rows from appender to DuckDB for model: %s, %d", modelName, rowCounter,
 			))
 			if err := appender.Flush(); err != nil {
@@ -46,15 +43,15 @@ func ConfirmInsert(modelName string, dc chan []int64, rowsExpected int64) {
 		select {
 		case message := <-dc:
 			if rowsExpected == 0 {
-				utils.Info(fmt.Sprintf("Inserted %d rows into model %s", message[0], modelName))
+				Info(fmt.Sprintf("Inserted %d rows into model %s", message[0], modelName))
 				return
 			}
 			if message[0] == rowsExpected {
-				utils.Info(fmt.Sprintf("Inserted %d rows into model %s. Expected %d rows", message[0], modelName, rowsExpected))
+				Info(fmt.Sprintf("Inserted %d rows into model %s. Expected %d rows", message[0], modelName, rowsExpected))
 				return
 			}
 			if message[0] != rowsExpected {
-				utils.Error(fmt.Sprintf("Inserted %d rows into model %s. Expected %d rows", message[0], modelName, rowsExpected))
+				Error(fmt.Sprintf("Inserted %d rows into model %s. Expected %d rows", message[0], modelName, rowsExpected))
 				return
 			}
 		}

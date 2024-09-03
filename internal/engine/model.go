@@ -6,9 +6,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/hyphasql/hypha/internal/config"
-	"github.com/hyphasql/hypha/internal/duckdb"
-	"github.com/hyphasql/hypha/internal/utils"
 	"github.com/xwb1989/sqlparser"
 )
 
@@ -28,7 +25,7 @@ type Models struct {
 	Config map[ModelName]*ModelConfig
 }
 
-func BuildModel(cfg *config.Config) error {
+func BuildModel(cfg *Config) error {
 
 	models, err := ParseModels(cfg)
 	if err != nil {
@@ -52,7 +49,7 @@ func BuildModel(cfg *config.Config) error {
 		return fmt.Errorf("error building model tables: %w", err)
 	}
 
-	utils.Info(fmt.Sprintf("Fetching data from %d configured sources", len(cfg.Sources)))
+	Info(fmt.Sprintf("Fetching data from %d configured sources", len(cfg.ConfigSources)))
 	if err = Retrieve(cfg, *models); err != nil {
 		return fmt.Errorf("error retrieving data: %w", err)
 	}
@@ -60,7 +57,7 @@ func BuildModel(cfg *config.Config) error {
 	return nil
 }
 
-func ParseModels(cfg *config.Config) (*Models, error) {
+func ParseModels(cfg *Config) (*Models, error) {
 	models, err := readModelFiles(cfg)
 	if err != nil {
 		return nil, err
@@ -73,7 +70,7 @@ func ParseModels(cfg *config.Config) (*Models, error) {
 	return &Models{Config: models}, nil
 }
 
-func readModelFiles(cfg *config.Config) (map[ModelName]*ModelConfig, error) {
+func readModelFiles(cfg *Config) (map[ModelName]*ModelConfig, error) {
 	ModelQueries := make(map[ModelName]*ModelConfig, 0)
 	files, err := os.ReadDir(cfg.Env.HyphaModelPath)
 	if err != nil {
@@ -81,16 +78,18 @@ func readModelFiles(cfg *config.Config) (map[ModelName]*ModelConfig, error) {
 	}
 
 	modelFileCount := 0
+	modelFiles := make([]string, 0)
 
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), ".sql") {
 			modelFileCount++
 			modelName := strings.TrimSuffix(file.Name(), ".sql")
+			modelFiles = append(modelFiles, modelName)
 			if !slices.Contains(cfg.Models, modelName) {
-				utils.Debug(fmt.Sprintf("Skipping file %s", modelName))
+				Debug(fmt.Sprintf("Skipping file %s", modelName))
 				continue
 			}
-			utils.Debug("Loading ", file.Name())
+			Debug("Loading ", file.Name())
 			bytes, err := os.ReadFile(cfg.Env.HyphaModelPath + "/" + file.Name())
 			if err != nil {
 				return nil, err
@@ -99,7 +98,7 @@ func readModelFiles(cfg *config.Config) (map[ModelName]*ModelConfig, error) {
 				Query: string(bytes),
 				IsSql: true,
 			}
-			utils.Debug(fmt.Sprintf("Parsing query: %s", cq.Query))
+			Debug(fmt.Sprintf("Parsing query: %s", cq.Query))
 			parsedQuery, err := sqlparser.Parse(cq.Query)
 			if err != nil {
 				return nil, err
@@ -109,11 +108,12 @@ func readModelFiles(cfg *config.Config) (map[ModelName]*ModelConfig, error) {
 		} else if strings.HasSuffix(file.Name(), ".json") {
 			modelFileCount++
 			modelName := strings.TrimSuffix(file.Name(), ".json")
+			modelFiles = append(modelFiles, modelName)
 			if !slices.Contains(cfg.Models, modelName) {
-				utils.Debug(fmt.Sprintf("Skipping file %s", modelName))
+				Debug(fmt.Sprintf("Skipping file %s", modelName))
 				continue
 			}
-			utils.Debug("Loading ", file.Name())
+			Debug("Loading ", file.Name())
 			bytes, err := os.ReadFile(cfg.Env.HyphaModelPath + "/" + file.Name())
 			if err != nil {
 				return nil, err
@@ -130,7 +130,11 @@ func readModelFiles(cfg *config.Config) (map[ModelName]*ModelConfig, error) {
 		return nil, fmt.Errorf("no model files found in %s", cfg.Env.HyphaModelPath)
 	}
 
-	utils.Debug(fmt.Sprintf("Loaded %d model files from %s", modelFileCount, cfg.Env.HyphaModelPath))
+	if err = errorOnMissingModels(cfg, modelFiles); err != nil {
+		return nil, err
+	}
+
+	Debug(fmt.Sprintf("Loaded %d model files from %s", modelFileCount, cfg.Env.HyphaModelPath))
 
 	return ModelQueries, nil
 }
@@ -138,14 +142,26 @@ func readModelFiles(cfg *config.Config) (map[ModelName]*ModelConfig, error) {
 // Create each model's destination table in DuckDB
 func buildDuckDBTables(models map[ModelName]*ModelConfig) error {
 	for modelName, modelConfig := range models {
-		utils.Debug(fmt.Sprintf("Creating table %s", modelName))
-
+		Debug(fmt.Sprintf("Creating table %s", modelName))
 		createTableStmt := fmt.Sprintf("CREATE OR REPLACE table main.%s (%s);", modelName, modelConfig.DDLString)
-		err = duckdb.DMLQuery(createTableStmt)
+		err = DMLQuery(createTableStmt)
 		if err != nil {
-			utils.Debug(fmt.Sprintf("Error creating table %s: %s", modelName, createTableStmt))
+			Debug(fmt.Sprintf("Error creating table %s: %s", modelName, createTableStmt))
 			return err
 		}
+	}
+	return nil
+}
+
+func errorOnMissingModels(cfg *Config, modelFiles []string) error {
+	missingModels := make([]string, 0)
+	for _, modelName := range cfg.Models {
+		if !slices.Contains(modelFiles, modelName) {
+			missingModels = append(missingModels, modelName)
+		}
+	}
+	if len(missingModels) > 0 {
+		return fmt.Errorf("no model file detected for models: %s", strings.Join(missingModels, ", "))
 	}
 	return nil
 }

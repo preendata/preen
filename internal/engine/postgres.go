@@ -1,0 +1,105 @@
+package engine
+
+import (
+	"context"
+	"database/sql/driver"
+	"fmt"
+	"net/url"
+	"reflect"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+type QueryResult struct {
+	Rows    []map[string]any
+	Columns []string
+}
+
+func getPostgresPool(url string) (*pgxpool.Pool, error) {
+	// urlExample := "postgres://username:password@localhost:5432/database_name"
+	dbpool, err := pgxpool.New(context.Background(), url)
+
+	if err != nil {
+		Error(
+			fmt.Sprintf("Unable to connect to database: %v\n", err),
+		)
+		return nil, err
+	}
+	return dbpool, nil
+}
+
+func getPostgresPoolFromSource(source configSource) (*pgxpool.Pool, error) {
+
+	url := fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s",
+		source.Connection.Username,
+		url.QueryEscape(source.Connection.Password),
+		url.QueryEscape(source.Connection.Host),
+		source.Connection.Port,
+		source.Connection.Database,
+	)
+	dbpool, err := getPostgresPool(url)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return dbpool, nil
+}
+
+func ingestPostgresSource(r *Retriever, ic chan []driver.Value) error {
+	Debug(fmt.Sprintf("Retrieving context %s for %s", r.ModelName, r.Source.Name))
+	clientPool, err := getPostgresPoolFromSource(r.Source)
+	if err != nil {
+		return err
+	}
+	defer clientPool.Close()
+	rows, err := clientPool.Query(context.Background(), r.Query)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if err = processPostgresRows(r, ic, rows); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func processPostgresRows(r *Retriever, ic chan []driver.Value, rows pgx.Rows) error {
+	var rowCounter int64
+	for rows.Next() {
+		values, err := rows.Values()
+		if err != nil {
+			return err
+		}
+		rowCounter++
+		driverRow := make([]driver.Value, len(values)+1)
+		driverRow[0] = r.Source.Name
+		for i, value := range values {
+			if value == nil {
+				driverRow[i+1] = nil
+				continue
+			}
+			switch reflect.TypeOf(value).String() {
+			case "pgtype.Numeric":
+				decimal := duckdbDecimal(0)
+				decimal.Scan(value)
+				driverRow[i+1], err = decimal.Value()
+				if err != nil {
+					return err
+				}
+			default:
+				driverRow[i+1] = value
+			}
+		}
+		ic <- driverRow
+	}
+	Debug(fmt.Sprintf("Retrieved %d rows for %s - %s\n", rowCounter, r.Source.Name, r.ModelName))
+	if err = rows.Err(); err != nil {
+		return err
+	}
+	return nil
+}
