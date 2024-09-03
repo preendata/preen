@@ -25,6 +25,9 @@ type Models struct {
 	Config map[ModelName]*ModelConfig
 }
 
+// BuildModel is the entrypoint and primary orchestrator of the model building workflow. It coordinates actions from
+// sourcing configuration for source connection, fetching data from source, adjusting types of inbound data as needed
+// and inserting fetched data into DuckDB
 func BuildModel(cfg *Config) error {
 
 	models, err := ParseModels(cfg)

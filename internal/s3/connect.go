@@ -13,10 +13,10 @@ import (
 
 func main() {
 	// Hardcoded AWS credentials and bucket information
-	awsAccessKeyID := "AKIAW3MD6XDBU4ED7MKY"                         // Replace with your access key ID
-	awsSecretAccessKey := "VpaPd3GdUmzGJ5Qskb4JvfMxA1avl8HrA4vtQo2Z" // Replace with your secret access key
-	awsRegion := "us-west-2"                                         // Replace with your region
-	bucketName := "your-bucket-name"                                 // Replace with your bucket name
+	awsAccessKeyID := "AKIAW3MD6XDBU4ED7MKY"
+	awsSecretAccessKey := "VpaPd3GdUmzGJ5Qskb4JvfMxA1avl8HrA4vtQo2Z"
+	awsRegion := "us-east-2"
+	bucketName := "hyphadb-internal-transfer"
 
 	// Load the configuration with hardcoded credentials
 	cfg, err := config.LoadDefaultConfig(context.TODO(),
