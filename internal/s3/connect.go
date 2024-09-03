@@ -15,7 +15,7 @@ func main() {
 	// Hardcoded AWS credentials and bucket information
 	awsAccessKeyID := "AKIAW3MD6XDBU4ED7MKY"
 	awsSecretAccessKey := "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"
-	awsRegion := "us-east-2"
+	awsRegion := "us-east-1"
 	bucketName := "hyphadb-internal-transfer"
 
 	// Load the configuration with hardcoded credentials

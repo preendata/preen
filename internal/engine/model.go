@@ -126,6 +126,24 @@ func readModelFiles(cfg *Config) (map[ModelName]*ModelConfig, error) {
 				IsSql: false,
 			}
 			ModelQueries[ModelName(strings.TrimSuffix(file.Name(), ".json"))] = cq
+		} else if strings.HasSuffix(file.Name(), ".s3") {
+			modelFileCount++
+			modelName := strings.TrimSuffix(file.Name(), ".s3")
+			modelFiles = append(modelFiles, modelName)
+			if !slices.Contains(cfg.Models, modelName) {
+				Debug(fmt.Sprintf("Skipping file %s", modelName))
+				continue
+			}
+			Debug("Loading ", file.Name())
+			bytes, err := os.ReadFile(cfg.Env.HyphaModelPath + "/" + file.Name())
+			if err != nil {
+				return nil, err
+			}
+			cq := &ModelConfig{
+				Query: string(bytes),
+				IsSql: false,
+			}
+			ModelQueries[ModelName(strings.TrimSuffix(file.Name(), ".s3"))] = cq
 		}
 	}
 

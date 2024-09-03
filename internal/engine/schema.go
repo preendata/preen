@@ -41,6 +41,8 @@ func BuildInformationSchema(cfg *Config, models *Models) error {
 				}
 			case "mongodb":
 				Debug("No information schema required for MongoDB")
+			case "s3":
+				Debug("No information schema required for S3")
 			default:
 				return fmt.Errorf("unsupported engine: %s", engine)
 			}

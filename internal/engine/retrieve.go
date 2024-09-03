@@ -35,6 +35,17 @@ func Retrieve(cfg *Config, models Models) error {
 				Query:     models.Config[ModelName(modelName)].Query,
 			}
 			switch source.Engine {
+			case "s3":
+				func(r Retriever, ic chan []driver.Value) error {
+					g.Go(func() error {
+						if err := ingestS3Source(&r, ic); err != nil {
+							return err
+						}
+						return nil
+					})
+
+					return nil
+				}(r, ic)
 			case "postgres":
 				func(r Retriever, ic chan []driver.Value) error {
 					g.Go(func() error {

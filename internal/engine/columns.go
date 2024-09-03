@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/xwb1989/sqlparser"
 )
 
@@ -107,62 +108,14 @@ func buildColumnMetadataDataStructure(rows *[]map[string]any) ColumnMetadata {
 	return columnMetadata
 }
 
-// Select majority type of input column via Boyer-Moore majority vote algorithm
-func identifyMajorityType(columnName ColumnName, types []string) (MajorityType, error) {
-	// Implement Boyer-Moore majority vote algorithm
-	var majority MajorityType
-	votes := 0
-
-	for _, candidate := range types {
-		mtCandidate := MajorityType(candidate)
-		if votes == 0 {
-			majority = mtCandidate
-		}
-		if mtCandidate == majority {
-			votes++
-		} else {
-			votes--
-		}
-	}
-
-	count := 0
-
-	// Checking if majority candidate occurs more than n/2 times
-	for _, candidate := range types {
-		if MajorityType(candidate) == majority {
-			count += 1
-		}
-	}
-	if majority == "" {
-		Warn(
-			fmt.Sprintf("Column: '%s' is missing from majority of tables!", columnName),
-		)
-	} else if count > len(types)/2 && count == len(types) {
-		Debug(
-			fmt.Sprintf("Data type for column '%s' is: %s", columnName, majority),
-		)
-		return majority, nil
-
-	} else if count > len(types)/2 && count != len(types) {
-		Warn(
-			fmt.Sprintf("Discrepancy in data types for column '%s'! Using majority data type of %s", columnName, majority),
-		)
-		return majority, nil
-	}
-
-	Warn(
-		fmt.Sprintf("No majority data type found for column '%s'!", columnName),
-	)
-	// This needs to be made unreachable
-	return "unknown", fmt.Errorf("no majority data type found for column '%s'", columnName)
-}
-
 func ParseModelColumns(models map[ModelName]*ModelConfig, columnMetadata ColumnMetadata) error {
 	cp := columnParser{
 		columns:        make(map[TableName]map[ColumnName]Column),
 		columnMetadata: columnMetadata,
 	}
 	for modelName, modelConfig := range models {
+		Debug("ABOVETHE NOT IS SQL STEP")
+		spew.Dump(modelConfig)
 		if !modelConfig.IsSql {
 			cp.modelName = ModelName(modelName)
 			cp.tableName = TableName(modelName)
@@ -349,4 +302,54 @@ func processCase(expr *sqlparser.AliasedExpr, cp *columnParser) error {
 	cp.ddlString = fmt.Sprintf("%s, %s %s", cp.ddlString, col.Alias, *colType)
 
 	return nil
+}
+
+// Select majority type of input column via Boyer-Moore majority vote algorithm
+func identifyMajorityType(columnName ColumnName, types []string) (MajorityType, error) {
+	// Implement Boyer-Moore majority vote algorithm
+	var majority MajorityType
+	votes := 0
+
+	for _, candidate := range types {
+		mtCandidate := MajorityType(candidate)
+		if votes == 0 {
+			majority = mtCandidate
+		}
+		if mtCandidate == majority {
+			votes++
+		} else {
+			votes--
+		}
+	}
+
+	count := 0
+
+	// Checking if majority candidate occurs more than n/2 times
+	for _, candidate := range types {
+		if MajorityType(candidate) == majority {
+			count += 1
+		}
+	}
+	if majority == "" {
+		Warn(
+			fmt.Sprintf("Column: '%s' is missing from majority of tables!", columnName),
+		)
+	} else if count > len(types)/2 && count == len(types) {
+		Debug(
+			fmt.Sprintf("Data type for column '%s' is: %s", columnName, majority),
+		)
+		return majority, nil
+
+	} else if count > len(types)/2 && count != len(types) {
+		Warn(
+			fmt.Sprintf("Discrepancy in data types for column '%s'! Using majority data type of %s", columnName, majority),
+		)
+		return majority, nil
+	}
+
+	Warn(
+		fmt.Sprintf("No majority data type found for column '%s'!", columnName),
+	)
+	// This needs to be made unreachable
+	return "unknown", fmt.Errorf("no majority data type found for column '%s'", columnName)
 }

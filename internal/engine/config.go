@@ -37,7 +37,7 @@ func GetConfig() (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing environment: %w", err)
 	}
-
+	fmt.Println(c.Env)
 	configFilePath := filepath.Join(c.Env.HyphaConfigPath, "config.yaml")
 	file, err := os.ReadFile(configFilePath)
 	if err != nil {
