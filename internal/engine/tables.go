@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/xwb1989/sqlparser"
+	"github.com/hyphasql/sqlparser"
 )
 
 type TableAlias string

@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/xwb1989/sqlparser"
+	"github.com/hyphasql/sqlparser"
 )
 
 type ModelName string
