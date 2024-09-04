@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/xwb1989/sqlparser"
+	"github.com/hyphasql/sqlparser"
 )
 
 type FuncName string
@@ -213,8 +213,14 @@ func ParseModelColumns(models map[ModelName]*ModelConfig, columnMetadata ColumnM
 						if err := processCase(expr, &cp); err != nil {
 							return err
 						}
+					// Process cast expression column
+					case *sqlparser.ConvertExpr:
+						tableAlias := expr.Expr.(*sqlparser.ConvertExpr).Expr.(*sqlparser.ColName).Qualifier.Name.String()
+						cp.tableName = modelConfig.TableMap[TableAlias(tableAlias)]
+						if err := processConvertColumn(expr, &cp); err != nil {
+							return err
+						}
 					}
-
 				case *sqlparser.StarExpr:
 					return errors.New("star expressions are not supported. please specify columns explicitly")
 				}
@@ -347,6 +353,30 @@ func processCase(expr *sqlparser.AliasedExpr, cp *columnParser) error {
 		return errors.New("unsupported data type in case expression")
 	}
 	cp.ddlString = fmt.Sprintf("%s, %s %s", cp.ddlString, col.Alias, *colType)
+
+	return nil
+}
+
+func processConvertColumn(expr *sqlparser.AliasedExpr, cp *columnParser) error {
+	convertExpr := expr.Expr.(*sqlparser.ConvertExpr)
+	if _, ok := cp.columns[cp.tableName]; !ok {
+		cp.columns[cp.tableName] = make(map[ColumnName]Column)
+	}
+	col := Column{
+		TableName: &cp.tableName,
+		Position:  cp.selectIdx,
+	}
+	if expr.As.String() != "" {
+		col.Alias = expr.As.String()
+		colHashKey := fmt.Sprintf("%s.%s", cp.tableName, col.Alias)
+		cp.columns[cp.tableName][ColumnName(colHashKey)] = col
+	} else {
+		col.Alias = fmt.Sprintf("\"%s\"", sqlparser.String(expr))
+		colHashKey := fmt.Sprintf("%s.%s", cp.tableName, col.Alias)
+		cp.columns[cp.tableName][ColumnName(colHashKey)] = col
+	}
+	colType := convertExpr.Type.Type
+	cp.ddlString = fmt.Sprintf("%s, %s %s", cp.ddlString, col.Alias, colType)
 
 	return nil
 }
