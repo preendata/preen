@@ -1,4 +1,5 @@
 hyphadb
+bin/
 tmp.txt
 .config/
 .venv/

@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/chzyer/readline v1.5.1
 	github.com/go-sql-driver/mysql v1.8.1
-	github.com/hyphasql/sqlparser v0.0.0-20180606152119-120387863bf2
+	github.com/hyphasql/sqlparser v0.0.1
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/jedib0t/go-pretty/v6 v6.5.9
 	github.com/joho/godotenv v1.5.1
