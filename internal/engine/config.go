@@ -1,70 +1,15 @@
 package engine
 
-import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"slices"
-
-	yaml "gopkg.in/yaml.v3"
-)
-
-type Connection struct {
-	Host       string `yaml:"host"`
-	Port       int    `yaml:"port"`
-	Database   string `yaml:"database"`
-	Username   string `yaml:"username"`
-	Password   string `yaml:"password"`
-	AuthSource string `yaml:"auth_source"`
-}
-
-type configSource struct {
-	Name       string     `yaml:"name"`
-	Engine     string     `yaml:"engine"`
-	Connection Connection `yaml:"connection"`
-	Models     []string   `yaml:"models"`
-}
-
-type Config struct {
-	ConfigSources []configSource `yaml:"sources"`
-	Env           *Env           `yaml:"-"`
-	Models        []string       `yaml:"-"`
-}
-
-func GetConfig() (*Config, error) {
-	c := Config{}
-	c.Env, err = EnvInit()
+func GetConfig() (*SourceConfig, *ModelConfig, error) {
+	sc, err := GetSourceConfig()
 	if err != nil {
-		return nil, fmt.Errorf("error initializing environment: %w", err)
+		return nil, nil, err
 	}
 
-	configFilePath := filepath.Join(c.Env.HyphaConfigPath, "config.yaml")
-	file, err := os.ReadFile(configFilePath)
+	mc, err := GetModelConfigs()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %s", err)
+		return nil, nil, err
 	}
 
-	if err = yaml.Unmarshal(file, &c); err != nil {
-		return nil, fmt.Errorf("failed to parse config file: %w", err)
-	}
-
-	// Override config with environment variables
-	fromEnv(&c)
-
-	collectModels(&c)
-	if len(c.Models) == 0 {
-		return nil, fmt.Errorf("no models defined in config file")
-	}
-
-	return &c, nil
-}
-
-func collectModels(config *Config) {
-	for _, configSource := range config.ConfigSources {
-		for _, model := range configSource.Models {
-			if !slices.Contains(config.Models, model) {
-				config.Models = append(config.Models, model)
-			}
-		}
-	}
+	return sc, mc, nil
 }

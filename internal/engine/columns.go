@@ -44,9 +44,9 @@ type ColumnMetadata map[TableName]map[ColumnName]ColumnType
 // 2) Performs type validation against each column pulled from the source databases, via the Boyer-Moore majority voting
 // algorithm. This majority type is then packaged into the ColumnMetadata and return to the caller. This is important
 // for typing the model tables created in DuckDB
-func BuildColumnMetadata(cfg *Config) (ColumnMetadata, error) {
+func BuildColumnMetadata() (ColumnMetadata, error) {
 	// query data from hypha_information_schema
-	results, err := Execute("SELECT column_name, data_type, table_name FROM hypha_information_schema", cfg)
+	results, err := Execute("SELECT column_name, data_type, table_name FROM hypha_information_schema")
 	if err != nil {
 		return nil, err
 	}
@@ -157,38 +157,39 @@ func identifyMajorityType(columnName ColumnName, types []string) (MajorityType, 
 	return "unknown", fmt.Errorf("no majority data type found for column '%s'", columnName)
 }
 
-func ParseModelColumns(models map[ModelName]*ModelConfig, columnMetadata ColumnMetadata) error {
+func ParseModelColumns(mc *ModelConfig, columnMetadata ColumnMetadata) error {
 	cp := columnParser{
 		columns:        make(map[TableName]map[ColumnName]Column),
 		columnMetadata: columnMetadata,
 	}
-	for modelName, modelConfig := range models {
-		if !modelConfig.IsSql {
-			cp.modelName = ModelName(modelName)
-			cp.tableName = TableName(modelName)
+	for _, model := range mc.Models {
+		switch model.Type {
+		case "mongodb":
+			cp.modelName = ModelName(model.Name)
+			cp.tableName = TableName(model.Name)
 			cp.ddlString = "hypha_source_name varchar, document json"
 			cp.columns[cp.tableName] = make(map[ColumnName]Column)
 			sourceColumn := Column{
-				ModelName: modelName,
+				ModelName: model.Name,
 				TableName: &cp.tableName,
 				IsJoin:    false,
 				Position:  0,
 				Alias:     "hypha_source_name",
 			}
-			sourceColumnHashKey := ColumnName(fmt.Sprintf("%s.hypha_source_name", modelName))
+			sourceColumnHashKey := ColumnName(fmt.Sprintf("%s.hypha_source_name", model.Name))
 			cp.columns[cp.tableName][sourceColumnHashKey] = sourceColumn
 			documentColumn := Column{
-				ModelName: modelName,
+				ModelName: model.Name,
 				TableName: &cp.tableName,
 				IsJoin:    false,
 				Position:  1,
 				Alias:     "document",
 			}
-			documentColumnHashKey := ColumnName(fmt.Sprintf("%s.document", modelName))
+			documentColumnHashKey := ColumnName(fmt.Sprintf("%s.document", model.Name))
 			cp.columns[cp.tableName][documentColumnHashKey] = documentColumn
-		} else {
+		case "sql":
 			cp.ddlString = "hypha_source_name varchar"
-			selectStmt := modelConfig.Parsed.(*sqlparser.Select)
+			selectStmt := model.Parsed.(*sqlparser.Select)
 			for selectIdx := range selectStmt.SelectExprs {
 				cp.selectIdx = selectIdx
 				switch expr := selectStmt.SelectExprs[selectIdx].(type) {
@@ -197,7 +198,7 @@ func ParseModelColumns(models map[ModelName]*ModelConfig, columnMetadata ColumnM
 					// Process normal column.
 					case *sqlparser.ColName:
 						tableAlias := expr.Expr.(*sqlparser.ColName).Qualifier.Name.String()
-						cp.tableName = modelConfig.TableMap[TableAlias(tableAlias)]
+						cp.tableName = model.TableMap[TableAlias(tableAlias)]
 						if err := processModelColumn(expr, &cp); err != nil {
 							return err
 						}
@@ -216,7 +217,7 @@ func ParseModelColumns(models map[ModelName]*ModelConfig, columnMetadata ColumnM
 					// Process cast expression column
 					case *sqlparser.ConvertExpr:
 						tableAlias := expr.Expr.(*sqlparser.ConvertExpr).Expr.(*sqlparser.ColName).Qualifier.Name.String()
-						cp.tableName = modelConfig.TableMap[TableAlias(tableAlias)]
+						cp.tableName = model.TableMap[TableAlias(tableAlias)]
 						if err := processConvertColumn(expr, &cp); err != nil {
 							return err
 						}
@@ -225,10 +226,12 @@ func ParseModelColumns(models map[ModelName]*ModelConfig, columnMetadata ColumnM
 					return errors.New("star expressions are not supported. please specify columns explicitly")
 				}
 			}
+		default:
+			return fmt.Errorf("model type %s not supported", model.Type)
 		}
-		modelConfig.Columns = cp.columns
-		modelConfig.DDLString = cp.ddlString
-		models[modelName] = modelConfig
+		model.Columns = cp.columns
+		model.DDLString = cp.ddlString
+		mc.Models = append(mc.Models, model)
 	}
 
 	return nil

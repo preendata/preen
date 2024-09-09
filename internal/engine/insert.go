@@ -5,12 +5,12 @@ import (
 	"fmt"
 )
 
-func Insert(modelName string, ic <-chan []driver.Value, dc chan<- []int64) {
-	connector, err := CreateConnector()
+func Insert(modelName ModelName, ic <-chan []driver.Value, dc chan<- []int64) {
+	connector, err := ddbCreateConnector()
 	if err != nil {
 		panic(err)
 	}
-	appender, err := NewAppender(connector, "main", modelName)
+	appender, err := ddbNewAppender(connector, "main", string(modelName))
 	if err != nil {
 		panic(err)
 	}

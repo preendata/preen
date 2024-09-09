@@ -8,7 +8,7 @@ type QueryResults struct {
 
 var err error
 
-func Execute(statement string, cfg *Config) (*QueryResults, error) {
+func Execute(statement string) (*QueryResults, error) {
 	Debug("Executing query: " + statement)
 	qr := QueryResults{
 		ResultsChan: make(chan map[string]any),
@@ -16,7 +16,7 @@ func Execute(statement string, cfg *Config) (*QueryResults, error) {
 
 	go qr.collectResults(qr.ResultsChan)
 
-	qr.Columns, err = Query(statement, qr.ResultsChan)
+	qr.Columns, err = ddbQuery(statement, qr.ResultsChan)
 	if err != nil {
 		return nil, err
 	}

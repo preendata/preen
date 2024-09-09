@@ -11,28 +11,28 @@ import (
 type Retriever struct {
 	ModelName string
 	Query     string
-	Source    configSource
+	Source    Source
 }
 
-func Retrieve(cfg *Config, models Models) error {
-	for _, modelName := range cfg.Models {
+func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
+	for _, model := range mc.Models {
 		ic := make(chan []driver.Value, 10000)
 		dc := make(chan []int64)
-		go Insert(modelName, ic, dc)
+		go Insert(model.Name, ic, dc)
 		if err != nil {
 			return err
 		}
 		g := errgroup.Group{}
 		g.SetLimit(200)
-		for _, source := range cfg.ConfigSources {
-			if !slices.Contains(source.Models, modelName) {
-				Debug(fmt.Sprintf("Skipping %s for %s", modelName, source.Name))
+		for _, source := range sc.Sources {
+			if !slices.Contains(source.Models, string(model.Name)) {
+				Debug(fmt.Sprintf("Skipping %s for %s", model.Name, source.Name))
 				continue
 			}
 			r := Retriever{
 				Source:    source,
-				ModelName: modelName,
-				Query:     models.Config[ModelName(modelName)].Query,
+				ModelName: string(model.Name),
+				Query:     model.Query,
 			}
 			switch source.Engine {
 			case "postgres":
@@ -74,7 +74,7 @@ func Retrieve(cfg *Config, models Models) error {
 		}
 
 		ic <- []driver.Value{"quit"}
-		ConfirmInsert(modelName, dc, 0)
+		ConfirmInsert(string(model.Name), dc, 0)
 	}
 	return nil
 }

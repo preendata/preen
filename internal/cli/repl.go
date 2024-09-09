@@ -11,11 +11,6 @@ import (
 )
 
 func Repl(c *cli.Context) error {
-	conf, err := engine.GetConfig()
-	if err != nil {
-		return fmt.Errorf("error getting config: %w", err)
-	}
-
 	outputFormat := c.String("output-format")
 	fmt.Println("Output format: ", outputFormat)
 
@@ -67,7 +62,7 @@ func Repl(c *cli.Context) error {
 		rl.SaveHistory(cmd)
 
 		// Execute the input as a query
-		qr, err := engine.Execute(cmd, conf)
+		qr, err := engine.Execute(cmd)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			continue
