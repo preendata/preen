@@ -11,13 +11,12 @@ type TableAlias string
 type TableMap map[TableAlias]TableName
 type TableSet []TableName
 
-func ParseModelTables(models map[ModelName]*ModelConfig) error {
-	for modelName, modelConfig := range models {
-		if modelConfig.IsSql {
-			selectStmt := modelConfig.Parsed.(*sqlparser.Select)
-			modelConfig.TableMap, modelConfig.TableSet = getModelTableAliases(selectStmt)
+func ParseModelTables(mc *ModelConfig) error {
+	for _, model := range mc.Models {
+		if model.Type == "sql" {
+			selectStmt := model.Parsed.(*sqlparser.Select)
+			model.TableMap, model.TableSet = getModelTableAliases(selectStmt)
 		}
-		models[modelName] = modelConfig
 	}
 	return nil
 }

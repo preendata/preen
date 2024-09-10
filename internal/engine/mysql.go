@@ -12,7 +12,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-func GetMysqlPoolFromSource(source configSource) (*sql.DB, error) {
+func GetMysqlPoolFromSource(source Source) (*sql.DB, error) {
 	// Example url := "root:thisisnotarealpassword@tcp(127.0.0.1:33061)/mysql_db_1"
 	url := fmt.Sprintf(
 		"%s:%s@tcp(%s:%d)/%s?parseTime=true",

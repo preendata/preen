@@ -25,7 +25,7 @@ func mongoConnect(url string, ctx context.Context) (*mongo.Client, error) {
 	return client, nil
 }
 
-func mongoConnFromSource(source configSource, ctx context.Context) (*mongo.Client, error) {
+func mongoConnFromSource(source Source, ctx context.Context) (*mongo.Client, error) {
 
 	url := fmt.Sprintf(
 		"mongodb://%s:%s@%s:%d/?authSource=%s",

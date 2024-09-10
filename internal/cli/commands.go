@@ -14,13 +14,7 @@ func Query(c *cli.Context) error {
 	stmt := c.Args().First()
 	engine.Debug("Query: ", stmt)
 
-	conf, err := engine.GetConfig()
-
-	if err != nil {
-		return fmt.Errorf("error getting config %w", err)
-	}
-
-	qr, err := engine.Execute(stmt, conf)
+	qr, err := engine.Execute(stmt)
 
 	if err != nil {
 		engine.Debug("error executing query", err)
@@ -42,13 +36,12 @@ func Query(c *cli.Context) error {
 func BuildModel(c *cli.Context) error {
 	engine.Debug("Executing cli.buildmodel")
 
-	conf, err := engine.GetConfig()
-
+	sc, mc, err := engine.GetConfig()
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	err = engine.BuildModel(conf)
+	err = engine.BuildModels(sc, mc)
 	if err != nil {
 		return fmt.Errorf("error building model %w", err)
 	}
@@ -59,17 +52,12 @@ func BuildModel(c *cli.Context) error {
 func BuildInformationSchema(c *cli.Context) error {
 	engine.Debug("Executing cli.buildInformationSchema")
 
-	conf, err := engine.GetConfig()
+	sc, mc, err := engine.GetConfig()
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	models, err := engine.ParseModels(conf)
-	if err != nil {
-		return fmt.Errorf("error parsing models %w", err)
-	}
-
-	err = engine.BuildInformationSchema(conf, models)
+	err = engine.BuildInformationSchema(sc, mc)
 	if err != nil {
 		return fmt.Errorf("error building context %w", err)
 	}
@@ -80,26 +68,21 @@ func BuildInformationSchema(c *cli.Context) error {
 func Validate(c *cli.Context) error {
 	engine.Debug("Executing cli.validate")
 
-	conf, err := engine.GetConfig()
+	sc, mc, err := engine.GetConfig()
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	models, err := engine.ParseModels(conf)
-	if err != nil {
+	if err := engine.ValidateConfigs(sc, mc); err != nil {
 		return fmt.Errorf("error parsing models %w", err)
 	}
 
-	err = engine.BuildInformationSchema(conf, models)
-
-	if err != nil {
-		engine.Debug("error building information schema", err)
+	if err = engine.BuildInformationSchema(sc, mc); err != nil {
 		return fmt.Errorf("error building information schema %w", err)
 	}
 
-	_, err = engine.BuildColumnMetadata((conf))
+	_, err = engine.BuildColumnMetadata()
 	if err != nil {
-		engine.Debug("error building column metadata", err)
 		return fmt.Errorf("error building column metadata %w", err)
 	}
 
@@ -108,13 +91,16 @@ func Validate(c *cli.Context) error {
 
 func ListSources(c *cli.Context) error {
 	engine.Debug("Executing cli.listSources")
-	conf, err := engine.GetConfig()
+	sc, _, err := engine.GetConfig()
+	if err != nil {
+		return fmt.Errorf("error getting config %w", err)
+	}
 
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	for _, conn := range conf.ConfigSources {
+	for _, conn := range sc.Sources {
 		c, err := json.MarshalIndent(conn, "", "  ")
 
 		if err != nil {

@@ -29,7 +29,7 @@ func getPostgresPool(url string) (*pgxpool.Pool, error) {
 	return dbpool, nil
 }
 
-func getPostgresPoolFromSource(source configSource) (*pgxpool.Pool, error) {
+func getPostgresPoolFromSource(source Source) (*pgxpool.Pool, error) {
 
 	url := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s",
