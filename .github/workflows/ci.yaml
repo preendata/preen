@@ -20,15 +20,12 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.23.0'
-
-    - name: Set up Docker Compose
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y docker-compose
         
 
     - name: Build Docker services (PG, MySQL, etc.)
-      run: docker-compose -f ${{ github.workspace }}/build/ci/docker-compose.yaml up -d
+      run: |
+
+        docker compose -f ${{ github.workspace }}/build/ci/docker-compose.yaml up -d
 
     - name: Hypha validate test
       run: go run main.go source validate
@@ -41,4 +38,4 @@ jobs:
 
     - name: Shut down services
       if: always()
-      run: docker-compose down
+      run: docker compose down
