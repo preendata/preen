@@ -8,6 +8,13 @@ on:
 
 jobs:
   integration-tests:
+    env:
+      HYPHA_CONFIG_PATH: ./build/ci
+      HYPHA_MODELS_PATH: ./build/ci
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      MYSQL_USER: ${{ secrets.MYSQL_USER }}
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
     runs-on: ubuntu-latest
 
     steps:
