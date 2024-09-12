@@ -1,0 +1,69 @@
+models:
+  - name: mysql-data-types-test
+    type: sql
+    query: |
+      select
+        test_data_types.mysql_id,
+        test_data_types.mysql_field_tinyint,
+        test_data_types.mysql_field_smallint,
+        test_data_types.mysql_field_mediumint,
+        test_data_types.mysql_field_int,
+        test_data_types.mysql_field_bigint,
+        test_data_types.mysql_field_decimal,
+        test_data_types.mysql_field_float,
+        test_data_types.mysql_field_double,
+        test_data_types.mysql_field_char,
+        test_data_types.mysql_field_varchar,
+        test_data_types.mysql_field_tinytext,
+        test_data_types.mysql_field_text,
+        test_data_types.mysql_field_mediumtext,
+        test_data_types.mysql_field_longtext,
+        test_data_types.mysql_field_boolean,
+        test_data_types.mysql_field_date,
+        test_data_types.mysql_field_time,
+        test_data_types.mysql_field_datetime,
+        test_data_types.mysql_field_timestamp,
+        test_data_types.mysql_field_year,
+        test_data_types.mysql_field_binary,
+        test_data_types.mysql_field_varbinary,
+        test_data_types.mysql_field_tinyblob,
+        test_data_types.mysql_field_blob,
+        test_data_types.mysql_field_mediumblob,
+        test_data_types.mysql_field_longblob,
+        test_data_types.mysql_field_enum,
+        test_data_types.mysql_field_set,
+        test_data_types.mysql_field_json
+      from
+        test_data_types;
+  
+  - name: postgres-data-types-test
+    type: sql
+    query: |
+      select
+        test_data_types.pg_id,
+        test_data_types.pg_field_smallint,
+        test_data_types.pg_field_integer,
+        test_data_types.pg_field_bigint,
+        test_data_types.pg_field_decimal,
+        test_data_types.pg_field_numeric,
+        test_data_types.pg_field_real,
+        test_data_types.pg_field_double,
+        test_data_types.pg_field_char,
+        test_data_types.pg_field_varchar,
+        test_data_types.pg_field_text,
+        test_data_types.pg_field_boolean,
+        test_data_types.pg_field_date,
+        test_data_types.pg_field_time,
+        test_data_types.pg_field_timestamp,
+        test_data_types.pg_field_interval,
+        test_data_types.pg_field_bytea,
+        test_data_types.pg_field_inet,
+        test_data_types.pg_field_cidr,
+        test_data_types.pg_field_macaddr,
+        test_data_types.pg_field_json,
+        test_data_types.pg_field_jsonb,
+        test_data_types.pg_field_text_array,
+        test_data_types.pg_field_uuid,
+        test_data_types.pg_field_xml
+      from
+        test_data_types;

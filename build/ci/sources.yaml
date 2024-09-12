@@ -1,0 +1,21 @@
+sources:
+  - name: mysql-docker
+    engine: mysql
+    connection:
+      host: localhost
+      port: 3306
+      database: mysql
+      username: ${MYSQL_USER}
+      password: ${MYSQL_PASSWORD}
+    models: 
+      - mysql-data-types-test
+  - name: postgres-docker
+    engine: postgres
+    connection:
+      host: localhost
+      port: 5432
+      database: postgres
+      username: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+    models: 
+      - postgres-data-types-test
