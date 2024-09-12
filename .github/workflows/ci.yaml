@@ -24,7 +24,7 @@ jobs:
 
     - name: Build Docker services (PG, MySQL, etc.)
       run: |
-
+        ls
         docker compose -f ${{ github.workspace }}/build/ci/docker-compose.yaml up -d
 
     - name: Hypha validate test
