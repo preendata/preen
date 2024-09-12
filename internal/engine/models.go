@@ -40,7 +40,7 @@ func GetModelConfigs() (*ModelConfig, error) {
 	}
 
 	configFilePath := filepath.Join(mc.Env.HyphaConfigPath, "models.yaml")
-	modelsDir := mc.Env.HyphaModelPath
+	modelsDir := mc.Env.HyphaModelsPath
 
 	// Check if a modles.yaml file exists in the config directory.
 	// If it does, parse it.
@@ -53,6 +53,9 @@ func GetModelConfigs() (*ModelConfig, error) {
 
 	// Process any .yaml files in the models directory
 	err = parseModelDirectoryFiles(modelsDir, &mc)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing models directory: %w", err)
+	}
 
 	// If no models are detected, return an error
 	if len(mc.Models) == 0 {
@@ -105,7 +108,11 @@ func parseModelDirectoryFiles(modelsDir string, mc *ModelConfig) error {
 			if err != nil {
 				return fmt.Errorf("error parsing model file %s: %w", filePath, err)
 			}
-			mc.Models = append(mc.Models, &m)
+			if m.Name != "" {
+				mc.Models = append(mc.Models, &m)
+			} else {
+				Debug(fmt.Sprintf("Skipping model file %s: no model name detected", filePath))
+			}
 		}
 	}
 
@@ -169,10 +176,11 @@ func BuildModels(sc *SourceConfig, mc *ModelConfig) error {
 func buildDuckDBTables(mc *ModelConfig) error {
 	for _, model := range mc.Models {
 		Debug(fmt.Sprintf("Creating table %s", model.Name))
-		createTableStmt := fmt.Sprintf("create or replace table main.%s (%s);", model.Name, model.DDLString)
+		tableName := strings.ReplaceAll(string(model.Name), "-", "_")
+		createTableStmt := fmt.Sprintf("create or replace table main.%s (%s);", tableName, model.DDLString)
 		err = ddbDmlQuery(createTableStmt)
 		if err != nil {
-			Debug(fmt.Sprintf("Error creating table %s: %s", model.Name, createTableStmt))
+			Debug(fmt.Sprintf("Error creating table %s: %s", tableName, createTableStmt))
 			return err
 		}
 	}
