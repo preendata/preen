@@ -27,7 +27,7 @@ jobs:
         sudo apt-get install -y docker-compose
 
     - name: Build Docker services (PG, MySQL, etc.)
-      run: docker-compose -f ./build/ci/docker-compose.yaml up -d
+      run: docker-compose -f build/ci/docker-compose.yaml up -d
 
     - name: Hypha validate test
       run: go run main.go source validate
