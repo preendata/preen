@@ -69,6 +69,9 @@ func ingestMysqlSource(r *Retriever, ic chan []driver.Value) error {
 func processMysqlRows(r *Retriever, ic chan []driver.Value, rows *sql.Rows) error {
 	// Get the column types from the rows and create a slice of pointers to scan into.
 	valuePtrs, err := processMysqlColumns(rows)
+	if err != nil {
+		return err
+	}
 	for rows.Next() {
 		if err = rows.Scan(valuePtrs...); err != nil {
 			return err
@@ -81,12 +84,6 @@ func processMysqlRows(r *Retriever, ic chan []driver.Value, rows *sql.Rows) erro
 				continue
 			}
 			switch reflect.TypeOf(ptr).String() {
-			case "*engine.mysqlBool":
-				value := reflect.ValueOf(ptr).Elem().Interface()
-				driverRow[i+1], err = value.(mysqlBool).Value()
-				if err != nil {
-					return err
-				}
 			case "*engine.duckdbDecimal":
 				value := reflect.ValueOf(ptr).Elem().Interface()
 				driverRow[i+1], err = value.(duckdbDecimal).Value()
@@ -117,17 +114,17 @@ func processMysqlColumns(rows *sql.Rows) ([]any, error) {
 			valuePtrs[i] = new(duckdbDecimal)
 		case "BIGINT":
 			valuePtrs[i] = new(int64)
-		case "INT":
+		case "INT", "MEDIUMINT":
 			valuePtrs[i] = new(int32)
-		case "SMALLINT":
+		case "SMALLINT", "YEAR":
 			valuePtrs[i] = new(int16)
 		case "TINYINT":
-			valuePtrs[i] = new(mysqlBool)
-		case "BIT":
+			valuePtrs[i] = new(int8)
+		case "BIT", "BINARY", "VARBINARY", "TINYBLOB", "MEDIUMBLOB", "LONGBLOB", "BLOB":
 			valuePtrs[i] = new([]byte)
-		case "DATE", "TIME", "DATETIME", "TIMESTAMP":
+		case "DATE", "DATETIME", "TIMESTAMP":
 			valuePtrs[i] = new(time.Time)
-		case "CHAR", "VARCHAR", "TEXT", "BLOB":
+		case "CHAR", "VARCHAR", "TEXT", "TINYTEXT", "MEDIUMTEXT", "LONGTEXT", "ENUM", "SET", "JSON", "TIME":
 			valuePtrs[i] = new(string)
 		default:
 			return nil, fmt.Errorf("unsupported column type: %s", columnType.DatabaseTypeName())

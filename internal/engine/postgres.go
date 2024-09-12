@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/marcboeker/go-duckdb"
 )
 
 type QueryResult struct {
@@ -88,6 +89,49 @@ func processPostgresRows(r *Retriever, ic chan []driver.Value, rows pgx.Rows) er
 				decimal := duckdbDecimal(0)
 				decimal.Scan(value)
 				driverRow[i+1], err = decimal.Value()
+				if err != nil {
+					return err
+				}
+			case "pgtype.Time":
+				timeVal := duckdbTime("")
+				timeVal.Scan(value)
+				driverRow[i+1], err = timeVal.Value()
+				if err != nil {
+					return err
+				}
+			case "pgtype.Interval":
+				duration := duckdbDuration(0)
+				duration.Scan(value)
+				driverRow[i+1], err = duration.Value()
+				if err != nil {
+					return err
+				}
+			case "netip.Prefix":
+				prefix := duckdbNetIpPrefix("")
+				prefix.Scan(value)
+				driverRow[i+1], err = prefix.Value()
+				if err != nil {
+					return err
+				}
+			case "net.HardwareAddr":
+				hwAddr := duckdbHardwareAddr("")
+				hwAddr.Scan(value)
+				driverRow[i+1], err = hwAddr.Value()
+				if err != nil {
+					return err
+				}
+			case "map[string]interface {}", "[]interface {}":
+				jsonVal := duckdbJSON("")
+				jsonVal.Scan(value)
+				driverRow[i+1], err = jsonVal.Value()
+				if err != nil {
+					return err
+				}
+			// These are UUIDs
+			case "[16]uint8":
+				uuid := duckdbUUID(duckdb.UUID{})
+				uuid.Scan(value)
+				driverRow[i+1], err = uuid.Value()
 				if err != nil {
 					return err
 				}

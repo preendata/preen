@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"slices"
+	"strings"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -18,7 +19,8 @@ func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
 	for _, model := range mc.Models {
 		ic := make(chan []driver.Value, 10000)
 		dc := make(chan []int64)
-		go Insert(model.Name, ic, dc)
+		tableName := strings.ReplaceAll(string(model.Name), "-", "_")
+		go Insert(ModelName(tableName), ic, dc)
 		if err != nil {
 			return err
 		}

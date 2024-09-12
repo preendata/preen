@@ -1,86 +1,40 @@
-name: Release
+name: CI
 
 on:
-  push:
-    tags:
-      - '**'
-
+  pull_request:
+    branches:
+      - '*'
+      - '!main'
 
 jobs:
-  build-linux:
+  integration-tests:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        go-version: [1.21.1]
-        os: [linux]
-        arch: [amd64]
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23.0'
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go-version }}
+    - name: Set up Docker Compose
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y docker-compose
 
-      - name: Install dependencies
-        run: go mod tidy
+    - name: Build Docker services (PG, MySQL, etc.)
+      run: docker-compose -f ./build/ci/docker-compose.yaml up -d
 
-      - name: Lint
-        run: go install golang.org/x/lint/golint@latest && golint ./...
+    - name: Hypha validate test
+      run: go run main.go source validate
 
-      - name: Build
-        env:
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
-          CGO_ENABLED: 1
-        run: |
-          CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb --ldflags="-extldflags=-static" -tags osusergo,netgo main.go
-          echo "Built for $GOOS $GOARCH"
+    - name: Hypha model build test
+      run: go run main.go model build
+    
+    - name: Hypha query test
+      run: go run main.go query -f json "select * from mysql_data_types_test;"
 
-      - name: Upload binaries
-        uses: actions/upload-artifact@v2
-        with:
-          name: hyphadb-${{ matrix.os }}-${{ matrix.arch }}
-          path: output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb
-
-  build-macos:
-    runs-on: macos-latest
-
-    strategy:
-      matrix:
-        go-version: [1.21.1]
-        os: [darwin]
-        arch: [arm64]
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go-version }}
-
-      - name: Install dependencies
-        run: go mod tidy
-
-      - name: Lint
-        run: go install golang.org/x/lint/golint@latest && golint ./...
-
-      - name: Build
-        env:
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
-          CGO_ENABLED: 1
-        run: |
-          CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb  main.go 
-          echo "Built for $GOOS $GOARCH"
-          
-      - name: Upload binaries
-        uses: actions/upload-artifact@v2
-        with:
-          name: hyphadb-${{ matrix.os }}-${{ matrix.arch }}
-          path: output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb
+    - name: Shut down services
+      if: always()
+      run: docker-compose down

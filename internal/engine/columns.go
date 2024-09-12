@@ -267,6 +267,9 @@ func processModelColumn(expr *sqlparser.AliasedExpr, cp *columnParser) error {
 
 	// Look up the data type and append it to the table creation DDL string.
 	colType := duckdbTypeMap[string(cp.columnMetadata[TableName(cp.tableName)][ColumnName(colName)].MajorityType)]
+	if colType == "" {
+		return fmt.Errorf("data type not found for column: %s.%s", cp.tableName, colName)
+	}
 	cp.ddlString = fmt.Sprintf("%s, %s %s", cp.ddlString, col.Alias, colType)
 
 	return nil
