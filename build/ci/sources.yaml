@@ -15,7 +15,7 @@ sources:
       host: localhost
       port: 5432
       database: postgres
-      username: ${POSTGRES_USER}
-      password: ${POSTGRES_PASSWORD}
+      username: ${PG_USER}
+      password: ${PG_PASSWORD}
     models: 
       - postgres-data-types-test
