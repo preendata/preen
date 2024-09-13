@@ -52,7 +52,6 @@ func BuildColumnMetadata() (ColumnMetadata, error) {
 	}
 
 	columnMetadata := buildColumnMetadataDataStructure(&results.Rows)
-
 	// For each column in each table as sourced from InformationSchema, determine the majority type
 	for tableName, tableStruct := range columnMetadata {
 		for columnName, columnStruct := range tableStruct {
@@ -231,7 +230,6 @@ func ParseModelColumns(mc *ModelConfig, columnMetadata ColumnMetadata) error {
 		}
 		model.Columns = cp.columns
 		model.DDLString = cp.ddlString
-		mc.Models = append(mc.Models, model)
 	}
 
 	return nil

@@ -20,7 +20,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
@@ -125,4 +124,3 @@ venv.bak/
 *hyphaContext.db*
 .docker/db/data/**
 .hyphadb/config.yaml
-models/

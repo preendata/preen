@@ -24,9 +24,8 @@ func Execute(statement string) (*QueryResults, error) {
 	return &qr, nil
 }
 
-func (qr *QueryResults) collectResults(c chan map[string]any) error {
+func (qr *QueryResults) collectResults(c chan map[string]any) {
 	for row := range c {
 		qr.Rows = append(qr.Rows, row)
 	}
-	return nil
 }

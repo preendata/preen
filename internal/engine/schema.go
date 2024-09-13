@@ -30,11 +30,11 @@ func BuildInformationSchema(sc *SourceConfig, mc *ModelConfig) error {
 		sourceErrGroup.Go(func() error {
 			switch engine {
 			case "postgres":
-				if err = buildPostgresInformationSchema(sources, ic, mc); err != nil {
+				if err := buildPostgresInformationSchema(sources, ic, mc); err != nil {
 					return fmt.Errorf("error building postgres information schema: %w", err)
 				}
 			case "mysql":
-				if err = buildMySQLInformationSchema(sources, ic, mc); err != nil {
+				if err := buildMySQLInformationSchema(sources, ic, mc); err != nil {
 					return fmt.Errorf("error building mysql information schema: %w", err)
 				}
 			case "mongodb":
@@ -61,7 +61,7 @@ func buildMySQLInformationSchema(sources []Source, ic chan<- []driver.Value, mc 
 	schemaErrGroup := new(errgroup.Group)
 
 	for _, source := range sources {
-		func(source Source) error {
+		err := func(source Source) error {
 			schemaErrGroup.Go(func() error {
 				// Open new pool for every source
 				pool, err := GetMysqlPoolFromSource(source)
@@ -72,10 +72,10 @@ func buildMySQLInformationSchema(sources []Source, ic chan<- []driver.Value, mc 
 				defer pool.Close()
 
 				// Iterate over all models and get the tables for each model
-				for modelName, modelConfig := range mc.Models {
-					if modelConfig.Type == "sql" {
+				for _, model := range mc.Models {
+					if model.Type == "sql" {
 						tablesQueryString := ""
-						for _, tableName := range modelConfig.TableSet {
+						for _, tableName := range model.TableSet {
 							if tablesQueryString != "" {
 								tablesQueryString += fmt.Sprintf(",'%s'", tableName)
 							} else {
@@ -107,7 +107,7 @@ func buildMySQLInformationSchema(sources []Source, ic chan<- []driver.Value, mc 
 							if err != nil {
 								return err
 							}
-							ic <- []driver.Value{source.Name, string(modelName), table_name, column_name, data_type}
+							ic <- []driver.Value{source.Name, string(model.Name), table_name, column_name, data_type}
 						}
 					}
 				}
@@ -115,6 +115,9 @@ func buildMySQLInformationSchema(sources []Source, ic chan<- []driver.Value, mc 
 			})
 			return nil
 		}(source)
+		if err != nil {
+			return err
+		}
 	}
 	if err := schemaErrGroup.Wait(); err != nil {
 		return err
@@ -128,7 +131,7 @@ func buildPostgresInformationSchema(sources []Source, ic chan<- []driver.Value, 
 	schemaErrGroup := new(errgroup.Group)
 
 	for _, source := range sources {
-		func(source Source) error {
+		err := func(source Source) error {
 			schemaErrGroup.Go(func() error {
 				// Open new pool for every source
 				pool, err := getPostgresPoolFromSource(source)
@@ -140,10 +143,10 @@ func buildPostgresInformationSchema(sources []Source, ic chan<- []driver.Value, 
 				schema := "public"
 
 				// Iterate over all models and get the tables for each model
-				for modelName, modelConfig := range mc.Models {
-					if modelConfig.Type == "sql" {
+				for _, model := range mc.Models {
+					if model.Type == "sql" {
 						tablesQueryString := ""
-						for _, tableName := range modelConfig.TableSet {
+						for _, tableName := range model.TableSet {
 							if tablesQueryString != "" {
 								tablesQueryString += fmt.Sprintf(",'%s'", tableName)
 							} else {
@@ -168,7 +171,7 @@ func buildPostgresInformationSchema(sources []Source, ic chan<- []driver.Value, 
 							if err != nil {
 								return err
 							}
-							ic <- []driver.Value{source.Name, string(modelName), values[0], values[1], values[2]}
+							ic <- []driver.Value{source.Name, string(model.Name), values[0], values[1], values[2]}
 						}
 					}
 				}
@@ -176,6 +179,9 @@ func buildPostgresInformationSchema(sources []Source, ic chan<- []driver.Value, 
 			})
 			return nil
 		}(source)
+		if err != nil {
+			return err
+		}
 	}
 	if err := schemaErrGroup.Wait(); err != nil {
 		return err

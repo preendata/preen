@@ -15,11 +15,11 @@ func Insert(modelName ModelName, ic <-chan []driver.Value, dc chan<- []int64) {
 		panic(err)
 	}
 	rowCounter := 0
-	for c := range ic {
-		if c[0] == "quit" {
+	for message := range ic {
+		if message[0] == "quit" {
 			break
 		}
-		if err := appender.AppendRow(c...); err != nil {
+		if err := appender.AppendRow(message...); err != nil {
 			panic(err)
 		}
 		rowCounter++
@@ -39,21 +39,18 @@ func Insert(modelName ModelName, ic <-chan []driver.Value, dc chan<- []int64) {
 }
 
 func ConfirmInsert(modelName string, dc chan []int64, rowsExpected int64) {
-	for {
-		select {
-		case message := <-dc:
-			if rowsExpected == 0 {
-				Info(fmt.Sprintf("Inserted %d rows into model %s", message[0], modelName))
-				return
-			}
-			if message[0] == rowsExpected {
-				Info(fmt.Sprintf("Inserted %d rows into model %s. Expected %d rows", message[0], modelName, rowsExpected))
-				return
-			}
-			if message[0] != rowsExpected {
-				Error(fmt.Sprintf("Inserted %d rows into model %s. Expected %d rows", message[0], modelName, rowsExpected))
-				return
-			}
+	for message := range dc {
+		if rowsExpected == 0 {
+			Info(fmt.Sprintf("Inserted %d rows into model %s", message[0], modelName))
+			break
+		}
+		if message[0] == rowsExpected {
+			Info(fmt.Sprintf("Inserted %d rows into model %s. Expected %d rows", message[0], modelName, rowsExpected))
+			break
+		}
+		if message[0] != rowsExpected {
+			Error(fmt.Sprintf("Inserted %d rows into model %s. Expected %d rows", message[0], modelName, rowsExpected))
+			break
 		}
 	}
 }

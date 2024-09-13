@@ -23,20 +23,20 @@ import (
 type duckdbDecimal float64
 
 func (d *duckdbDecimal) Scan(s any) error {
-	switch s.(type) {
+	switch v := s.(type) {
 	// The byte array is from the MySQL driver.
 	case []byte:
-		if float, err := strconv.ParseFloat(string(s.([]byte)), 64); err == nil {
+		if float, err := strconv.ParseFloat(string(v), 64); err == nil {
 			*d = duckdbDecimal(float)
 		} else {
 			return fmt.Errorf("error scanning duckdbDecimal: %w", err)
 		}
 	// The float32 type is from the MySQL driver.
 	case float32:
-		*d = duckdbDecimal(s.(float32))
+		*d = duckdbDecimal(v)
 	// The float64 type is from the MySQL driver.
 	case float64:
-		*d = duckdbDecimal(s.(float64))
+		*d = duckdbDecimal(v)
 	// The numeric type is from the PG driver.
 	case pgtype.Numeric:
 		numericType := s.(pgtype.Numeric)
@@ -61,9 +61,9 @@ func (d duckdbDecimal) Value() (driver.Value, error) {
 type duckdbTime string
 
 func (t *duckdbTime) Scan(s any) error {
-	switch s.(type) {
+	switch v := s.(type) {
 	case pgtype.Time:
-		timeType := s.(pgtype.Time)
+		timeType := v
 		// Create a Time object for midnight of the current day
 		midnight := time.Now().Truncate(24 * time.Hour)
 		resultTime := midnight.Add(time.Duration(timeType.Microseconds) * time.Microsecond)
@@ -80,16 +80,18 @@ func (t *duckdbTime) Value() (driver.Value, error) {
 	return fmt.Sprint(t), nil
 }
 
-// duckdbDuration is a custom type for scanning and valuing time.Duration values.
-// The PG driver returns interval types as a custom type, so we need to convert them to time.Duration.
-type duckdbDuration time.Duration
+// duckdbDuration is a custom type for scanning and valuing string values.
+// The PG driver returns interval types as a custom type, so we need to convert them to string.
+// The database/sql driver doesn't respect interval data types.
+type duckdbDuration string
 
 func (d *duckdbDuration) Scan(s any) error {
 	switch v := s.(type) {
-	case int64:
-		*d = duckdbDuration(v)
+	case pgtype.Interval:
+		stringVal := fmt.Sprintf("Microseconds: %d, Days: %d, Months: %d", v.Microseconds, v.Days, v.Months)
+		*d = duckdbDuration(stringVal)
 	case nil:
-		*d = duckdbDuration(0)
+		*d = duckdbDuration("")
 	default:
 		return fmt.Errorf("cannot sql.Scan() strfmt.Duration from: %#v", v)
 	}
@@ -97,7 +99,7 @@ func (d *duckdbDuration) Scan(s any) error {
 }
 
 func (d duckdbDuration) Value() (driver.Value, error) {
-	return int64(d), nil
+	return string(d), nil
 }
 
 // duckdbNetIPPrefix is a custom type for scanning and valuing netip.Prefix values.
@@ -188,7 +190,6 @@ func (u duckdbUUID) Value() (driver.Value, error) {
 var duckdbTypeMap = map[string]string{
 	"integer":                     "integer",
 	"bigint":                      "bigint",
-	"interval":                    "bigint",
 	"smallint":                    "smallint",
 	"mediumint":                   "integer",
 	"int":                         "integer",
@@ -233,5 +234,6 @@ var duckdbTypeMap = map[string]string{
 	"set":                         "varchar",
 	"time without time zone":      "varchar",
 	"time":                        "varchar",
+	"interval":                    "varchar",
 	"uuid":                        "uuid",
 }

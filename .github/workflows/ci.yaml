@@ -1,40 +1,62 @@
 name: CI
 
-on:
-  pull_request:
-    branches:
-      - '*'
-      - '!main'
+on: pull_request
 
 jobs:
   integration-tests:
+    env:
+      HYPHA_CONFIG_PATH: ./build/ci
+      HYPHA_MODELS_PATH: ./build/ci/models
+      PG_USER: ${{ secrets.PG_USER }}
+      PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+      MYSQL_USER: ${{ secrets.MYSQL_USER }}
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
         go-version: '1.23.0'
 
-    - name: Set up Docker Compose
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y docker-compose
-
     - name: Build Docker services (PG, MySQL, etc.)
-      run: docker-compose -f ./build/ci/docker-compose.yaml up -d
+      run: 
+        docker compose -f build/ci/docker-compose.yaml up -d
 
-    - name: Hypha validate test
-      run: go run main.go source validate
+    - name: Install dependencies
+      run: |
+        go mod tidy
 
-    - name: Hypha model build test
-      run: go run main.go model build
-    
-    - name: Hypha query test
-      run: go run main.go query -f json "select * from mysql_data_types_test;"
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: v1.60
+
+    - name: Hypha build
+      run: make build
+
+    - name: Hypha test
+      run: |
+        sleep 5
+
+        bin/hypha model build
+
+        # Test that the MySQL model was built and can be queried. Query should return 1 row.
+        MYSQL_RESULTS_LENGTH=$(bin/hypha query -f json "select * from mysql_data_types_test;" | jq length)
+        if [[ $MYSQL_RESULTS_LENGTH -ne 1 ]]; then
+          echo "Expected 1 row in mysql_data_types_test, got $MYSQL_RESULTS_LENGTH"
+          exit 1
+        fi
+
+        # Test that the PostgreSQL model was built and can be queried. Query should return 1 row.
+        PG_RESULTS_LENGTH=$(bin/hypha query -f json "select * from pg_data_types_test;" | jq length)
+        if [[ $PG_RESULTS_LENGTH -ne 1 ]]; then
+          echo "Expected 1 row in pg_data_types_test, got $PG_RESULTS_LENGTH"
+          exit 1
+        fi
 
     - name: Shut down services
       if: always()
-      run: docker-compose down
+      run: docker compose -f build/ci/docker-compose.yaml down

@@ -14,8 +14,12 @@ type TableSet []TableName
 func ParseModelTables(mc *ModelConfig) error {
 	for _, model := range mc.Models {
 		if model.Type == "sql" {
-			selectStmt := model.Parsed.(*sqlparser.Select)
-			model.TableMap, model.TableSet = getModelTableAliases(selectStmt)
+			switch stmt := model.Parsed.(type) {
+			case *sqlparser.Select:
+				model.TableMap, model.TableSet = getModelTableAliases(stmt)
+			default:
+				return fmt.Errorf("Model %s failed. Non-select queries not supported.", model.Name)
+			}
 		}
 	}
 	return nil

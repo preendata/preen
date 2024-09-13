@@ -31,11 +31,11 @@ type SourceConfig struct {
 
 func GetSourceConfig() (*SourceConfig, error) {
 	sc := SourceConfig{}
-	sc.Env, err = EnvInit()
+	env, err := EnvInit()
 	if err != nil {
 		return nil, fmt.Errorf("error initializing environment: %w", err)
 	}
-
+	sc.Env = env
 	configFilePath := filepath.Join(sc.Env.HyphaConfigPath, "sources.yaml")
 	file, err := os.ReadFile(configFilePath)
 	if err != nil {

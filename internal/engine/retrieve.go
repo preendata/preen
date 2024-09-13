@@ -21,9 +21,6 @@ func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
 		dc := make(chan []int64)
 		tableName := strings.ReplaceAll(string(model.Name), "-", "_")
 		go Insert(ModelName(tableName), ic, dc)
-		if err != nil {
-			return err
-		}
 		g := errgroup.Group{}
 		g.SetLimit(200)
 		for _, source := range sc.Sources {
@@ -38,7 +35,7 @@ func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
 			}
 			switch source.Engine {
 			case "postgres":
-				func(r Retriever, ic chan []driver.Value) error {
+				err := func(r Retriever, ic chan []driver.Value) error {
 					g.Go(func() error {
 						if err := ingestPostgresSource(&r, ic); err != nil {
 							return err
@@ -47,8 +44,11 @@ func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
 					})
 					return nil
 				}(r, ic)
+				if err != nil {
+					return err
+				}
 			case "mysql":
-				func(r Retriever, ic chan []driver.Value) error {
+				err := func(r Retriever, ic chan []driver.Value) error {
 					g.Go(func() error {
 						if err := ingestMysqlSource(&r, ic); err != nil {
 							return err
@@ -57,8 +57,11 @@ func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
 					})
 					return nil
 				}(r, ic)
+				if err != nil {
+					return err
+				}
 			case "mongodb":
-				func(r Retriever, ic chan []driver.Value) error {
+				err := func(r Retriever, ic chan []driver.Value) error {
 					g.Go(func() error {
 						if err := ingestMongoSource(&r, ic); err != nil {
 							return err
@@ -67,11 +70,14 @@ func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
 					})
 					return nil
 				}(r, ic)
+				if err != nil {
+					return err
+				}
 			default:
 				Error(fmt.Sprintf("Engine %s not supported", source.Engine))
 			}
 		}
-		if err = g.Wait(); err != nil {
+		if err := g.Wait(); err != nil {
 			return err
 		}
 

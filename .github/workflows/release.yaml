@@ -29,9 +29,6 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
 
-      - name: Lint
-        run: go install golang.org/x/lint/golint@latest && golint ./...
-
       - name: Build
         env:
           GOOS: ${{ matrix.os }}
@@ -68,9 +65,6 @@ jobs:
 
       - name: Install dependencies
         run: go mod tidy
-
-      - name: Lint
-        run: go install golang.org/x/lint/golint@latest && golint ./...
 
       - name: Build
         env:
