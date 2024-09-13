@@ -1,9 +1,6 @@
 .PHONY: integration-test
 integration-test: build
-	docker compose -f build/ci/docker-compose.yaml up -d
-	sleep 5
-	build/ci/integration-tests.sh
-	docker compose -f build/ci/docker-compose.yaml down
+	build/ci/integration-test.sh
 
 .PHONY: build
 build:

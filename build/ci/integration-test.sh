@@ -1,5 +1,8 @@
 #!/bin/bash
 
+docker compose -f build/ci/docker-compose.yaml up -d
+sleep 5
+
 bin/hypha model build
 
 # Test that the MySQL model was built and can be queried. Query should return 1 row.
