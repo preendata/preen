@@ -13,3 +13,7 @@ lint:
 .PHONY: install-depenencies
 install-depenencies:
 	brew install golangci-lint
+
+.PHONY: test
+test:
+	go test -v ./...

@@ -3,7 +3,7 @@ name: CI
 on: pull_request
 
 jobs:
-  integration-tests:
+  tests:
     env:
       HYPHA_CONFIG_PATH: ./build/ci
       HYPHA_MODELS_PATH: ./build/ci/models
@@ -34,10 +34,13 @@ jobs:
       with:
         version: v1.60
 
-    - name: Hypha build
+    - name: Build Hypha binary
       run: make build
 
-    - name: Hypha test
+    - name: Unit Tests
+      run: make test
+
+    - name: Integration tests
       run: |
         sleep 5
 
