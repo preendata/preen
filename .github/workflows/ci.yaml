@@ -20,20 +20,28 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.23.0'
-        
 
     - name: Build Docker services (PG, MySQL, etc.)
       run: 
         docker compose -f build/ci/docker-compose.yaml up -d
 
+    - name: Install dependencies
+      run: go mod tidy
+
+    - name: Lint
+      run: go install golang.org/x/lint/golint@latest && golint ./...
+
+    - name: Hypha build
+      run: make build
+
     - name: Hypha validate test
-      run: go run main.go source validate
+      run: bin/hypha source validate
 
     - name: Hypha model build test
-      run: go run main.go model build
+      run: bin/hypha model build
     
     - name: Hypha query test
-      run: go run main.go query -f json "select * from mysql_data_types_test;"
+      run: bin/hypha query -f json "select * from mysql_data_types_test;"
 
     - name: Shut down services
       if: always()

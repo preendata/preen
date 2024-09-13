@@ -231,7 +231,6 @@ func ParseModelColumns(mc *ModelConfig, columnMetadata ColumnMetadata) error {
 		}
 		model.Columns = cp.columns
 		model.DDLString = cp.ddlString
-		mc.Models = append(mc.Models, model)
 	}
 
 	return nil

@@ -42,7 +42,7 @@ func GetModelConfigs() (*ModelConfig, error) {
 	configFilePath := filepath.Join(mc.Env.HyphaConfigPath, "models.yaml")
 	modelsDir := mc.Env.HyphaModelsPath
 
-	// Check if a modles.yaml file exists in the config directory.
+	// Check if a models.yaml file exists in the config directory.
 	// If it does, parse it.
 	if _, err = os.Stat(configFilePath); err == nil {
 		err = parseModelsYamlFile(configFilePath, &mc)
@@ -59,12 +59,14 @@ func GetModelConfigs() (*ModelConfig, error) {
 
 	// If no models are detected, return an error
 	if len(mc.Models) == 0 {
-		return nil, fmt.Errorf("no models detected in models.yaml file or models directory")
+		return nil, fmt.Errorf(
+			"no models detected in %s/models.yaml file or %s directory",
+			mc.Env.HyphaConfigPath, mc.Env.HyphaModelsPath,
+		)
 	}
 
 	// Override config with environment variables
 	fromEnv(&mc)
-
 	if err = parseSQLModels(&mc); err != nil {
 		return nil, fmt.Errorf("error parsing sql models: %w", err)
 	}
@@ -76,6 +78,35 @@ func GetModelConfigs() (*ModelConfig, error) {
 	return &mc, nil
 }
 
+// This is the main entry point for building models. The CLI commands call this function.
+func BuildModels(sc *SourceConfig, mc *ModelConfig) error {
+	if err := BuildInformationSchema(sc, mc); err != nil {
+		return fmt.Errorf("error building information schema: %w", err)
+	}
+
+	columnMetadata, err := BuildColumnMetadata()
+	if err != nil {
+		return fmt.Errorf("error building column metadata: %w", err)
+	}
+
+	if err = ParseModelColumns(mc, columnMetadata); err != nil {
+		return fmt.Errorf("error parsing model columns: %w", err)
+	}
+
+	if err = buildDuckDBTables(mc); err != nil {
+		return fmt.Errorf("error building model tables: %w", err)
+	}
+
+	Info(fmt.Sprintf("Fetching data from %d configured sources", len(sc.Sources)))
+	if err = Retrieve(sc, mc); err != nil {
+		return fmt.Errorf("error retrieving data: %w", err)
+	}
+
+	return nil
+}
+
+// Parse the models.yaml file in the hypha config directory. This file can contain multiple models.
+// It is optional, but if it exists, it will be parsed.
 func parseModelsYamlFile(filePath string, mc *ModelConfig) error {
 	file, err := os.ReadFile(filePath)
 	if err != nil {
@@ -89,6 +120,8 @@ func parseModelsYamlFile(filePath string, mc *ModelConfig) error {
 	return nil
 }
 
+// Parse the models directory which is supplied as a possible environment value.
+// Each .yaml file in this directory is a model.
 func parseModelDirectoryFiles(modelsDir string, mc *ModelConfig) error {
 	files, err := os.ReadDir(modelsDir)
 	if err != nil {
@@ -109,9 +142,10 @@ func parseModelDirectoryFiles(modelsDir string, mc *ModelConfig) error {
 				return fmt.Errorf("error parsing model file %s: %w", filePath, err)
 			}
 			if m.Name != "" {
+				fmt.Println(m.Name)
 				mc.Models = append(mc.Models, &m)
 			} else {
-				Debug(fmt.Sprintf("Skipping model file %s: no model name detected", filePath))
+				Warn(fmt.Sprintf("Unrecognized model file %s: no model name detected", filePath))
 			}
 		}
 	}
@@ -142,33 +176,6 @@ func parseSQLModels(mc *ModelConfig) error {
 			mc.Models[modelName] = model
 		}
 	}
-	return nil
-}
-
-func BuildModels(sc *SourceConfig, mc *ModelConfig) error {
-
-	if err := BuildInformationSchema(sc, mc); err != nil {
-		return fmt.Errorf("error building information schema: %w", err)
-	}
-
-	columnMetadata, err := BuildColumnMetadata()
-	if err != nil {
-		return fmt.Errorf("error building column metadata: %w", err)
-	}
-
-	if err = ParseModelColumns(mc, columnMetadata); err != nil {
-		return fmt.Errorf("error parsing model columns: %w", err)
-	}
-
-	if err = buildDuckDBTables(mc); err != nil {
-		return fmt.Errorf("error building model tables: %w", err)
-	}
-
-	Info(fmt.Sprintf("Fetching data from %d configured sources", len(sc.Sources)))
-	if err = Retrieve(sc, mc); err != nil {
-		return fmt.Errorf("error retrieving data: %w", err)
-	}
-
 	return nil
 }
 
