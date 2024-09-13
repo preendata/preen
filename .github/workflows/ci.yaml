@@ -26,22 +26,21 @@ jobs:
         docker compose -f build/ci/docker-compose.yaml up -d
 
     - name: Install dependencies
-      run: go mod tidy
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y jq
+        go mod tidy
 
-    - name: Lint
-      run: go install golang.org/x/lint/golint@latest && golint ./...
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: v1.60
 
     - name: Hypha build
       run: make build
 
-    - name: Hypha validate test
-      run: bin/hypha source validate
-
-    - name: Hypha model build test
-      run: bin/hypha model build
-    
-    - name: Hypha query test
-      run: bin/hypha query -f json "select * from mysql_data_types_test;"
+    - name: Hypha test
+      run: build/ci/integration-tests.sh
 
     - name: Shut down services
       if: always()

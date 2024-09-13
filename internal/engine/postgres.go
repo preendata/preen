@@ -87,42 +87,54 @@ func processPostgresRows(r *Retriever, ic chan []driver.Value, rows pgx.Rows) er
 			switch reflect.TypeOf(value).String() {
 			case "pgtype.Numeric":
 				decimal := duckdbDecimal(0)
-				decimal.Scan(value)
+				if err = decimal.Scan(value); err != nil {
+					return err
+				}
 				driverRow[i+1], err = decimal.Value()
 				if err != nil {
 					return err
 				}
 			case "pgtype.Time":
 				timeVal := duckdbTime("")
-				timeVal.Scan(value)
+				if err = timeVal.Scan(value); err != nil {
+					return err
+				}
 				driverRow[i+1], err = timeVal.Value()
 				if err != nil {
 					return err
 				}
 			case "pgtype.Interval":
-				duration := duckdbDuration(0)
-				duration.Scan(value)
+				duration := duckdbDuration("")
+				if err = duration.Scan(value); err != nil {
+					return err
+				}
 				driverRow[i+1], err = duration.Value()
 				if err != nil {
 					return err
 				}
 			case "netip.Prefix":
 				prefix := duckdbNetIpPrefix("")
-				prefix.Scan(value)
+				if err = prefix.Scan(value); err != nil {
+					return err
+				}
 				driverRow[i+1], err = prefix.Value()
 				if err != nil {
 					return err
 				}
 			case "net.HardwareAddr":
 				hwAddr := duckdbHardwareAddr("")
-				hwAddr.Scan(value)
+				if err = hwAddr.Scan(value); err != nil {
+					return err
+				}
 				driverRow[i+1], err = hwAddr.Value()
 				if err != nil {
 					return err
 				}
 			case "map[string]interface {}", "[]interface {}":
 				jsonVal := duckdbJSON("")
-				jsonVal.Scan(value)
+				if err = jsonVal.Scan(value); err != nil {
+					return err
+				}
 				driverRow[i+1], err = jsonVal.Value()
 				if err != nil {
 					return err
@@ -130,7 +142,9 @@ func processPostgresRows(r *Retriever, ic chan []driver.Value, rows pgx.Rows) er
 			// These are UUIDs
 			case "[16]uint8":
 				uuid := duckdbUUID(duckdb.UUID{})
-				uuid.Scan(value)
+				if err = uuid.Scan(value); err != nil {
+					return err
+				}
 				driverRow[i+1], err = uuid.Value()
 				if err != nil {
 					return err
@@ -142,7 +156,7 @@ func processPostgresRows(r *Retriever, ic chan []driver.Value, rows pgx.Rows) er
 		ic <- driverRow
 	}
 	Debug(fmt.Sprintf("Retrieved %d rows for %s - %s\n", rowCounter, r.Source.Name, r.ModelName))
-	if err = rows.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		return err
 	}
 	return nil

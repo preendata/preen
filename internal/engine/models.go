@@ -34,10 +34,11 @@ type ModelConfig struct {
 
 func GetModelConfigs() (*ModelConfig, error) {
 	mc := ModelConfig{}
-	mc.Env, err = EnvInit()
+	env, err := EnvInit()
 	if err != nil {
 		return nil, fmt.Errorf("error initializing environment: %w", err)
 	}
+	mc.Env = env
 
 	configFilePath := filepath.Join(mc.Env.HyphaConfigPath, "models.yaml")
 	modelsDir := mc.Env.HyphaModelsPath
@@ -136,6 +137,9 @@ func parseModelDirectoryFiles(modelsDir string, mc *ModelConfig) error {
 		filePath := filepath.Join(modelsDir, file.Name())
 		if strings.HasSuffix(filePath, ".yaml") {
 			file, err := os.ReadFile(filePath)
+			if err != nil {
+				return fmt.Errorf("error reading model file %s: %w", filePath, err)
+			}
 			m := Model{}
 			err = yaml.Unmarshal(file, &m)
 			if err != nil {
@@ -154,11 +158,11 @@ func parseModelDirectoryFiles(modelsDir string, mc *ModelConfig) error {
 }
 
 func ValidateConfigs(sc *SourceConfig, mc *ModelConfig) error {
-	if err = errorOnMissingModels(sc, mc); err != nil {
+	if err := errorOnMissingModels(sc, mc); err != nil {
 		return fmt.Errorf("error on missing models: %w", err)
 	}
 
-	if err = parseSQLModels(mc); err != nil {
+	if err := parseSQLModels(mc); err != nil {
 		return fmt.Errorf("error parsing sql models: %w", err)
 	}
 
@@ -185,10 +189,8 @@ func buildDuckDBTables(mc *ModelConfig) error {
 		Debug(fmt.Sprintf("Creating table %s", model.Name))
 		tableName := strings.ReplaceAll(string(model.Name), "-", "_")
 		createTableStmt := fmt.Sprintf("create or replace table main.%s (%s);", tableName, model.DDLString)
-		err = ddbDmlQuery(createTableStmt)
-		if err != nil {
-			Debug(fmt.Sprintf("Error creating table %s: %s", tableName, createTableStmt))
-			return err
+		if err := ddbDmlQuery(createTableStmt); err != nil {
+			return fmt.Errorf("error creating table %s: %w", tableName, err)
 		}
 	}
 	return nil

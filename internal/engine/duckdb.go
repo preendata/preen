@@ -4,11 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
-	"fmt"
-	"math"
-	"reflect"
 
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/marcboeker/go-duckdb"
 )
 
@@ -53,58 +49,6 @@ func ddbCreateConnector() (driver.Connector, error) {
 func ddbOpenDatabase(connector driver.Connector) (*sql.DB, error) {
 	db := sql.OpenDB(connector)
 	return db, nil
-}
-
-func ddbInsertResults(sourceName string, tableName string, c chan []any) error {
-	fmt.Println(len(c))
-	rowCounter := 0
-	Debug(fmt.Sprintf("Inserting rows into %s", tableName))
-	connector, err := ddbCreateConnector()
-	if err != nil {
-		return err
-	}
-
-	appender, err := ddbNewAppender(connector, "main", tableName)
-	if err != nil {
-		return err
-	}
-
-	for row := range c {
-		rowCounter++
-		if row[0] == "done" {
-			break
-		}
-		err := ddbProcessRow(appender, row, sourceName)
-		if err != nil {
-			return err
-		}
-	}
-
-	fmt.Printf("Inserted %d rows into %s", rowCounter, tableName)
-
-	return nil
-}
-
-func ddbProcessRow(appender *duckdb.Appender, row []any, sourceName string) error {
-	driverRow := make([]driver.Value, len(row)+1)
-	driverRow[0] = sourceName
-	for i, value := range row {
-		if value == nil {
-			driverRow[i+1] = nil
-			continue
-		}
-		if reflect.TypeOf(value).String() == "pgtype.Numeric" {
-			val := duckdb.Decimal{Value: value.(pgtype.Numeric).Int, Scale: uint8(math.Abs(float64(value.(pgtype.Numeric).Exp)))}
-			driverRow[i+1] = val.Float64()
-		} else {
-			driverRow[i+1] = value
-		}
-	}
-	err := appender.AppendRow(driverRow...)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func ddbDmlQuery(queryString string) error {
