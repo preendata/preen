@@ -18,4 +18,4 @@ sources:
       username: ${PG_USER}
       password: ${PG_PASSWORD}
     models: 
-      - postgres-data-types-test
+      - pg-data-types-test

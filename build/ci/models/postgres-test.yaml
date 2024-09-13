@@ -1,4 +1,4 @@
-name: postgres-data-types-test
+name: pg-data-types-test
 type: sql
 query: |
   select

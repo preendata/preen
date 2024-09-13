@@ -10,8 +10,8 @@ if [[ $MYSQL_RESULTS_LENGTH -ne 1 ]]; then
 fi
 
 # Test that the PostgreSQL model was built and can be queried. Query should return 1 row.
-POSTGRES_RESULTS_LENGTH=$(bin/hypha query -f json "select * from postgres_data_types_test;" | jq length)
-if [[ $POSTGRES_RESULTS_LENGTH -ne 1 ]]; then
-  echo "Expected 1 row in postgres_data_types_test, got $POSTGRES_RESULTS_LENGTH"
+PG_RESULTS_LENGTH=$(bin/hypha query -f json "select * from pg_data_types_test;" | jq length)
+if [[ $PG_RESULTS_LENGTH -ne 1 ]]; then
+  echo "Expected 1 row in pg_data_types_test, got $PG_RESULTS_LENGTH"
   exit 1
 fi
