@@ -76,7 +76,7 @@ func (t *duckdbTime) Scan(s any) error {
 	return nil
 }
 
-func (t *duckdbTime) Value() (driver.Value, error) {
+func (t duckdbTime) Value() (driver.Value, error) {
 	return fmt.Sprint(t), nil
 }
 
