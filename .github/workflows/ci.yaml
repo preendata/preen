@@ -6,7 +6,7 @@ jobs:
   integration-tests:
     env:
       HYPHA_CONFIG_PATH: ./build/ci
-      HYPHA_MODELS_PATH: ./build/ci
+      HYPHA_MODELS_PATH: ./build/ci/models
       PG_USER: ${{ secrets.PG_USER }}
       PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
       MYSQL_USER: ${{ secrets.MYSQL_USER }}
