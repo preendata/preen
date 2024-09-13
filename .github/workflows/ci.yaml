@@ -21,25 +21,10 @@ jobs:
       with:
         go-version: '1.23.0'
 
-    - name: Build Docker services (PG, MySQL, etc.)
-      run: 
-        docker compose -f build/ci/docker-compose.yaml up -d
-
     - name: Install dependencies
       run: |
         go mod tidy
 
-    - name: golangci-lint
-      uses: golangci/golangci-lint-action@v6
-      with:
-        version: v1.60
-
-    - name: Hypha build
-      run: make build
-
-    - name: Hypha test
-      run: build/ci/integration-tests.sh
-
-    - name: Shut down services
-      if: always()
-      run: docker compose -f build/ci/docker-compose.yaml down
+    - name: Integration tests
+      run: |
+        make integration-test
