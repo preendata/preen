@@ -21,10 +21,42 @@ jobs:
       with:
         go-version: '1.23.0'
 
+    - name: Build Docker services (PG, MySQL, etc.)
+      run: 
+        docker compose -f build/ci/docker-compose.yaml up -d
+
     - name: Install dependencies
       run: |
         go mod tidy
 
-    - name: Integration tests
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: v1.60
+
+    - name: Hypha build
+      run: make build
+
+    - name: Hypha test
       run: |
-        make integration-test
+        sleep 5
+
+        bin/hypha model build
+
+        # Test that the MySQL model was built and can be queried. Query should return 1 row.
+        MYSQL_RESULTS_LENGTH=$(bin/hypha query -f json "select * from mysql_data_types_test;" | jq length)
+        if [[ $MYSQL_RESULTS_LENGTH -ne 1 ]]; then
+          echo "Expected 1 row in mysql_data_types_test, got $MYSQL_RESULTS_LENGTH"
+          exit 1
+        fi
+
+        # Test that the PostgreSQL model was built and can be queried. Query should return 1 row.
+        PG_RESULTS_LENGTH=$(bin/hypha query -f json "select * from pg_data_types_test;" | jq length)
+        if [[ $PG_RESULTS_LENGTH -ne 1 ]]; then
+          echo "Expected 1 row in pg_data_types_test, got $PG_RESULTS_LENGTH"
+          exit 1
+        fi
+
+    - name: Shut down services
+      if: always()
+      run: docker compose -f build/ci/docker-compose.yaml down
