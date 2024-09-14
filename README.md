@@ -1,4 +1,4 @@
-![tests](https://github.com/github/docs/actions/workflows/ci.yml/badge.svg)
+![tests](https://github.com/hyphasql/hypha/actions/workflows/ci.yaml/badge.svg)
 
 # Hypha
 
