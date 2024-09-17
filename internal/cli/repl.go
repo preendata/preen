@@ -11,11 +11,6 @@ import (
 )
 
 func Repl(c *cli.Context) error {
-	conf, err := engine.GetConfig()
-	if err != nil {
-		return fmt.Errorf("error getting config: %w", err)
-	}
-
 	outputFormat := c.String("output-format")
 	fmt.Println("Output format: ", outputFormat)
 
@@ -64,16 +59,21 @@ func Repl(c *cli.Context) error {
 		cmd := strings.Join(cmds, " ")
 		cmds = cmds[:0]
 		rl.SetPrompt("hyphadb> ")
-		rl.SaveHistory(cmd)
+		if err := rl.SaveHistory(cmd); err != nil {
+			fmt.Printf("failed to save repl history: %v\n", err)
+		}
 
 		// Execute the input as a query
-		qr, err := engine.Execute(cmd, conf)
+		qr, err := engine.Execute(cmd)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 			continue
 		}
 
-		engine.WriteToTable(qr.Rows, qr.Columns, outputFormat)
+		if err := engine.WriteToTable(qr.Rows, qr.Columns, outputFormat); err != nil {
+			fmt.Printf("Error: %v\n", err)
+			continue
+		}
 	}
 
 	return nil

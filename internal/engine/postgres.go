@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/marcboeker/go-duckdb"
 )
 
 type QueryResult struct {
@@ -29,7 +30,7 @@ func getPostgresPool(url string) (*pgxpool.Pool, error) {
 	return dbpool, nil
 }
 
-func getPostgresPoolFromSource(source configSource) (*pgxpool.Pool, error) {
+func getPostgresPoolFromSource(source Source) (*pgxpool.Pool, error) {
 
 	url := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s",
@@ -86,8 +87,65 @@ func processPostgresRows(r *Retriever, ic chan []driver.Value, rows pgx.Rows) er
 			switch reflect.TypeOf(value).String() {
 			case "pgtype.Numeric":
 				decimal := duckdbDecimal(0)
-				decimal.Scan(value)
+				if err = decimal.Scan(value); err != nil {
+					return err
+				}
 				driverRow[i+1], err = decimal.Value()
+				if err != nil {
+					return err
+				}
+			case "pgtype.Time":
+				timeVal := duckdbTime("")
+				if err = timeVal.Scan(value); err != nil {
+					return err
+				}
+				driverRow[i+1], err = timeVal.Value()
+				if err != nil {
+					return err
+				}
+			case "pgtype.Interval":
+				duration := duckdbDuration("")
+				if err = duration.Scan(value); err != nil {
+					return err
+				}
+				driverRow[i+1], err = duration.Value()
+				if err != nil {
+					return err
+				}
+			case "netip.Prefix":
+				prefix := duckdbNetIpPrefix("")
+				if err = prefix.Scan(value); err != nil {
+					return err
+				}
+				driverRow[i+1], err = prefix.Value()
+				if err != nil {
+					return err
+				}
+			case "net.HardwareAddr":
+				hwAddr := duckdbHardwareAddr("")
+				if err = hwAddr.Scan(value); err != nil {
+					return err
+				}
+				driverRow[i+1], err = hwAddr.Value()
+				if err != nil {
+					return err
+				}
+			case "map[string]interface {}", "[]interface {}":
+				jsonVal := duckdbJSON("")
+				if err = jsonVal.Scan(value); err != nil {
+					return err
+				}
+				driverRow[i+1], err = jsonVal.Value()
+				if err != nil {
+					return err
+				}
+			// These are UUIDs
+			case "[16]uint8":
+				uuid := duckdbUUID(duckdb.UUID{})
+				if err = uuid.Scan(value); err != nil {
+					return err
+				}
+				driverRow[i+1], err = uuid.Value()
 				if err != nil {
 					return err
 				}
@@ -98,7 +156,7 @@ func processPostgresRows(r *Retriever, ic chan []driver.Value, rows pgx.Rows) er
 		ic <- driverRow
 	}
 	Debug(fmt.Sprintf("Retrieved %d rows for %s - %s\n", rowCounter, r.Source.Name, r.ModelName))
-	if err = rows.Err(); err != nil {
+	if err := rows.Err(); err != nil {
 		return err
 	}
 	return nil

@@ -1,0 +1,24 @@
+services:
+  
+  postgres:
+    image: postgres:16
+    ports: 
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: thisisnotarealpassword
+      POSTGRES_DB: postgres
+    command: ["postgres", "-c", "log_statement=all"]
+    volumes:
+      - ./pg/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  mysql:
+    image: mysql:8
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: thisisnotarealpassword
+      MYSQL_DATABASE: mysql
+    volumes:
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+

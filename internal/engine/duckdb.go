@@ -4,16 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
-	"fmt"
-	"math"
-	"reflect"
 
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/marcboeker/go-duckdb"
 )
 
 // Returns a DuckDB appender instance for bulk loading of data
-func NewAppender(connector driver.Connector, schema string, table string) (*duckdb.Appender, error) {
+func ddbNewAppender(connector driver.Connector, schema string, table string) (*duckdb.Appender, error) {
 	conn, err := connector.Connect(context.Background())
 	if err != nil {
 		return nil, err
@@ -27,7 +23,7 @@ func NewAppender(connector driver.Connector, schema string, table string) (*duck
 	return appender, nil
 }
 
-func CreateConnector() (driver.Connector, error) {
+func ddbCreateConnector() (driver.Connector, error) {
 	connector, err := duckdb.NewConnector("./hyphaContext.db?threads=4", func(execer driver.ExecerContext) error {
 		bootQueries := []string{
 			"INSTALL 'json'",
@@ -50,70 +46,18 @@ func CreateConnector() (driver.Connector, error) {
 	return connector, nil
 }
 
-func OpenDatabase(connector driver.Connector) (*sql.DB, error) {
+func ddbOpenDatabase(connector driver.Connector) (*sql.DB, error) {
 	db := sql.OpenDB(connector)
 	return db, nil
 }
 
-func InsertResults(sourceName string, tableName string, c chan []any) error {
-	fmt.Println(len(c))
-	rowCounter := 0
-	Debug(fmt.Sprintf("Inserting rows into %s", tableName))
-	connector, err := CreateConnector()
+func ddbDmlQuery(queryString string) error {
+	connector, err := ddbCreateConnector()
 	if err != nil {
 		return err
 	}
 
-	appender, err := NewAppender(connector, "main", tableName)
-	if err != nil {
-		return err
-	}
-
-	for row := range c {
-		rowCounter++
-		if row[0] == "done" {
-			break
-		}
-		err := processRow(appender, row, sourceName)
-		if err != nil {
-			return err
-		}
-	}
-
-	fmt.Printf("Inserted %d rows into %s", rowCounter, tableName)
-
-	return nil
-}
-
-func processRow(appender *duckdb.Appender, row []any, sourceName string) error {
-	driverRow := make([]driver.Value, len(row)+1)
-	driverRow[0] = sourceName
-	for i, value := range row {
-		if value == nil {
-			driverRow[i+1] = nil
-			continue
-		}
-		if reflect.TypeOf(value).String() == "pgtype.Numeric" {
-			val := duckdb.Decimal{Value: value.(pgtype.Numeric).Int, Scale: uint8(math.Abs(float64(value.(pgtype.Numeric).Exp)))}
-			driverRow[i+1] = val.Float64()
-		} else {
-			driverRow[i+1] = value
-		}
-	}
-	err := appender.AppendRow(driverRow...)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func DMLQuery(queryString string) error {
-	connector, err := CreateConnector()
-	if err != nil {
-		return err
-	}
-
-	db, err := OpenDatabase(connector)
+	db, err := ddbOpenDatabase(connector)
 	if err != nil {
 		return err
 	}
@@ -127,13 +71,13 @@ func DMLQuery(queryString string) error {
 	return err
 }
 
-func Query(queryString string, c chan map[string]any) ([]string, error) {
-	connector, err := CreateConnector()
+func ddbQuery(queryString string, c chan map[string]any) ([]string, error) {
+	connector, err := ddbCreateConnector()
 	if err != nil {
 		return nil, err
 	}
 
-	db, err := OpenDatabase(connector)
+	db, err := ddbOpenDatabase(connector)
 	if err != nil {
 		return nil, err
 	}

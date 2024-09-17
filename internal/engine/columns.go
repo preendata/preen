@@ -4,8 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/xwb1989/sqlparser"
+	"github.com/hyphasql/sqlparser"
 )
 
 type FuncName string
@@ -45,15 +44,14 @@ type ColumnMetadata map[TableName]map[ColumnName]ColumnType
 // 2) Performs type validation against each column pulled from the source databases, via the Boyer-Moore majority voting
 // algorithm. This majority type is then packaged into the ColumnMetadata and return to the caller. This is important
 // for typing the model tables created in DuckDB
-func BuildColumnMetadata(cfg *Config) (ColumnMetadata, error) {
+func BuildColumnMetadata() (ColumnMetadata, error) {
 	// query data from hypha_information_schema
-	results, err := Execute("SELECT column_name, data_type, table_name FROM hypha_information_schema", cfg)
+	results, err := Execute("SELECT column_name, data_type, table_name FROM hypha_information_schema")
 	if err != nil {
 		return nil, err
 	}
 
 	columnMetadata := buildColumnMetadataDataStructure(&results.Rows)
-
 	// For each column in each table as sourced from InformationSchema, determine the majority type
 	for tableName, tableStruct := range columnMetadata {
 		for columnName, columnStruct := range tableStruct {
@@ -108,40 +106,89 @@ func buildColumnMetadataDataStructure(rows *[]map[string]any) ColumnMetadata {
 	return columnMetadata
 }
 
-func ParseModelColumns(models map[ModelName]*ModelConfig, columnMetadata ColumnMetadata) error {
+// Select majority type of input column via Boyer-Moore majority vote algorithm
+func identifyMajorityType(columnName ColumnName, types []string) (MajorityType, error) {
+	// Implement Boyer-Moore majority vote algorithm
+	var majority MajorityType
+	votes := 0
+
+	for _, candidate := range types {
+		mtCandidate := MajorityType(candidate)
+		if votes == 0 {
+			majority = mtCandidate
+		}
+		if mtCandidate == majority {
+			votes++
+		} else {
+			votes--
+		}
+	}
+
+	count := 0
+
+	// Checking if majority candidate occurs more than n/2 times
+	for _, candidate := range types {
+		if MajorityType(candidate) == majority {
+			count += 1
+		}
+	}
+	if majority == "" {
+		Warn(
+			fmt.Sprintf("Column: '%s' is missing from majority of tables!", columnName),
+		)
+	} else if count > len(types)/2 && count == len(types) {
+		Debug(
+			fmt.Sprintf("Data type for column '%s' is: %s", columnName, majority),
+		)
+		return majority, nil
+
+	} else if count > len(types)/2 && count != len(types) {
+		Warn(
+			fmt.Sprintf("Discrepancy in data types for column '%s'! Using majority data type of %s", columnName, majority),
+		)
+		return majority, nil
+	}
+
+	Warn(
+		fmt.Sprintf("No majority data type found for column '%s'!", columnName),
+	)
+	// This needs to be made unreachable
+	return "unknown", fmt.Errorf("no majority data type found for column '%s'", columnName)
+}
+
+func ParseModelColumns(mc *ModelConfig, columnMetadata ColumnMetadata) error {
 	cp := columnParser{
 		columns:        make(map[TableName]map[ColumnName]Column),
 		columnMetadata: columnMetadata,
 	}
-	for modelName, modelConfig := range models {
-		Debug("ABOVETHE NOT IS SQL STEP")
-		spew.Dump(modelConfig)
-		if !modelConfig.IsSql {
-			cp.modelName = ModelName(modelName)
-			cp.tableName = TableName(modelName)
+	for _, model := range mc.Models {
+		switch model.Type {
+		case "mongodb":
+			cp.modelName = ModelName(model.Name)
+			cp.tableName = TableName(model.Name)
 			cp.ddlString = "hypha_source_name varchar, document json"
 			cp.columns[cp.tableName] = make(map[ColumnName]Column)
 			sourceColumn := Column{
-				ModelName: modelName,
+				ModelName: model.Name,
 				TableName: &cp.tableName,
 				IsJoin:    false,
 				Position:  0,
 				Alias:     "hypha_source_name",
 			}
-			sourceColumnHashKey := ColumnName(fmt.Sprintf("%s.hypha_source_name", modelName))
+			sourceColumnHashKey := ColumnName(fmt.Sprintf("%s.hypha_source_name", model.Name))
 			cp.columns[cp.tableName][sourceColumnHashKey] = sourceColumn
 			documentColumn := Column{
-				ModelName: modelName,
+				ModelName: model.Name,
 				TableName: &cp.tableName,
 				IsJoin:    false,
 				Position:  1,
 				Alias:     "document",
 			}
-			documentColumnHashKey := ColumnName(fmt.Sprintf("%s.document", modelName))
+			documentColumnHashKey := ColumnName(fmt.Sprintf("%s.document", model.Name))
 			cp.columns[cp.tableName][documentColumnHashKey] = documentColumn
-		} else {
+		case "sql":
 			cp.ddlString = "hypha_source_name varchar"
-			selectStmt := modelConfig.Parsed.(*sqlparser.Select)
+			selectStmt := model.Parsed.(*sqlparser.Select)
 			for selectIdx := range selectStmt.SelectExprs {
 				cp.selectIdx = selectIdx
 				switch expr := selectStmt.SelectExprs[selectIdx].(type) {
@@ -150,7 +197,7 @@ func ParseModelColumns(models map[ModelName]*ModelConfig, columnMetadata ColumnM
 					// Process normal column.
 					case *sqlparser.ColName:
 						tableAlias := expr.Expr.(*sqlparser.ColName).Qualifier.Name.String()
-						cp.tableName = modelConfig.TableMap[TableAlias(tableAlias)]
+						cp.tableName = model.TableMap[TableAlias(tableAlias)]
 						if err := processModelColumn(expr, &cp); err != nil {
 							return err
 						}
@@ -166,16 +213,23 @@ func ParseModelColumns(models map[ModelName]*ModelConfig, columnMetadata ColumnM
 						if err := processCase(expr, &cp); err != nil {
 							return err
 						}
+					// Process cast expression column
+					case *sqlparser.ConvertExpr:
+						tableAlias := expr.Expr.(*sqlparser.ConvertExpr).Expr.(*sqlparser.ColName).Qualifier.Name.String()
+						cp.tableName = model.TableMap[TableAlias(tableAlias)]
+						if err := processConvertColumn(expr, &cp); err != nil {
+							return err
+						}
 					}
-
 				case *sqlparser.StarExpr:
 					return errors.New("star expressions are not supported. please specify columns explicitly")
 				}
 			}
+		default:
+			return fmt.Errorf("model type %s not supported", model.Type)
 		}
-		modelConfig.Columns = cp.columns
-		modelConfig.DDLString = cp.ddlString
-		models[modelName] = modelConfig
+		model.Columns = cp.columns
+		model.DDLString = cp.ddlString
 	}
 
 	return nil
@@ -211,6 +265,9 @@ func processModelColumn(expr *sqlparser.AliasedExpr, cp *columnParser) error {
 
 	// Look up the data type and append it to the table creation DDL string.
 	colType := duckdbTypeMap[string(cp.columnMetadata[TableName(cp.tableName)][ColumnName(colName)].MajorityType)]
+	if colType == "" {
+		return fmt.Errorf("data type not found for column: %s.%s", cp.tableName, colName)
+	}
 	cp.ddlString = fmt.Sprintf("%s, %s %s", cp.ddlString, col.Alias, colType)
 
 	return nil
@@ -304,52 +361,26 @@ func processCase(expr *sqlparser.AliasedExpr, cp *columnParser) error {
 	return nil
 }
 
-// Select majority type of input column via Boyer-Moore majority vote algorithm
-func identifyMajorityType(columnName ColumnName, types []string) (MajorityType, error) {
-	// Implement Boyer-Moore majority vote algorithm
-	var majority MajorityType
-	votes := 0
-
-	for _, candidate := range types {
-		mtCandidate := MajorityType(candidate)
-		if votes == 0 {
-			majority = mtCandidate
-		}
-		if mtCandidate == majority {
-			votes++
-		} else {
-			votes--
-		}
+func processConvertColumn(expr *sqlparser.AliasedExpr, cp *columnParser) error {
+	convertExpr := expr.Expr.(*sqlparser.ConvertExpr)
+	if _, ok := cp.columns[cp.tableName]; !ok {
+		cp.columns[cp.tableName] = make(map[ColumnName]Column)
 	}
-
-	count := 0
-
-	// Checking if majority candidate occurs more than n/2 times
-	for _, candidate := range types {
-		if MajorityType(candidate) == majority {
-			count += 1
-		}
+	col := Column{
+		TableName: &cp.tableName,
+		Position:  cp.selectIdx,
 	}
-	if majority == "" {
-		Warn(
-			fmt.Sprintf("Column: '%s' is missing from majority of tables!", columnName),
-		)
-	} else if count > len(types)/2 && count == len(types) {
-		Debug(
-			fmt.Sprintf("Data type for column '%s' is: %s", columnName, majority),
-		)
-		return majority, nil
-
-	} else if count > len(types)/2 && count != len(types) {
-		Warn(
-			fmt.Sprintf("Discrepancy in data types for column '%s'! Using majority data type of %s", columnName, majority),
-		)
-		return majority, nil
+	if expr.As.String() != "" {
+		col.Alias = expr.As.String()
+		colHashKey := fmt.Sprintf("%s.%s", cp.tableName, col.Alias)
+		cp.columns[cp.tableName][ColumnName(colHashKey)] = col
+	} else {
+		col.Alias = fmt.Sprintf("\"%s\"", sqlparser.String(expr))
+		colHashKey := fmt.Sprintf("%s.%s", cp.tableName, col.Alias)
+		cp.columns[cp.tableName][ColumnName(colHashKey)] = col
 	}
+	colType := convertExpr.Type.Type
+	cp.ddlString = fmt.Sprintf("%s, %s %s", cp.ddlString, col.Alias, colType)
 
-	Warn(
-		fmt.Sprintf("No majority data type found for column '%s'!", columnName),
-	)
-	// This needs to be made unreachable
-	return "unknown", fmt.Errorf("no majority data type found for column '%s'", columnName)
+	return nil
 }

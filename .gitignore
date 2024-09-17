@@ -1,4 +1,5 @@
 hyphadb
+bin/
 tmp.txt
 .config/
 .venv/
@@ -19,7 +20,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
 dist/
 downloads/

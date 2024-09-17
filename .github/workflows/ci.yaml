@@ -1,86 +1,65 @@
-name: Release
+name: CI
 
-on:
-  push:
-    tags:
-      - '**'
-
+on: pull_request
 
 jobs:
-  build-linux:
+  tests:
+    env:
+      HYPHA_CONFIG_PATH: ./build/ci
+      HYPHA_MODELS_PATH: ./build/ci/models
+      PG_USER: ${{ secrets.PG_USER }}
+      PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+      MYSQL_USER: ${{ secrets.MYSQL_USER }}
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        go-version: [1.21.1]
-        os: [linux]
-        arch: [amd64]
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23.0'
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go-version }}
+    - name: Build Docker services (PG, MySQL, etc.)
+      run: 
+        docker compose -f build/ci/docker-compose.yaml up -d
 
-      - name: Install dependencies
-        run: go mod tidy
+    - name: Install dependencies
+      run: |
+        go mod tidy
 
-      - name: Lint
-        run: go install golang.org/x/lint/golint@latest && golint ./...
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: v1.60
 
-      - name: Build
-        env:
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
-          CGO_ENABLED: 1
-        run: |
-          CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb --ldflags="-extldflags=-static" -tags osusergo,netgo main.go
-          echo "Built for $GOOS $GOARCH"
+    - name: Build Hypha binary
+      run: make build
 
-      - name: Upload binaries
-        uses: actions/upload-artifact@v2
-        with:
-          name: hyphadb-${{ matrix.os }}-${{ matrix.arch }}
-          path: output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb
+    - name: Unit Tests
+      run: make test
 
-  build-macos:
-    runs-on: macos-latest
+    - name: Integration tests
+      run: |
+        sleep 5
 
-    strategy:
-      matrix:
-        go-version: [1.21.1]
-        os: [darwin]
-        arch: [arm64]
+        bin/hypha model build
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+        # Test that the MySQL model was built and can be queried. Query should return 1 row.
+        MYSQL_RESULTS_LENGTH=$(bin/hypha query -f json "select * from mysql_data_types_test;" | jq length)
+        if [[ $MYSQL_RESULTS_LENGTH -ne 1 ]]; then
+          echo "Expected 1 row in mysql_data_types_test, got $MYSQL_RESULTS_LENGTH"
+          exit 1
+        fi
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{ matrix.go-version }}
+        # Test that the PostgreSQL model was built and can be queried. Query should return 1 row.
+        PG_RESULTS_LENGTH=$(bin/hypha query -f json "select * from pg_data_types_test;" | jq length)
+        if [[ $PG_RESULTS_LENGTH -ne 1 ]]; then
+          echo "Expected 1 row in pg_data_types_test, got $PG_RESULTS_LENGTH"
+          exit 1
+        fi
 
-      - name: Install dependencies
-        run: go mod tidy
-
-      - name: Lint
-        run: go install golang.org/x/lint/golint@latest && golint ./...
-
-      - name: Build
-        env:
-          GOOS: ${{ matrix.os }}
-          GOARCH: ${{ matrix.arch }}
-          CGO_ENABLED: 1
-        run: |
-          CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build -o output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb  main.go 
-          echo "Built for $GOOS $GOARCH"
-          
-      - name: Upload binaries
-        uses: actions/upload-artifact@v2
-        with:
-          name: hyphadb-${{ matrix.os }}-${{ matrix.arch }}
-          path: output/${{ matrix.os }}_${{ matrix.arch }}/hyphadb
+    - name: Shut down services
+      if: always()
+      run: docker compose -f build/ci/docker-compose.yaml down

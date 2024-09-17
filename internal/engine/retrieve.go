@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"slices"
+	"strings"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -11,28 +12,26 @@ import (
 type Retriever struct {
 	ModelName string
 	Query     string
-	Source    configSource
+	Source    Source
 }
 
-func Retrieve(cfg *Config, models Models) error {
-	for _, modelName := range cfg.Models {
+func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
+	for _, model := range mc.Models {
 		ic := make(chan []driver.Value, 10000)
 		dc := make(chan []int64)
-		go Insert(modelName, ic, dc)
-		if err != nil {
-			return err
-		}
+		tableName := strings.ReplaceAll(string(model.Name), "-", "_")
+		go Insert(ModelName(tableName), ic, dc)
 		g := errgroup.Group{}
 		g.SetLimit(200)
-		for _, source := range cfg.ConfigSources {
-			if !slices.Contains(source.Models, modelName) {
-				Debug(fmt.Sprintf("Skipping %s for %s", modelName, source.Name))
+		for _, source := range sc.Sources {
+			if !slices.Contains(source.Models, string(model.Name)) {
+				Debug(fmt.Sprintf("Skipping %s for %s", model.Name, source.Name))
 				continue
 			}
 			r := Retriever{
 				Source:    source,
-				ModelName: modelName,
-				Query:     models.Config[ModelName(modelName)].Query,
+				ModelName: string(model.Name),
+				Query:     model.Query,
 			}
 			switch source.Engine {
 			case "s3":
@@ -47,7 +46,7 @@ func Retrieve(cfg *Config, models Models) error {
 					return nil
 				}(r, ic)
 			case "postgres":
-				func(r Retriever, ic chan []driver.Value) error {
+				err := func(r Retriever, ic chan []driver.Value) error {
 					g.Go(func() error {
 						if err := ingestPostgresSource(&r, ic); err != nil {
 							return err
@@ -56,8 +55,11 @@ func Retrieve(cfg *Config, models Models) error {
 					})
 					return nil
 				}(r, ic)
+				if err != nil {
+					return err
+				}
 			case "mysql":
-				func(r Retriever, ic chan []driver.Value) error {
+				err := func(r Retriever, ic chan []driver.Value) error {
 					g.Go(func() error {
 						if err := ingestMysqlSource(&r, ic); err != nil {
 							return err
@@ -66,8 +68,11 @@ func Retrieve(cfg *Config, models Models) error {
 					})
 					return nil
 				}(r, ic)
+				if err != nil {
+					return err
+				}
 			case "mongodb":
-				func(r Retriever, ic chan []driver.Value) error {
+				err := func(r Retriever, ic chan []driver.Value) error {
 					g.Go(func() error {
 						if err := ingestMongoSource(&r, ic); err != nil {
 							return err
@@ -76,16 +81,19 @@ func Retrieve(cfg *Config, models Models) error {
 					})
 					return nil
 				}(r, ic)
+				if err != nil {
+					return err
+				}
 			default:
 				Error(fmt.Sprintf("Engine %s not supported", source.Engine))
 			}
 		}
-		if err = g.Wait(); err != nil {
+		if err := g.Wait(); err != nil {
 			return err
 		}
 
 		ic <- []driver.Value{"quit"}
-		ConfirmInsert(modelName, dc, 0)
+		ConfirmInsert(string(model.Name), dc, 0)
 	}
 	return nil
 }

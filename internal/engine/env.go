@@ -5,6 +5,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"os/user"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -14,19 +15,19 @@ import (
 
 type Env struct {
 	HyphaConfigPath string
-	HyphaModelPath  string
+	HyphaModelsPath string
 	LicenseKey      string
 }
 
 func EnvInit() (*Env, error) {
-	workDir, err := os.Getwd()
+	usr, err := user.Current()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get current working directory: %w", err)
+		return nil, fmt.Errorf("failed to get current user: %w", err)
 	}
 
 	return &Env{
-		HyphaConfigPath: getEnv("HYPHA_CONFIG_PATH", filepath.Join(workDir, ".hypha"), false),
-		HyphaModelPath:  getEnv("HYPHA_MODEL_PATH", filepath.Join(workDir, "models"), false),
+		HyphaConfigPath: getEnv("HYPHA_CONFIG_PATH", filepath.Join(usr.HomeDir, ".hypha"), false),
+		HyphaModelsPath: getEnv("HYPHA_MODELS_PATH", "", false),
 		LicenseKey:      getEnv("HYPHA_LICENSE_KEY", "", false),
 	}, nil
 }

@@ -9,7 +9,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func BuildInformationSchema(cfg *Config, models *Models) error {
+func BuildInformationSchema(sc *SourceConfig, mc *ModelConfig) error {
 	// Ensure info schema table exists
 	if err := prepareDDBInformationSchema(); err != nil {
 		return err
@@ -22,22 +22,20 @@ func BuildInformationSchema(cfg *Config, models *Models) error {
 	go Insert("hypha_information_schema", ic, dc)
 
 	// Group sources by engine to distribute across specific engine handlers
-	hyphaSourcesByEngine := groupSourceByEngine(cfg)
+	hyphaSourcesByEngine := groupSourceByEngine(sc)
 
 	sourceErrGroup := new(errgroup.Group)
 
 	for engine, sources := range hyphaSourcesByEngine {
-		engine := engine
-		sources := sources
 		sourceErrGroup.Go(func() error {
 			switch engine {
 			case "postgres":
-				if err = buildPostgresInformationSchema(sources, ic, *models); err != nil {
-					return err
+				if err := buildPostgresInformationSchema(sources, ic, mc); err != nil {
+					return fmt.Errorf("error building postgres information schema: %w", err)
 				}
 			case "mysql":
-				if err = buildMySQLInformationSchema(sources, ic, *models); err != nil {
-					return err
+				if err := buildMySQLInformationSchema(sources, ic, mc); err != nil {
+					return fmt.Errorf("error building mysql information schema: %w", err)
 				}
 			case "mongodb":
 				Debug("No information schema required for MongoDB")
@@ -61,11 +59,11 @@ func BuildInformationSchema(cfg *Config, models *Models) error {
 }
 
 // buildMySQLInformationSchema builds the information schema for all mysql sources in the config
-func buildMySQLInformationSchema(sources []configSource, ic chan<- []driver.Value, models Models) error {
+func buildMySQLInformationSchema(sources []Source, ic chan<- []driver.Value, mc *ModelConfig) error {
 	schemaErrGroup := new(errgroup.Group)
 
 	for _, source := range sources {
-		func(source configSource) error {
+		err := func(source Source) error {
 			schemaErrGroup.Go(func() error {
 				// Open new pool for every source
 				pool, err := GetMysqlPoolFromSource(source)
@@ -76,10 +74,10 @@ func buildMySQLInformationSchema(sources []configSource, ic chan<- []driver.Valu
 				defer pool.Close()
 
 				// Iterate over all models and get the tables for each model
-				for modelName, modelConfig := range models.Config {
-					if modelConfig.IsSql {
+				for _, model := range mc.Models {
+					if model.Type == "sql" {
 						tablesQueryString := ""
-						for _, tableName := range modelConfig.TableSet {
+						for _, tableName := range model.TableSet {
 							if tablesQueryString != "" {
 								tablesQueryString += fmt.Sprintf(",'%s'", tableName)
 							} else {
@@ -111,7 +109,7 @@ func buildMySQLInformationSchema(sources []configSource, ic chan<- []driver.Valu
 							if err != nil {
 								return err
 							}
-							ic <- []driver.Value{source.Name, string(modelName), table_name, column_name, data_type}
+							ic <- []driver.Value{source.Name, string(model.Name), table_name, column_name, data_type}
 						}
 					}
 				}
@@ -119,6 +117,9 @@ func buildMySQLInformationSchema(sources []configSource, ic chan<- []driver.Valu
 			})
 			return nil
 		}(source)
+		if err != nil {
+			return err
+		}
 	}
 	if err := schemaErrGroup.Wait(); err != nil {
 		return err
@@ -128,11 +129,11 @@ func buildMySQLInformationSchema(sources []configSource, ic chan<- []driver.Valu
 }
 
 // buildPostgresInformationSchema builds the information schema for all postgres sources in the config
-func buildPostgresInformationSchema(sources []configSource, ic chan<- []driver.Value, models Models) error {
+func buildPostgresInformationSchema(sources []Source, ic chan<- []driver.Value, mc *ModelConfig) error {
 	schemaErrGroup := new(errgroup.Group)
 
 	for _, source := range sources {
-		func(source configSource) error {
+		err := func(source Source) error {
 			schemaErrGroup.Go(func() error {
 				// Open new pool for every source
 				pool, err := getPostgresPoolFromSource(source)
@@ -144,10 +145,10 @@ func buildPostgresInformationSchema(sources []configSource, ic chan<- []driver.V
 				schema := "public"
 
 				// Iterate over all models and get the tables for each model
-				for modelName, modelConfig := range models.Config {
-					if modelConfig.IsSql {
+				for _, model := range mc.Models {
+					if model.Type == "sql" {
 						tablesQueryString := ""
-						for _, tableName := range modelConfig.TableSet {
+						for _, tableName := range model.TableSet {
 							if tablesQueryString != "" {
 								tablesQueryString += fmt.Sprintf(",'%s'", tableName)
 							} else {
@@ -162,7 +163,7 @@ func buildPostgresInformationSchema(sources []configSource, ic chan<- []driver.V
 
 						rows, err := pool.Query(context.Background(), query)
 						if err != nil {
-							return err
+							return fmt.Errorf("error querying postgres information schema: %w", err)
 						}
 
 						defer rows.Close()
@@ -172,7 +173,7 @@ func buildPostgresInformationSchema(sources []configSource, ic chan<- []driver.V
 							if err != nil {
 								return err
 							}
-							ic <- []driver.Value{source.Name, string(modelName), values[0], values[1], values[2]}
+							ic <- []driver.Value{source.Name, string(model.Name), values[0], values[1], values[2]}
 						}
 					}
 				}
@@ -180,6 +181,9 @@ func buildPostgresInformationSchema(sources []configSource, ic chan<- []driver.V
 			})
 			return nil
 		}(source)
+		if err != nil {
+			return err
+		}
 	}
 	if err := schemaErrGroup.Wait(); err != nil {
 		return err
@@ -189,9 +193,9 @@ func buildPostgresInformationSchema(sources []configSource, ic chan<- []driver.V
 }
 
 // groupSourceByEngine reduces the raw config.Sources into a map of engine -> sources
-func groupSourceByEngine(cfg *Config) map[string][]configSource {
-	engines := make(map[string][]configSource)
-	for _, source := range cfg.ConfigSources {
+func groupSourceByEngine(sc *SourceConfig) map[string][]Source {
+	engines := make(map[string][]Source)
+	for _, source := range sc.Sources {
 		engines[source.Engine] = append(engines[source.Engine], source)
 	}
 
@@ -203,7 +207,7 @@ func prepareDDBInformationSchema() error {
 	informationSchemaColumnNames := []string{"source_name varchar", "model_name varchar", "table_name varchar", "column_name varchar", "data_type varchar"}
 	informationSchemaTableName := "main.hypha_information_schema"
 	Debug(fmt.Sprintf("Creating table %s", informationSchemaTableName))
-	err := DMLQuery(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName, strings.Join(informationSchemaColumnNames, ", ")))
+	err := ddbDmlQuery(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName, strings.Join(informationSchemaColumnNames, ", ")))
 	if err != nil {
 		return err
 	}

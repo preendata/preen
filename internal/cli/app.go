@@ -140,10 +140,6 @@ func NewApp() *cli.App {
 				return err
 			}
 
-			// Initialize config
-			if _, err := engine.GetConfig(); err != nil {
-				return err
-			}
 			return nil
 		},
 	}

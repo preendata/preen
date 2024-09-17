@@ -14,18 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-func mongoConnect(url string, ctx context.Context) (*mongo.Client, error) {
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(url))
-	if err != nil {
-		return nil, err
-	}
-	if err = client.Ping(ctx, readpref.Primary()); err != nil {
-		return nil, err
-	}
-	return client, nil
-}
-
-func mongoConnFromSource(source configSource, ctx context.Context) (*mongo.Client, error) {
+func mongoConnFromSource(source Source, ctx context.Context) (*mongo.Client, error) {
 
 	url := fmt.Sprintf(
 		"mongodb://%s:%s@%s:%d/?authSource=%s",
@@ -54,7 +43,13 @@ func ingestMongoSource(r *Retriever, ic chan []driver.Value) error {
 	if err != nil {
 		return err
 	}
-	defer mongoClient.Disconnect(context.Background())
+
+	// If this function returns an error, then it failed to disconnect from the mongo client
+	defer func() {
+		if err = mongoClient.Disconnect(context.Background()); err != nil {
+			Errorf("Error disconnecting from mongo: %s", err)
+		}
+	}()
 
 	defer cancel()
 
