@@ -18,7 +18,19 @@ Hypha is currently in the alpha stage and not all features are available. We are
 
 ## Installation
 
-To install Hypha, you need to have Go 1.23.0 or later installed on your system. Then, you can build the application using the following commands:
+### Download pre-built binary
+
+You can download a pre-built binary for your operating system and architecture from the [GitHub Releases](https://github.com/hyphasql/hypha/releases) page. The example below shows an install for v0.0.1 for MacOS.
+
+```bash
+curl -L https://github.com/hyphasql/hypha/releases/download/v0.0.1/hypha-darwin_arm64-v0.0.1.tar.gz -o hypha.tar.gz
+tar -xvzf hypha.tar.gz
+sudo mv hypha /usr/local/bin
+```
+
+### Build from source
+
+To build Hypha from source, you need to have Go 1.23.0 or later installed on your system. Then, you can build the application using the following commands:
 
 ```bash
 git clone https://github.com/yourusername/hypha.git
