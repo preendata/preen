@@ -64,7 +64,6 @@ func BuildColumnMetadata() (ColumnMetadata, error) {
 				MajorityType: majorityType,
 			}
 		}
-
 	}
 
 	return columnMetadata, nil
@@ -225,6 +224,8 @@ func ParseModelColumns(mc *ModelConfig, columnMetadata ColumnMetadata) error {
 					return errors.New("star expressions are not supported. please specify columns explicitly")
 				}
 			}
+		case "file":
+			Debug("no columns to parse for file model")
 		default:
 			return fmt.Errorf("model type %s not supported", model.Type)
 		}

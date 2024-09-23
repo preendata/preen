@@ -78,9 +78,9 @@ func NewApp() *cli.App {
 						Usage:   "Build model",
 						Flags: []cli.Flag{
 							&cli.StringFlag{
-								Name:    "model-name",
-								Aliases: []string{"cn"},
-								Usage:   "Target a specific model",
+								Name:    "target",
+								Aliases: []string{"t"},
+								Usage:   "Target a specific model(s). The default is all models. This is relative to the HYPHA_MODELS_PATH.",
 							},
 							&cli.BoolFlag{
 								Name:    "source-name",
@@ -109,10 +109,10 @@ func NewApp() *cli.App {
 						Action:  Validate,
 					},
 					{
-						Name:    "info",
+						Name:    "metadata",
 						Aliases: []string{"i"},
-						Usage:   "Build source information schema",
-						Action:  BuildInformationSchema,
+						Usage:   "Build source metadata",
+						Action:  BuildMetadata,
 					},
 				},
 			},

@@ -18,7 +18,7 @@ func ParseModelTables(mc *ModelConfig) error {
 			case *sqlparser.Select:
 				model.TableMap, model.TableSet = getModelTableAliases(stmt)
 			default:
-				return fmt.Errorf("Model %s failed. Non-select queries not supported.", model.Name)
+				return fmt.Errorf("model %s failed. non-select queries not supported", model.Name)
 			}
 		}
 	}
@@ -46,8 +46,6 @@ func getModelTableAliases(stmt *sqlparser.Select) (TableMap, TableSet) {
 		}
 	case *sqlparser.JoinTableExpr:
 		_, tableSet = parseJoinTables(t, tableMap, tableSet)
-	default:
-		fmt.Println("default")
 	}
 
 	return tableMap, tableSet
