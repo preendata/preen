@@ -36,7 +36,7 @@ jobs:
           CGO_ENABLED: 1
         run: |
           CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build -o output/${{ matrix.os }}_${{ matrix.arch }}/hypha --ldflags="-extldflags=-static" -tags osusergo,netgo main.go
-          tar -C output/${{ matrix.os }}_${{ matrix.arch }} -czvf hypha-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz output/${{ matrix.os }}_${{ matrix.arch }}/hypha
+          tar -C output/${{ matrix.os }}_${{ matrix.arch }} -czvf hypha-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz hypha
           echo "Built for $GOOS $GOARCH"
 
       - name: Upload binaries
@@ -74,7 +74,7 @@ jobs:
           CGO_ENABLED: 1
         run: |
           CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build -o output/${{ matrix.os }}_${{ matrix.arch }}/hypha main.go
-          tar -C output/${{ matrix.os }}_${{ matrix.arch }} -czvf hypha-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz output/${{ matrix.os }}_${{ matrix.arch }}/hypha
+          tar -C output/${{ matrix.os }}_${{ matrix.arch }} -czvf hypha-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz hypha
           echo "Built for $GOOS $GOARCH"
           
       - name: Upload binaries
