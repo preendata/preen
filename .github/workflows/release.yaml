@@ -42,7 +42,7 @@ jobs:
       - name: Upload binaries
         uses: svenstaro/upload-release-action@v2
         with:
-          file: output/${{ matrix.os }}_${{ matrix.arch }}/hypha-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
+          file: hypha-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
 
@@ -80,6 +80,6 @@ jobs:
       - name: Upload binaries
         uses: svenstaro/upload-release-action@v2
         with:
-          file: output/${{ matrix.os }}_${{ matrix.arch }}/hypha-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
+          file: hypha-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
