@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -98,7 +97,7 @@ func GetModelConfigs(modelTarget string) (*ModelConfig, error) {
 			return nil, fmt.Errorf("error creating models.yaml file at %s with error %s", configFilePath, err)
 		}
 
-		return nil, errors.New(fmt.Sprintf("created empty models.yaml file at %s. Please configure valid models before proceeding", configFilePath))
+		return nil, fmt.Errorf("created empty models.yaml file at %s. Please configure valid models before proceeding", configFilePath)
 	} else if err != nil {
 		return nil, fmt.Errorf("error reading models.yaml file at %s with error %s", configFilePath, err)
 	}
