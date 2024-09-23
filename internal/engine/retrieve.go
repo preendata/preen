@@ -10,17 +10,27 @@ import (
 )
 
 type Retriever struct {
-	ModelName string
-	Query     string
-	Source    Source
+	ModelName    string
+	TableName    string
+	Query        string
+	Source       Source
+	Options      Options
+	Format       string
+	FilePatterns *[]string
 }
 
+// Retrieve data from sources and insert into the duckDB database.
+// Database sources are inserted via the Insert function.
+// File sources are inserted via the native duckDB integrations.
 func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
 	for _, model := range mc.Models {
 		ic := make(chan []driver.Value, 10000)
 		dc := make(chan []int64)
 		tableName := strings.ReplaceAll(string(model.Name), "-", "_")
-		go Insert(ModelName(tableName), ic, dc)
+		// Only insert SQL models into DuckDB
+		if model.Type == "sql" {
+			go Insert(ModelName(tableName), ic, dc)
+		}
 		g := errgroup.Group{}
 		g.SetLimit(200)
 		for _, source := range sc.Sources {
@@ -29,15 +39,33 @@ func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
 				continue
 			}
 			r := Retriever{
-				Source:    source,
-				ModelName: string(model.Name),
-				Query:     model.Query,
+				Source:       source,
+				ModelName:    string(model.Name),
+				Query:        model.Query,
+				Options:      model.Options,
+				Format:       model.Format,
+				FilePatterns: model.FilePatterns,
+				TableName:    tableName,
 			}
 			switch source.Engine {
+			case "s3":
+				err := func(r Retriever, ic chan []driver.Value) error {
+					g.Go(func() error {
+						if err := ingestS3Model(&r); err != nil {
+							return err
+						}
+						return nil
+					})
+
+					return nil
+				}(r, ic)
+				if err != nil {
+					return err
+				}
 			case "postgres":
 				err := func(r Retriever, ic chan []driver.Value) error {
 					g.Go(func() error {
-						if err := ingestPostgresSource(&r, ic); err != nil {
+						if err := ingestPostgresModel(&r, ic); err != nil {
 							return err
 						}
 						return nil
@@ -50,7 +78,7 @@ func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
 			case "mysql":
 				err := func(r Retriever, ic chan []driver.Value) error {
 					g.Go(func() error {
-						if err := ingestMysqlSource(&r, ic); err != nil {
+						if err := ingestMysqlModel(&r, ic); err != nil {
 							return err
 						}
 						return nil
@@ -63,7 +91,7 @@ func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
 			case "mongodb":
 				err := func(r Retriever, ic chan []driver.Value) error {
 					g.Go(func() error {
-						if err := ingestMongoSource(&r, ic); err != nil {
+						if err := ingestMongoModel(&r, ic); err != nil {
 							return err
 						}
 						return nil
@@ -80,9 +108,10 @@ func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
 		if err := g.Wait(); err != nil {
 			return err
 		}
-
 		ic <- []driver.Value{"quit"}
-		ConfirmInsert(string(model.Name), dc, 0)
+		if model.Type == "sql" {
+			ConfirmInsert(string(model.Name), dc, 0)
+		}
 	}
 	return nil
 }

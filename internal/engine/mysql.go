@@ -45,7 +45,7 @@ func getMysqlPool(url string) (*sql.DB, error) {
 }
 
 // Retrieve retrieves data from a MySQL source and sends it to the insert channel.
-func ingestMysqlSource(r *Retriever, ic chan []driver.Value) error {
+func ingestMysqlModel(r *Retriever, ic chan []driver.Value) error {
 	Debug(fmt.Sprintf("Retrieving context %s for %s", r.ModelName, r.Source.Name))
 	clientPool, err := GetMysqlPoolFromSource(r.Source)
 	if err != nil {

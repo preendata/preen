@@ -49,7 +49,7 @@ func getPostgresPoolFromSource(source Source) (*pgxpool.Pool, error) {
 	return dbpool, nil
 }
 
-func ingestPostgresSource(r *Retriever, ic chan []driver.Value) error {
+func ingestPostgresModel(r *Retriever, ic chan []driver.Value) error {
 	Debug(fmt.Sprintf("Retrieving context %s for %s", r.ModelName, r.Source.Name))
 	clientPool, err := getPostgresPoolFromSource(r.Source)
 	if err != nil {

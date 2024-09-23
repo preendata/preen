@@ -35,8 +35,8 @@ func Query(c *cli.Context) error {
 
 func BuildModel(c *cli.Context) error {
 	engine.Debug("Executing cli.buildmodel")
-
-	sc, mc, err := engine.GetConfig()
+	modelTarget := c.String("target")
+	sc, mc, err := engine.GetConfig(modelTarget)
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
@@ -49,17 +49,17 @@ func BuildModel(c *cli.Context) error {
 	return nil
 }
 
-func BuildInformationSchema(c *cli.Context) error {
+func BuildMetadata(c *cli.Context) error {
 	engine.Debug("Executing cli.buildInformationSchema")
-
-	sc, mc, err := engine.GetConfig()
+	modelTarget := ""
+	sc, mc, err := engine.GetConfig(modelTarget)
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
-	err = engine.BuildInformationSchema(sc, mc)
+	err = engine.BuildMetadata(sc, mc)
 	if err != nil {
-		return fmt.Errorf("error building context %w", err)
+		return fmt.Errorf("error building metadata %w", err)
 	}
 
 	return nil
@@ -67,8 +67,8 @@ func BuildInformationSchema(c *cli.Context) error {
 
 func Validate(c *cli.Context) error {
 	engine.Debug("Executing cli.validate")
-
-	sc, mc, err := engine.GetConfig()
+	modelTarget := ""
+	sc, mc, err := engine.GetConfig(modelTarget)
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
@@ -77,8 +77,8 @@ func Validate(c *cli.Context) error {
 		return fmt.Errorf("error parsing models %w", err)
 	}
 
-	if err = engine.BuildInformationSchema(sc, mc); err != nil {
-		return fmt.Errorf("error building information schema %w", err)
+	if err = engine.BuildMetadata(sc, mc); err != nil {
+		return fmt.Errorf("error building metadata %w", err)
 	}
 
 	_, err = engine.BuildColumnMetadata()
@@ -91,23 +91,18 @@ func Validate(c *cli.Context) error {
 
 func ListSources(c *cli.Context) error {
 	engine.Debug("Executing cli.listSources")
-	sc, _, err := engine.GetConfig()
-	if err != nil {
-		return fmt.Errorf("error getting config %w", err)
-	}
-
+	modelTarget := ""
+	sc, _, err := engine.GetConfig(modelTarget)
 	if err != nil {
 		return fmt.Errorf("error getting config %w", err)
 	}
 
 	for _, conn := range sc.Sources {
-		c, err := json.MarshalIndent(conn, "", "  ")
+		_, err := json.MarshalIndent(conn, "", "  ")
 
 		if err != nil {
 			return fmt.Errorf("error unmarshalling config %w", err)
 		}
-
-		fmt.Println(string(c))
 	}
 	return nil
 }

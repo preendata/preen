@@ -28,6 +28,10 @@ func ddbCreateConnector() (driver.Connector, error) {
 		bootQueries := []string{
 			"INSTALL 'json'",
 			"LOAD 'json'",
+			"INSTALL aws",
+			"LOAD aws",
+			"INSTALL httpfs",
+			"LOAD httpfs",
 		}
 
 		for _, query := range bootQueries {
@@ -51,7 +55,7 @@ func ddbOpenDatabase(connector driver.Connector) (*sql.DB, error) {
 	return db, nil
 }
 
-func ddbDmlQuery(queryString string) error {
+func ddbExec(queryString string) error {
 	connector, err := ddbCreateConnector()
 	if err != nil {
 		return err

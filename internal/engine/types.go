@@ -206,6 +206,7 @@ var duckdbTypeMap = map[string]string{
 	"timestamp":                   "timestamp",
 	"datetime":                    "timestamp",
 	"timestamp without time zone": "timestamp",
+	"timestamp with time zone":    "timestamp",
 	"binary":                      "blob",
 	"varbinary":                   "blob",
 	"tinyblob":                    "blob",

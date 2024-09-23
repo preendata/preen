@@ -6,10 +6,15 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"golang.org/x/sync/errgroup"
 )
 
-func BuildInformationSchema(sc *SourceConfig, mc *ModelConfig) error {
+// BuildMetadata builds any required metadata for the sources in the sources.yaml config.
+// Postgres and MySQL sources require an information schema to be built.
+// S3 sources require duckDB secrets to be stored.
+func BuildMetadata(sc *SourceConfig, mc *ModelConfig) error {
 	// Ensure info schema table exists
 	if err := prepareDDBInformationSchema(); err != nil {
 		return err
@@ -39,6 +44,16 @@ func BuildInformationSchema(sc *SourceConfig, mc *ModelConfig) error {
 				}
 			case "mongodb":
 				Debug("No information schema required for MongoDB")
+			case "s3":
+				if len(sources) > 1 {
+					return fmt.Errorf("only one s3 source is supported")
+				}
+				if err := buildS3Secrets(sources[0]); err != nil {
+					return fmt.Errorf("error configuring s3 access: %w", err)
+				}
+				if err := confirmS3Connection(sources[0]); err != nil {
+					return fmt.Errorf("error confirming s3 objects: %w", err)
+				}
 			default:
 				return fmt.Errorf("unsupported engine: %s", engine)
 			}
@@ -52,7 +67,55 @@ func BuildInformationSchema(sc *SourceConfig, mc *ModelConfig) error {
 	}
 	ic <- []driver.Value{"quit"}
 	ConfirmInsert("hypha_information_schema", dc, 0)
+	Info("Metadata build completed successfully")
 
+	return nil
+}
+
+// buildS3Secrets builds the secrets for all s3 sources in the config
+// This is required to access the S3 bucket, https://duckdb.org/docs/extensions/httpfs/s3api.html
+func buildS3Secrets(s Source) error {
+	query := fmt.Sprintf(`
+		install aws;
+		load aws;
+		create or replace persistent secret aws_s3 (
+			type S3,
+			region '%s',
+			provider CREDENTIAL_CHAIN
+		)
+	`, s.Connection.Region)
+	if err := ddbExec(query); err != nil {
+		return err
+	}
+	return nil
+}
+
+// confirmS3Connection confirms that the S3 connection is working,
+// and that at least one object is present inside the bucket.
+func confirmS3Connection(s Source) error {
+	ctx := context.Background()
+	cfg, err := config.LoadDefaultConfig(
+		ctx,
+		config.WithRegion(s.Connection.Region),
+	)
+	if err != nil {
+		return fmt.Errorf("error loading default config: %w", err)
+	}
+
+	s3Client := s3.NewFromConfig(cfg)
+	input := &s3.ListObjectsV2Input{
+		Bucket: &s.Connection.BucketName,
+	}
+
+	result, err := s3Client.ListObjectsV2(ctx, input)
+	if err != nil {
+		return fmt.Errorf("unable to list items in bucket %q: %w", s.Connection.BucketName, err)
+	}
+	if len(result.Contents) == 0 {
+		return fmt.Errorf("no objects found in bucket %q", s.Connection.BucketName)
+	} else {
+		Debug(fmt.Sprintf("Found %d objects in bucket %q", len(result.Contents), s.Connection.BucketName))
+	}
 	return nil
 }
 
@@ -205,7 +268,7 @@ func prepareDDBInformationSchema() error {
 	informationSchemaColumnNames := []string{"source_name varchar", "model_name varchar", "table_name varchar", "column_name varchar", "data_type varchar"}
 	informationSchemaTableName := "main.hypha_information_schema"
 	Debug(fmt.Sprintf("Creating table %s", informationSchemaTableName))
-	err := ddbDmlQuery(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName, strings.Join(informationSchemaColumnNames, ", ")))
+	err := ddbExec(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName, strings.Join(informationSchemaColumnNames, ", ")))
 	if err != nil {
 		return err
 	}

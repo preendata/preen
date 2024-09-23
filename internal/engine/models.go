@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,15 +13,54 @@ import (
 
 type ModelName string
 
+type Type struct {
+	Name string `yaml:"name"`
+	Type string `yaml:"type"`
+}
+
+type Options struct {
+	AllVarchar         *bool     `default:"false" yaml:"all_varchar"`
+	AllowQuotedNulls   *bool     `default:"true" yaml:"allow_quoted_nulls"`
+	AutoDetect         *bool     `default:"true" yaml:"auto_detect"`
+	AutoTypeCandidates *[]string `default:"-" yaml:"auto_type_candidates"`
+	Columns            *[]Type   `default:"-" yaml:"columns"`
+	Compression        *string   `default:"auto" yaml:"compression"`
+	DateFormat         *string   `default:"-" yaml:"date_format"`
+	DecimalSeparator   *string   `default:"." yaml:"decimal_separator"`
+	Delim              *string   `default:"," yaml:"delim"`
+	Escape             *string   `default:"\"" yaml:"escape"`
+	FileName           *bool     `default:"false" yaml:"filename"`
+	ForceNotNull       *[]string `default:"[]" yaml:"force_not_null"`
+	Header             *bool     `default:"false" yaml:"header"`
+	HivePartitioning   *bool     `default:"false" yaml:"hive_partitioning"`
+	IgnoreErrors       *bool     `default:"false" yaml:"ignore_errors"`
+	MaxLineSize        *int64    `default:"2097152" yaml:"max_line_size"`
+	Names              *[]string `default:"-" yaml:"names"`
+	NewLine            *string   `default:"-" yaml:"new_line"`
+	NormalizeNames     *bool     `default:"false" yaml:"normalize_names"`
+	NullPadding        *bool     `default:"false" yaml:"null_padding"`
+	NullString         *[]string `default:"-" yaml:"null_string"`
+	Parallel           *bool     `default:"true" yaml:"parallel"`
+	Quote              *string   `default:"\"" yaml:"quote"`
+	SampleSize         *int64    `default:"20480" yaml:"sample_size"`
+	Skip               *int64    `default:"0" yaml:"skip"`
+	TimestampFormat    *string   `default:"-" yaml:"timestamp_format"`
+	Types              *[]Type   `default:"-" yaml:"types"`
+	UnionByName        *bool     `default:"false" yaml:"union_by_name"`
+}
+
 type Model struct {
-	Name      ModelName `yaml:"name"`
-	Type      string    `yaml:"type"`
-	Query     string    `yaml:"query"`
-	Parsed    sqlparser.Statement
-	DDLString string
-	Columns   map[TableName]map[ColumnName]Column
-	TableMap  TableMap
-	TableSet  TableSet
+	Name         ModelName `yaml:"name"`
+	Type         string    `yaml:"type"`
+	Format       string    `yaml:"format"`
+	Options      Options   `yaml:"options"`
+	Query        string    `yaml:"query"`
+	FilePatterns *[]string `yaml:"file_patterns"`
+	Parsed       sqlparser.Statement
+	DDLString    string
+	Columns      map[TableName]map[ColumnName]Column
+	TableMap     TableMap
+	TableSet     TableSet
 }
 
 type ModelConfig struct {
@@ -33,7 +71,7 @@ type ModelConfig struct {
 // Models can be defined in a models.yaml file in the hypha config directory.
 // Models can also be defined in individual .yaml files in the hypha models directory.
 
-func GetModelConfigs() (*ModelConfig, error) {
+func GetModelConfigs(modelTarget string) (*ModelConfig, error) {
 	mc := ModelConfig{}
 	env, err := EnvInit()
 	if err != nil {
@@ -59,13 +97,13 @@ func GetModelConfigs() (*ModelConfig, error) {
 			return nil, fmt.Errorf("error creating models.yaml file at %s with error %s", configFilePath, err)
 		}
 
-		return nil, errors.New(fmt.Sprintf("created empty models.yaml file at %s. Please configure valid models before proceeding", configFilePath))
+		return nil, fmt.Errorf("created empty models.yaml file at %s. Please configure valid models before proceeding", configFilePath)
 	} else if err != nil {
 		return nil, fmt.Errorf("error reading models.yaml file at %s with error %s", configFilePath, err)
 	}
 
 	// Process any .yaml files in the models directory
-	err = parseModelDirectoryFiles(modelsDir, &mc)
+	err = parseModelDirectoryFiles(modelsDir, modelTarget, &mc)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing models directory: %w", err)
 	}
@@ -80,7 +118,7 @@ func GetModelConfigs() (*ModelConfig, error) {
 
 	// Override config with environment variables
 	fromEnv(&mc)
-	if err = parseSQLModels(&mc); err != nil {
+	if err = parseModels(&mc); err != nil {
 		return nil, fmt.Errorf("error parsing sql models: %w", err)
 	}
 
@@ -93,7 +131,7 @@ func GetModelConfigs() (*ModelConfig, error) {
 
 // This is the main entry point for building models. The CLI commands call this function.
 func BuildModels(sc *SourceConfig, mc *ModelConfig) error {
-	if err := BuildInformationSchema(sc, mc); err != nil {
+	if err := BuildMetadata(sc, mc); err != nil {
 		return fmt.Errorf("error building information schema: %w", err)
 	}
 
@@ -134,62 +172,63 @@ func parseModelsYamlFile(filePath string, mc *ModelConfig) error {
 }
 
 // Parse the models directory which is supplied as a possible environment value.
+// The modelTarget is the user input prefix of any model files that should be used.
 // Each .yaml file in this directory is a model.
-func parseModelDirectoryFiles(modelsDir string, mc *ModelConfig) error {
-	files, err := os.ReadDir(modelsDir)
+func parseModelDirectoryFiles(modelsDir string, modelTarget string, mc *ModelConfig) error {
+	_, err := os.ReadDir(modelsDir)
 	if err != nil {
 		return fmt.Errorf("failed to read models directory: %w", err)
 	}
 
-	for _, file := range files {
-		if file.IsDir() {
-			continue
+	err = filepath.WalkDir(modelsDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return fmt.Errorf("error walking directory: %w", err)
 		}
 
-		filePath := filepath.Join(modelsDir, file.Name())
-		if strings.HasSuffix(filePath, ".yaml") {
-			file, err := os.ReadFile(filePath)
+		if d.IsDir() {
+			return nil
+		}
+		if strings.HasSuffix(path, ".yaml") && (modelTarget == "" || strings.HasPrefix(path, filepath.Join(modelsDir, modelTarget))) {
+			file, err := os.ReadFile(path)
 			if err != nil {
-				return fmt.Errorf("error reading model file %s: %w", filePath, err)
+				return fmt.Errorf("error reading model file %s: %w", path, err)
 			}
 			m := Model{}
 			err = yaml.Unmarshal(file, &m)
 			if err != nil {
-				return fmt.Errorf("error parsing model file %s: %w", filePath, err)
+				return fmt.Errorf("error parsing model file %s: %w", path, err)
 			}
 			if m.Name != "" {
-				fmt.Println(m.Name)
 				mc.Models = append(mc.Models, &m)
 			} else {
-				Warn(fmt.Sprintf("Unrecognized model file %s: no model name detected", filePath))
+				Warn(fmt.Sprintf("Unrecognized model file %s: no model name detected", path))
 			}
 		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("error parsing model directory: %w", err)
 	}
-
 	return nil
 }
 
-func ValidateConfigs(sc *SourceConfig, mc *ModelConfig) error {
-	if err := errorOnMissingModels(sc, mc); err != nil {
-		return fmt.Errorf("error on missing models: %w", err)
-	}
-
-	if err := parseSQLModels(mc); err != nil {
-		return fmt.Errorf("error parsing sql models: %w", err)
-	}
-
-	return nil
-}
-
-func parseSQLModels(mc *ModelConfig) error {
+// Parse the models and create a parsed version of the model's required fields.
+// This is where the SQL models are parsed into ASTs.
+// This is where the file models are validated.
+func parseModels(mc *ModelConfig) error {
 	for modelName, model := range mc.Models {
-		if model.Type == "sql" {
+		switch model.Type {
+		case "sql":
 			stmt, err := sqlparser.Parse(model.Query)
 			if err != nil {
 				return fmt.Errorf("error parsing sql model %v: %w", modelName, err)
 			}
 			model.Parsed = stmt
 			mc.Models[modelName] = model
+		case "file":
+			if model.FilePatterns == nil {
+				return fmt.Errorf("error parsing file model %v: file_pattern required", modelName)
+			}
 		}
 	}
 	return nil
@@ -198,16 +237,22 @@ func parseSQLModels(mc *ModelConfig) error {
 // Create each model's destination table in DuckDB
 func buildDuckDBTables(mc *ModelConfig) error {
 	for _, model := range mc.Models {
-		Debug(fmt.Sprintf("Creating table %s", model.Name))
-		tableName := strings.ReplaceAll(string(model.Name), "-", "_")
-		createTableStmt := fmt.Sprintf("create or replace table main.%s (%s);", tableName, model.DDLString)
-		if err := ddbDmlQuery(createTableStmt); err != nil {
-			return fmt.Errorf("error creating table %s: %w", tableName, err)
+		switch model.Type {
+		case "sql":
+			Debug(fmt.Sprintf("Creating table %s", model.Name))
+			tableName := strings.ReplaceAll(string(model.Name), "-", "_")
+			createTableStmt := fmt.Sprintf("create or replace table main.%s (%s);", tableName, model.DDLString)
+			if err := ddbExec(createTableStmt); err != nil {
+				return fmt.Errorf("error creating table %s: %w", tableName, err)
+			}
+		case "file":
+			Debug("Tables for file models will be created on model retrieval")
 		}
 	}
 	return nil
 }
 
+// If a model file is referenced in a source, but no model file exists, return an error.
 func errorOnMissingModels(sc *SourceConfig, mc *ModelConfig) error {
 	missingModels := make([]string, 0)
 	for _, source := range sc.Sources {

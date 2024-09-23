@@ -41,11 +41,11 @@ func Insert(modelName ModelName, ic <-chan []driver.Value, dc chan<- []int64) {
 func ConfirmInsert(modelName string, dc chan []int64, rowsExpected int64) {
 	for message := range dc {
 		if rowsExpected == 0 {
-			Info(fmt.Sprintf("Inserted %d rows into model %s", message[0], modelName))
+			Debug(fmt.Sprintf("Inserted %d rows into model %s", message[0], modelName))
 			break
 		}
 		if message[0] == rowsExpected {
-			Info(fmt.Sprintf("Inserted %d rows into model %s. Expected %d rows", message[0], modelName, rowsExpected))
+			Debug(fmt.Sprintf("Inserted %d rows into model %s. Expected %d rows", message[0], modelName, rowsExpected))
 			break
 		}
 		if message[0] != rowsExpected {
