@@ -8,11 +8,11 @@ description: How to create a model to query a source.
 
 Read more about the rationale behind [models.md](../../concepts/models.md "mention")on its concept page.
 
-#### Defining a Model
+## Defining a Model
 
 You can define models in two ways, adding a `models.yaml` file to the `HYPHA_CONFIG_PATH` or adding individual model files to the  `~/.hypha/models` directory. You may save a model file anywhere you'd like, so long as its parent directory is specified by `HYPHA_MODELS_PATH`
 
-Here's an example `sql` model. **Note that column names need to be fully qualified, i.e.  users.id instead of id.**
+Here's an example `database` model. **Note that column names need to be fully qualified, i.e.  users.id instead of id.**
 
 ```yaml
 # FILENAME: ~/.hypha/models/users.yaml
@@ -28,7 +28,7 @@ query: |
     users;
 ```
 
-#### Registering a Model with a Source
+## Registering a Model with a Source
 
 Consider a simplified [source.md](../../concepts/source.md "mention") config from the last page, pared down to one data source. You register the users model with the source as follows.
 
@@ -47,6 +47,9 @@ sources:
       - users
 ```
 
-You've now completed the setup and can validate the correctness of your work by running `hypha source validate`.
+You can now validate and build your models in Hypha.
 
-There's much more to know about models. To learn more, visit the [Broken link](broken-reference "mention") or go directly to the [Broken link](broken-reference "mention")page.
+```bash
+hypha source validate
+hypha model build
+```

@@ -12,7 +12,7 @@
 ## Concepts
 
 * [Overview](concepts/overview.md)
-* [Source](concepts/source.md)
+* [Sources](concepts/sources.md)
 * [Models](concepts/models.md)
 * [Validation](concepts/validation.md)
 

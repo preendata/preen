@@ -1,8 +1,12 @@
+---
+description: what is a model?
+---
+
 # Models
 
 ## Overview
 
-A **Model** in Hypha is a fundamental concept that defines how data is accessed and structured for local querying. It acts as a bridge between your raw data sources and the Hypha system, allowing for targeted data retrieval.
+A Hypha **Model** is a fundamental concept that defines how data is accessed and structured for local querying. It acts as a bridge between your raw data sources and the Hypha system, allowing for targeted data retrieval.
 
 ## Definition
 
@@ -25,7 +29,7 @@ These models are defined as a YAML file that contains a SQL query.
 ```yaml
 # FILENAME: ~/.hypha/models/users.yaml
 name: users # This name needs to be unique
-type: sql
+type: database
 query: |
   select
     users.id,
