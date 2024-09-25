@@ -64,3 +64,5 @@ options:
 2. **Abstraction**: They provide a layer of abstraction between your raw data sources and your Hypha queries.
 3. **Flexibility**: Models can be easily adjusted to accommodate changes in data structure or source without affecting the rest of your Hypha setup.
 4. **Reusability**: Once defined, Models can be shared and reused by different users and teams within your organization.
+
+For detailed configuration reference see [models.md](../documentation/config/models.md "mention")
