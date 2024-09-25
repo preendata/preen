@@ -21,6 +21,24 @@ sources:
       password: ${PG_PASSWORD}    
 ```
 
+## Postgres Models
+
+Postgres models are defined as a YAML file that contains a SQL query.
+
+```yaml
+# FILENAME: ~/.hypha/models/users.yaml
+name: users # This name needs to be unique
+type: sql
+query: |
+  select
+    users.id,
+    users.first_name,
+    users.last_name,
+    users.birthday
+  from
+    users;
+```
+
 ## Postgres Type Mappings
 
 A comprehensive list of Postgres type mappings can be found [here](https://github.com/hyphasql/hypha/blob/main/internal/engine/types.go#L190-L240). We use the [pgtype](https://pkg.go.dev/github.com/jackc/pgtype) library to map Postgres types to Go types, with a few custom mappings for things like `float64`, `duration`, and `time` types.

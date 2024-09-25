@@ -22,6 +22,21 @@ sources:
 
 MongoDB models are defined as a YAML file that contains a MongoDB document filter. This filter is used to match documents in the database and return the data that matches the filter. The documents are written to DuckDB as a JSON column for local querying using the native [JSON querying capabilities of DuckDB](https://duckdb.org/docs/extensions/json.html).
 
+```yaml
+# FILENAME: ~/.hypha/models/users.yaml
+name: users
+type: mongodb
+query: |
+    {
+      "login_attempts": {
+        "$gt": 1
+      },
+      "account_status": {
+        "$in": ["inactive", "suspended"]
+      }
+    }
+```
+
 ## Code References
 
 - [mongo.go](https://github.com/hyphasql/hypha/blob/main/internal/engine/mongo.go)
