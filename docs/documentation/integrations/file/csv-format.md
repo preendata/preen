@@ -2,34 +2,34 @@
 
 Hypha supports the following options for CSV format. This is largely a wrapper on the [DuckDB CSV scan options](https://duckdb.org/docs/data/csv/overview.html#parameters).
 
-| Option | Description | Default Value |
-|--------|-------------|---------------|
-| all_varchar | Interpret all columns as varchar | false |
-| allow_quoted_nulls | Allow NULL values in quotes | true |
-| auto_detect | Automatically detect CSV dialect | true |
-| columns | Specify column names | - |
-| compression | Compression type (auto, none, gzip, zstd) | auto |
-| dateformat | Specifies the date format to use | - |
-| decimal_separator | Specifies the decimal separator | . |
-| delim | Specifies the delimiter character | , |
-| escape | Specifies the escape character | " |
-| filename | Include filename in the result | false |
-| force_not_null | Do not convert blank values to NULL | [] |
-| header | Whether or not the CSV file has a header | false |
-| ignore_errors | Ignore parsing errors | false |
-| max_line_size | Maximum line size in bytes | 2097152 |
-| names | Specify column names | - |
-| new_line | Specifies the newline character | - |
-| normalize_names | Normalize column names | false |
-| null_padding | Pad columns with null values if row is too short | false |
-| nullstr | Specifies the string that represents NULL values | - |
-| parallel | Use multi-threading for reading CSV files | true |
-| quote | Specifies the quote character | " |
-| sample_size | Number of sample rows for dialect and type detection | 20480 |
-| skip | Number of rows to skip | 0 |
-| timestampformat | Specifies the timestamp format | - |
-| types | Specify column types | - |
-| union_by_name | Union by name when reading multiple files | false |
+| Option               | Description                                          | Default Value |
+| -------------------- | ---------------------------------------------------- | ------------- |
+| all\_varchar         | Interpret all columns as varchar                     | false         |
+| allow\_quoted\_nulls | Allow NULL values in quotes                          | true          |
+| auto\_detect         | Automatically detect CSV dialect                     | true          |
+| columns              | Specify column names                                 | -             |
+| compression          | Compression type (auto, none, gzip, zstd)            | auto          |
+| dateformat           | Specifies the date format to use                     | -             |
+| decimal\_separator   | Specifies the decimal separator                      | .             |
+| delim                | Specifies the delimiter character                    | ,             |
+| escape               | Specifies the escape character                       | "             |
+| filename             | Include filename in the result                       | false         |
+| force\_not\_null     | Do not convert blank values to NULL                  | \[]           |
+| header               | Whether or not the CSV file has a header             | false         |
+| ignore\_errors       | Ignore parsing errors                                | false         |
+| max\_line\_size      | Maximum line size in bytes                           | 2097152       |
+| names                | Specify column names                                 | -             |
+| new\_line            | Specifies the newline character                      | -             |
+| normalize\_names     | Normalize column names                               | false         |
+| null\_padding        | Pad columns with null values if row is too short     | false         |
+| nullstr              | Specifies the string that represents NULL values     | -             |
+| parallel             | Use multi-threading for reading CSV files            | true          |
+| quote                | Specifies the quote character                        | "             |
+| sample\_size         | Number of sample rows for dialect and type detection | 20480         |
+| skip                 | Number of rows to skip                               | 0             |
+| timestampformat      | Specifies the timestamp format                       | -             |
+| types                | Specify column types                                 | -             |
+| union\_by\_name      | Union by name when reading multiple files            | false         |
 
 ## Examples
 

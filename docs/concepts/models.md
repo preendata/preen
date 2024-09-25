@@ -1,7 +1,3 @@
----
-description: Show the overall system architecture.
----
-
 # Models
 
 ## Overview

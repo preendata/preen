@@ -5,7 +5,7 @@
 Hypha's Amazon S3 integration uses the AWS SDK's credential chain to authenticate requests. This means you don't need to explicitly provide access keys in your application code or environment variables. Instead, the SDK will automatically look for credentials in the following order:
 
 1. Environment variables
-2. Shared credential file (~/.aws/credentials)
+2. Shared credential file (\~/.aws/credentials)
 3. AWS IAM role for Amazon EC2 or ECS tasks
 
 ### Setting Up Credentials
@@ -13,7 +13,6 @@ Hypha's Amazon S3 integration uses the AWS SDK's credential chain to authenticat
 To set up your credentials, you have several options:
 
 1. **AWS CLI Configuration**: If you have the AWS CLI installed, you can run `aws configure` to set up your credentials. This will create a shared credential file.
-
 2. **Shared Credentials File**: Manually create or edit the file `~/.aws/credentials` (on Linux/Mac) or `%UserProfile%\.aws\credentials` (on Windows) with the following content:
 
 ```conf
