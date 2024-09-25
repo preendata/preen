@@ -5,10 +5,9 @@
 ## Getting Started
 
 * [Installation](getting-started/installation.md)
-* [Your First Query](getting-started/first-query/README.md)
-  * [Configuring Sources](getting-started/first-query/configuring-sources.md)
-  * [Creating Models](getting-started/first-query/creating-models.md)
-  * [Querying Data](getting-started/first-query/querying-data.md)
+* [Hello World](getting-started/hello-world/README.md)
+  * [Configuring Sources](getting-started/hello-world/configuring-sources.md)
+  * [Creating Models](getting-started/hello-world/creating-models.md)
 
 ## Concepts
 
@@ -27,6 +26,6 @@
     * [Postgres](documentation/integrations/sql/postgres.md)
     * [MySQL](documentation/integrations/sql/mysql.md)
   * [MongoDB](documentation/integrations/mongodb.md)
-  * [File](documentation/integrations/file/README.md)
+  * [Cloud Blob Storage](documentation/integrations/cloud-blob-storage/README.md)
     * [Amazon S3](documentation/integrations/file/amazon-s3.md)
     * [CSV Format](documentation/integrations/file/csv-format.md)
