@@ -20,12 +20,14 @@ Hypha is currently in the alpha stage and not all features are available. We are
 
 ### Download pre-built binary
 
-You can download a pre-built binary for your operating system and architecture from the [GitHub Releases](https://github.com/hyphasql/hypha/releases) page. The example below shows an install for v0.0.1 for MacOS.
+You can download a pre-built binary for your operating system and architecture from the [GitHub Releases](https://github.com/hyphasql/hypha/releases) page.
 
 ```bash
-curl -L https://github.com/hyphasql/hypha/releases/download/v0.0.1/hypha-darwin_arm64-v0.0.1.tar.gz -o hypha.tar.gz
-tar -xvzf hypha.tar.gz
-sudo mv hypha /usr/local/bin
+# Using curl
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/hyphasql/hypha/main/build/install.sh)"
+
+# Using wget
+sh -c "$(wget https://raw.githubusercontent.com/hyphasql/hypha/main/build/install.sh -O -)"
 ```
 
 ### Build from source
@@ -33,12 +35,12 @@ sudo mv hypha /usr/local/bin
 To build Hypha from source, you need to have Go 1.23.0 or later installed on your system. Then, you can build the application using the following commands:
 
 ```bash
-git clone https://github.com/yourusername/hypha.git
+git clone https://github.com/hyphasql/hypha.git
 cd hypha
 make build
 ```
 
-This will create a `hypha` binary in the `bin` directory.
+This will create a `hypha` binary in the `bin` directory. You can add this to your `PATH` if you want to use the `hypha` command from anywhere.
 
 ## Configuration
 
