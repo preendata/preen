@@ -1,10 +1,10 @@
 ---
-description: how to configure hypha to connect to SQL databases.
+description: how to configure hypha to connect to databases.
 ---
 
-# SQL
+# Databases
 
-Hypha can connect to SQL databases. Our current implementation uses the Go [sql](https://pkg.go.dev/database/sql) and [pgx](https://github.com/jackc/pgx) libraries to connect to databases.
+Hypha can connect to SQL and NoSQL databases. Our current implementation uses the Go [sql](https://pkg.go.dev/database/sql) and [pgx](https://github.com/jackc/pgx) libraries to connect to databases.
 
 ## Supported Integrations
 
