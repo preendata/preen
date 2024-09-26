@@ -116,6 +116,21 @@ func NewApp() *cli.App {
 					},
 				},
 			},
+			{
+				Name:  "version",
+				Usage: "Print the version of the application",
+				Action: func(c *cli.Context) error {
+					fmt.Println("Hypha version:", engine.Version)
+					return nil
+				},
+			},
+			{
+				Name:  "upgrade",
+				Usage: "Upgrade to the latest version of the application",
+				Action: func(c *cli.Context) error {
+					return Upgrade()
+				},
+			},
 		},
 		Before: func(c *cli.Context) error {
 			logLevel := ""
