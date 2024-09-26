@@ -70,7 +70,7 @@ Here is an example `models.yaml` file:
 ```yaml
 models:
   - name: hypha-users-model
-    type: sql
+    type: database
     query: |
       SELECT users.user_id, users.name, users.email FROM users
 ```

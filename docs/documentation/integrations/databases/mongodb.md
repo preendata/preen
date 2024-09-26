@@ -28,8 +28,9 @@ MongoDB models are defined as a YAML file that contains a MongoDB document filte
 
 ```yaml
 # FILENAME: ~/.hypha/models/users.yaml
-name: users
+name: users-mongodb
 type: mongodb
+collection: users # The name of the collection to query.
 query: |
     {
       "login_attempts": {

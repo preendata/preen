@@ -17,6 +17,7 @@ type Retriever struct {
 	Options      Options
 	Format       string
 	FilePatterns *[]string
+	Collection   string
 }
 
 // Retrieve data from sources and insert into the duckDB database.
@@ -27,8 +28,8 @@ func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
 		ic := make(chan []driver.Value, 10000)
 		dc := make(chan []int64)
 		tableName := strings.ReplaceAll(string(model.Name), "-", "_")
-		// Only insert SQL models into DuckDB
-		if model.Type == "sql" {
+		// Only insert database models into DuckDB
+		if model.Type == "database" {
 			go Insert(ModelName(tableName), ic, dc)
 		}
 		g := errgroup.Group{}
@@ -46,6 +47,11 @@ func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
 				Format:       model.Format,
 				FilePatterns: model.FilePatterns,
 				TableName:    tableName,
+			}
+			if model.Collection != "" {
+				r.Collection = model.Collection
+			} else {
+				r.Collection = string(model.Name)
 			}
 			switch source.Engine {
 			case "s3":
@@ -109,7 +115,7 @@ func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
 			return err
 		}
 		ic <- []driver.Value{"quit"}
-		if model.Type == "sql" {
+		if model.Type == "database" {
 			ConfirmInsert(string(model.Name), dc, 0)
 		}
 	}

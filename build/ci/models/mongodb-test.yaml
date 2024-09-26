@@ -1,0 +1,8 @@
+name: mongodb-test
+type: database
+collection: test
+query: |
+    {
+      "personalInfo.age": 30,
+      "personalInfo.contact.address.state": "CA"
+    }

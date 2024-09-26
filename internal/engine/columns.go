@@ -162,66 +162,14 @@ func ParseModelColumns(mc *ModelConfig, columnMetadata ColumnMetadata) error {
 	}
 	for _, model := range mc.Models {
 		switch model.Type {
-		case "mongodb":
-			cp.modelName = ModelName(model.Name)
-			cp.tableName = TableName(model.Name)
-			cp.ddlString = "hypha_source_name varchar, document json"
-			cp.columns[cp.tableName] = make(map[ColumnName]Column)
-			sourceColumn := Column{
-				ModelName: model.Name,
-				TableName: &cp.tableName,
-				IsJoin:    false,
-				Position:  0,
-				Alias:     "hypha_source_name",
-			}
-			sourceColumnHashKey := ColumnName(fmt.Sprintf("%s.hypha_source_name", model.Name))
-			cp.columns[cp.tableName][sourceColumnHashKey] = sourceColumn
-			documentColumn := Column{
-				ModelName: model.Name,
-				TableName: &cp.tableName,
-				IsJoin:    false,
-				Position:  1,
-				Alias:     "document",
-			}
-			documentColumnHashKey := ColumnName(fmt.Sprintf("%s.document", model.Name))
-			cp.columns[cp.tableName][documentColumnHashKey] = documentColumn
-		case "sql":
-			cp.ddlString = "hypha_source_name varchar"
-			selectStmt := model.Parsed.(*sqlparser.Select)
-			for selectIdx := range selectStmt.SelectExprs {
-				cp.selectIdx = selectIdx
-				switch expr := selectStmt.SelectExprs[selectIdx].(type) {
-				case *sqlparser.AliasedExpr:
-					switch expr.Expr.(type) {
-					// Process normal column.
-					case *sqlparser.ColName:
-						tableAlias := expr.Expr.(*sqlparser.ColName).Qualifier.Name.String()
-						cp.tableName = model.TableMap[TableAlias(tableAlias)]
-						if err := processModelColumn(expr, &cp); err != nil {
-							return err
-						}
-					// Process function expression column.
-					case *sqlparser.FuncExpr:
-						cp.tableName = "model_generated"
-						if err := processFunction(expr, &cp); err != nil {
-							return err
-						}
-					// Process case expression column
-					case *sqlparser.CaseExpr:
-						cp.tableName = "model_generated"
-						if err := processCase(expr, &cp); err != nil {
-							return err
-						}
-					// Process cast expression column
-					case *sqlparser.ConvertExpr:
-						tableAlias := expr.Expr.(*sqlparser.ConvertExpr).Expr.(*sqlparser.ColName).Qualifier.Name.String()
-						cp.tableName = model.TableMap[TableAlias(tableAlias)]
-						if err := processConvertColumn(expr, &cp); err != nil {
-							return err
-						}
-					}
-				case *sqlparser.StarExpr:
-					return errors.New("star expressions are not supported. please specify columns explicitly")
+		case "database":
+			if model.Parsed == nil {
+				if err := parseNoSQLDatabaseModelColumns(model, &cp); err != nil {
+					return fmt.Errorf("error parsing noSQL database model columns: %w", err)
+				}
+			} else {
+				if err := parseSQLDatabaseModelColumns(model, &cp); err != nil {
+					return fmt.Errorf("error parsing SQL database model columns: %w", err)
 				}
 			}
 		case "file":
@@ -232,6 +180,75 @@ func ParseModelColumns(mc *ModelConfig, columnMetadata ColumnMetadata) error {
 		model.Columns = cp.columns
 		model.DDLString = cp.ddlString
 	}
+
+	return nil
+}
+
+func parseSQLDatabaseModelColumns(model *Model, cp *columnParser) error {
+	cp.ddlString = "hypha_source_name varchar"
+	selectStmt := model.Parsed.(*sqlparser.Select)
+	for selectIdx := range selectStmt.SelectExprs {
+		cp.selectIdx = selectIdx
+		switch expr := selectStmt.SelectExprs[selectIdx].(type) {
+		case *sqlparser.AliasedExpr:
+			switch expr.Expr.(type) {
+			// Process normal column.
+			case *sqlparser.ColName:
+				tableAlias := expr.Expr.(*sqlparser.ColName).Qualifier.Name.String()
+				cp.tableName = model.TableMap[TableAlias(tableAlias)]
+				if err := processModelColumn(expr, cp); err != nil {
+					return err
+				}
+			// Process function expression column.
+			case *sqlparser.FuncExpr:
+				cp.tableName = "model_generated"
+				if err := processFunction(expr, cp); err != nil {
+					return err
+				}
+			// Process case expression column
+			case *sqlparser.CaseExpr:
+				cp.tableName = "model_generated"
+				if err := processCase(expr, cp); err != nil {
+					return err
+				}
+			// Process cast expression column
+			case *sqlparser.ConvertExpr:
+				tableAlias := expr.Expr.(*sqlparser.ConvertExpr).Expr.(*sqlparser.ColName).Qualifier.Name.String()
+				cp.tableName = model.TableMap[TableAlias(tableAlias)]
+				if err := processConvertColumn(expr, cp); err != nil {
+					return err
+				}
+			}
+		case *sqlparser.StarExpr:
+			return errors.New("star expressions are not supported. please specify columns explicitly")
+		}
+	}
+	return nil
+}
+
+func parseNoSQLDatabaseModelColumns(model *Model, cp *columnParser) error {
+	cp.modelName = ModelName(model.Name)
+	cp.tableName = TableName(model.Name)
+	cp.ddlString = "hypha_source_name varchar, document json"
+	cp.columns[cp.tableName] = make(map[ColumnName]Column)
+	sourceColumn := Column{
+		ModelName: model.Name,
+		TableName: &cp.tableName,
+		IsJoin:    false,
+		Position:  0,
+		Alias:     "hypha_source_name",
+	}
+	sourceColumnHashKey := ColumnName(fmt.Sprintf("%s.hypha_source_name", model.Name))
+	cp.columns[cp.tableName][sourceColumnHashKey] = sourceColumn
+	documentColumn := Column{
+		ModelName: model.Name,
+		TableName: &cp.tableName,
+		IsJoin:    false,
+		Position:  1,
+		Alias:     "document",
+	}
+	documentColumnHashKey := ColumnName(fmt.Sprintf("%s.document", model.Name))
+	cp.columns[cp.tableName][documentColumnHashKey] = documentColumn
 
 	return nil
 }

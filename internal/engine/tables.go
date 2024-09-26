@@ -13,7 +13,7 @@ type TableSet []TableName
 
 func ParseModelTables(mc *ModelConfig) error {
 	for _, model := range mc.Models {
-		if model.Type == "sql" {
+		if model.Type == "database" && model.Parsed != nil {
 			switch stmt := model.Parsed.(type) {
 			case *sqlparser.Select:
 				model.TableMap, model.TableSet = getModelTableAliases(stmt)

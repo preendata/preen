@@ -56,6 +56,7 @@ type Model struct {
 	Options      Options   `yaml:"options"`
 	Query        string    `yaml:"query"`
 	FilePatterns *[]string `yaml:"file_patterns"`
+	Collection   string    `yaml:"collection"`
 	Parsed       sqlparser.Statement
 	DDLString    string
 	Columns      map[TableName]map[ColumnName]Column
@@ -108,7 +109,7 @@ func GetModelConfigs(modelTarget string) (*ModelConfig, error) {
 	// Override config with environment variables
 	fromEnv(&mc)
 	if err = parseModels(&mc); err != nil {
-		return nil, fmt.Errorf("error parsing sql models: %w", err)
+		return nil, fmt.Errorf("error parsing models: %w", err)
 	}
 
 	if err = ParseModelTables(&mc); err != nil {
@@ -207,13 +208,24 @@ func parseModelDirectoryFiles(modelsDir string, modelTarget string, mc *ModelCon
 func parseModels(mc *ModelConfig) error {
 	for modelName, model := range mc.Models {
 		switch model.Type {
-		case "sql":
-			stmt, err := sqlparser.Parse(model.Query)
-			if err != nil {
-				return fmt.Errorf("error parsing sql model %v: %w", modelName, err)
+		case "database":
+			// Database models require a query
+			if model.Query == "" {
+				return fmt.Errorf("error parsing database model %v: query required", modelName)
 			}
-			model.Parsed = stmt
-			mc.Models[modelName] = model
+			// If the query is a SELECT statement, parse it
+			if strings.HasPrefix(strings.ToLower(model.Query), "select") {
+				stmt, err := sqlparser.Parse(model.Query)
+				if err != nil {
+					return fmt.Errorf("error parsing sql model %v: %w", modelName, err)
+				}
+				model.Parsed = stmt
+				mc.Models[modelName] = model
+				// If the query is not a SELECT statement, set the parsed statement to nil
+			} else {
+				model.Parsed = nil
+				mc.Models[modelName] = model
+			}
 		case "file":
 			if model.FilePatterns == nil {
 				return fmt.Errorf("error parsing file model %v: file_pattern required", modelName)
@@ -227,7 +239,7 @@ func parseModels(mc *ModelConfig) error {
 func buildDuckDBTables(mc *ModelConfig) error {
 	for _, model := range mc.Models {
 		switch model.Type {
-		case "sql":
+		case "database":
 			Debug(fmt.Sprintf("Creating table %s", model.Name))
 			tableName := strings.ReplaceAll(string(model.Name), "-", "_")
 			createTableStmt := fmt.Sprintf("create or replace table main.%s (%s);", tableName, model.DDLString)

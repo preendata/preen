@@ -19,3 +19,14 @@ sources:
       password: ${PG_PASSWORD}
     models: 
       - pg-data-types-test
+  - name: mongo-docker
+    engine: mongodb
+    connection:
+      host: localhost
+      port: 27017
+      database: hypha
+      username: root
+      password: thisisnotarealpassword
+      auth_source: admin
+    models:
+      - mongodb-test

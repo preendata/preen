@@ -1,6 +1,6 @@
 models:
   - name: mysql-data-types-test
-    type: sql
+    type: database
     query: |
       select
         test_data_types.mysql_id,
