@@ -18,3 +18,10 @@ if [[ $PG_RESULTS_LENGTH -ne 1 ]]; then
   echo "Expected 1 row in pg_data_types_test, got $PG_RESULTS_LENGTH"
   exit 1
 fi
+
+# Test that the MongoDB model was built and can be queried. Query should return 1 row.
+MONGO_RESULTS_LENGTH=$(bin/hypha query -f json "select * from mongodb_test;" | jq length)
+if [[ $MONGO_RESULTS_LENGTH -ne 1 ]]; then
+  echo "Expected 1 row in mongodb_test, got $MONGO_RESULTS_LENGTH"
+  exit 1
+fi

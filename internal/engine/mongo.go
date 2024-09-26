@@ -37,6 +37,7 @@ func mongoConnFromSource(source Source, ctx context.Context) (*mongo.Client, err
 
 func ingestMongoModel(r *Retriever, ic chan []driver.Value) error {
 	Debug(fmt.Sprintf("Retrieving context %s for %s", r.ModelName, r.Source.Name))
+	fmt.Println(r.Query)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	mongoClient, err := mongoConnFromSource(r.Source, ctx)
@@ -61,40 +62,34 @@ func ingestMongoModel(r *Retriever, ic chan []driver.Value) error {
 }
 
 func processMongoDocuments(r *Retriever, client *mongo.Client, ic chan []driver.Value) error {
-	collection := client.Database(r.Source.Connection.Database).Collection(r.ModelName)
+	collection := client.Database(r.Source.Connection.Database).Collection(r.Collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	jsonQuery := make(map[string]interface{})
 	if err := json.Unmarshal([]byte(r.Query), &jsonQuery); err != nil {
-		Errorf("Error unmarshalling json query: %s", err)
-		return err
+		return fmt.Errorf("Error unmarshalling json query: %s", err)
 	}
 	bsonQuery, err := bson.Marshal(jsonQuery)
 	if err != nil {
-		Errorf("Error marshalling json query to BSON: %s", err)
-		return err
+		return fmt.Errorf("Error marshalling json query to BSON: %s", err)
 	}
 	cur, err := collection.Find(ctx, bsonQuery)
 	if err != nil {
-		Errorf("Error executing query: %s", err)
-		return err
+		return fmt.Errorf("Error executing query: %s", err)
 	}
 	if err := cur.Err(); err != nil {
-		Errorf("Error iterating cursor: %s", err)
-		return err
+		return fmt.Errorf("Error iterating cursor: %s", err)
 	}
 	defer cur.Close(ctx)
 	var rowCounter int64
 	for cur.Next(ctx) {
 		var result bson.M
 		if err := cur.Decode(&result); err != nil {
-			Errorf("Error decoding result: %s", err)
-			return err
+			return fmt.Errorf("Error decoding result: %s", err)
 		}
 		jsonBytes, err := json.Marshal(result)
 		if err != nil {
-			Errorf("Error marshalling result: %s", err)
-			return err
+			return fmt.Errorf("Error marshalling result: %s", err)
 		}
 		rowCounter++
 		driverRow := make([]driver.Value, 2)

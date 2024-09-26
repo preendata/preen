@@ -16,6 +16,7 @@ Hypha models are defined as a YAML file. The model file is used to define the da
 | `query`         | The query to be executed                                                | Yes for `database` type | `database`                          |
 | `options`       | Additional options for the model (e.g., file format, delimiter, header) | No                      | All (specific options vary by type) |
 | `file_patterns` | The file patterns to be used for matching files                         | Only for `file` type    | `file`                              |
+| `collection`    | The name of the collection to query                                     | Only for `database` type | Used for MongoDB sources           |
 
 ## Code References
 

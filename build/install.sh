@@ -3,7 +3,6 @@
 set -e
 
 # Define variables
-VERSION="v0.0.1"
 GITHUB_REPO="hyphasql/hypha"
 INSTALL_DIR="/usr/local/bin"
 
@@ -19,6 +18,17 @@ else
     echo "Unsupported architecture: $ARCH"
     exit 1
 fi
+
+# Fetch the latest release version
+echo "Fetching the latest release version..."
+VERSION=$(curl -s https://api.github.com/repos/${GITHUB_REPO}/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+
+if [ -z "$VERSION" ]; then
+    echo "Failed to fetch the latest version. Please check your internet connection and try again."
+    exit 1
+fi
+
+echo "Latest version: $VERSION"
 
 # Construct download URL
 DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/releases/download/${VERSION}/hypha-${OS}_${ARCH}-${VERSION}.tar.gz"
