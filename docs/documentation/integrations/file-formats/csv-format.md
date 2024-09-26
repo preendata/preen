@@ -1,3 +1,7 @@
+---
+description: how to configure hypha to read CSV files.
+---
+
 # CSV Format
 
 Hypha supports the following options for CSV format. This is largely a wrapper on the [DuckDB CSV scan options](https://duckdb.org/docs/data/csv/overview.html#parameters).

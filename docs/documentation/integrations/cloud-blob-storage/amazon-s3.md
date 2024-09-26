@@ -1,3 +1,7 @@
+---
+description: how to configure hypha to connect to Amazon S3.
+---
+
 # Amazon S3
 
 ## Credentials

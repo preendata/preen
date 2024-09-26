@@ -1,3 +1,7 @@
+---
+description: how to configure hypha to connect to MongoDB databases.
+---
+
 # MongoDB
 
 Hypha can connect to MongoDB databases. Our current implementation uses the Go [mongo](https://pkg.go.dev/go.mongodb.org/mongo-driver/mongo) library to connect to databases.
