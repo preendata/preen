@@ -1,5 +1,5 @@
 ---
-description: detail the various integrations hypha supports.
+description: details of the integrations hypha supports.
 ---
 
 # Integrations
@@ -19,3 +19,9 @@ Hypha supports the following SQL databases:
 Hypha supports the following cloud blob storage systems:
 
 - [Amazon S3](./cloud-blob-storage/amazon-s3.md)
+
+## File Formats
+
+Hypha supports the following file formats for file-based sources:
+
+- [CSV](./file-formats/csv-format.md)

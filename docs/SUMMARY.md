@@ -28,4 +28,5 @@
     * [MongoDB](documentation/integrations/databases/mongodb.md)
   * [Cloud Blob Storage](documentation/integrations/cloud-blob-storage/README.md)
     * [Amazon S3](documentation/integrations/cloud-blob-storage/amazon-s3.md)
-    * [CSV Format](documentation/integrations/cloud-blob-storage/csv-format.md)
+  * [File Formats](documentation/integrations/file-formats/README.md)
+    * [CSV](documentation/integrations/file-formats/csv-format.md)

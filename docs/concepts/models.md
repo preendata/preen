@@ -69,4 +69,11 @@ options:
 3. **Flexibility**: Models can be easily adjusted to accommodate changes in data structure or source without affecting the rest of your Hypha setup.
 4. **Reusability**: Once defined, Models can be shared and reused by different users and teams within your organization.
 
+## CLI Commands
+
+```bash
+hypha model build # Builds all models
+hypha model build --target users # Target a specific model
+```
+
 For detailed configuration reference see [models.md](../documentation/config/models.md "mention")

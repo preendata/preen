@@ -12,6 +12,12 @@ When collating data from multiple sources, it is possible that the data types of
 
 We store the results of the validation step in a DuckDB table called `hypha_information_schema`. You can use this table to inspect the results of the validation step and to cast the data types of the columns in your model.
 
+## CLI Commmands
+
+```bash
+hypha source validate
+```
+
 ## Code References
 
 - [metadata.go](https://github.com/hyphasql/hypha/blob/main/internal/engine/metadata.go)
