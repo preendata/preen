@@ -37,7 +37,6 @@ func mongoConnFromSource(source Source, ctx context.Context) (*mongo.Client, err
 
 func ingestMongoModel(r *Retriever, ic chan []driver.Value) error {
 	Debug(fmt.Sprintf("Retrieving context %s for %s", r.ModelName, r.Source.Name))
-	fmt.Println(r.Query)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	mongoClient, err := mongoConnFromSource(r.Source, ctx)

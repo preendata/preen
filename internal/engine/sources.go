@@ -40,19 +40,19 @@ func GetSourceConfig() (*SourceConfig, error) {
 	sc.Env = env
 
 	// Create directory if not exists
-	_, err = os.Stat(sc.Env.HyphaConfigPath)
+	_, err = os.Stat(sc.Env.PreenConfigPath)
 
 	if os.IsNotExist(err) {
-		err = os.Mkdir(sc.Env.HyphaConfigPath, os.ModePerm)
+		err = os.Mkdir(sc.Env.PreenConfigPath, os.ModePerm)
 
 		if err != nil {
-			return nil, fmt.Errorf("failed to create directory at %s with error %s", sc.Env.HyphaConfigPath, err)
+			return nil, fmt.Errorf("failed to create directory at %s with error %s", sc.Env.PreenConfigPath, err)
 		}
 	} else if err != nil {
-		return nil, fmt.Errorf("failed to access %s with error %s", sc.Env.HyphaConfigPath, err)
+		return nil, fmt.Errorf("failed to access %s with error %s", sc.Env.PreenConfigPath, err)
 	}
 
-	configFilePath := filepath.Join(sc.Env.HyphaConfigPath, "sources.yaml")
+	configFilePath := filepath.Join(sc.Env.PreenConfigPath, "sources.yaml")
 
 	// Create file if not exists
 	file, err := os.ReadFile(configFilePath)

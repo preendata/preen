@@ -1,6 +1,6 @@
 # Table of contents
 
-* [Hypha](README.md)
+* [Preen](README.md)
 
 ## Getting Started
 

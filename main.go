@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/hyphasql/hypha/internal/cli"
-	"github.com/hyphasql/hypha/internal/engine"
+	"github.com/preendata/preen/internal/cli"
+	"github.com/preendata/preen/internal/engine"
 	"github.com/joho/godotenv"
 )
 

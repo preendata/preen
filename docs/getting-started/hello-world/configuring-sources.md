@@ -1,10 +1,10 @@
 ---
-description: Define the data sources your Hypha session can connect to
+description: Define the data sources your Preen session can connect to
 ---
 
 # Configuring Sources
 
-Hypha maintains a configuration file in `$HOME/.hypha/sources.yml` by default. This is can be overridden via the `HYPHA_CONFIG_PATH` environment variable.
+Preen maintains a configuration file in `$HOME/.preen/sources.yml` by default. This is can be overridden via the `PREEN_CONFIG_PATH` environment variable.
 
 A config file might look like this:
 
@@ -16,7 +16,7 @@ sources:
       username: ACCJBKSHJLFALJAFJB
       password: BALJBS786asdhjaa87ads6asdas23232
       host: us-east-1
-      database: hyphadb-internal-transfer
+      database: preendb-internal-transfer
       AuthSource: mock-user-data-1.csv
   - name: postgres-model
     engine: postgres

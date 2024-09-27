@@ -24,7 +24,7 @@ func Initialize(logLevels ...string) error {
 	logLevel := "INFO"
 
 	// If log level in environment, use it
-	if l := os.Getenv("HYPHADB_LOG_LEVEL"); l != "" {
+	if l := os.Getenv("PREENDB_LOG_LEVEL"); l != "" {
 		logLevel = l
 	}
 

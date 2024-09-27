@@ -1,10 +1,10 @@
 ---
-description: how to configure hypha sources.
+description: how to configure preen sources.
 ---
 
 # Sources
 
-Hypha sources are defined as a YAML file. The source file is used to define the data sources, the query to be executed, and the type of query to be executed.
+Preen sources are defined as a YAML file. The source file is used to define the data sources, the query to be executed, and the type of query to be executed.
 
 ## Source Configuration Options
 

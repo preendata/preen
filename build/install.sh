@@ -3,7 +3,7 @@
 set -e
 
 # Define variables
-GITHUB_REPO="hyphasql/hypha"
+GITHUB_REPO="preendata/preen"
 INSTALL_DIR="/usr/local/bin"
 
 # Detect OS and architecture
@@ -31,30 +31,30 @@ fi
 echo "Latest version: $VERSION"
 
 # Construct download URL
-DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/releases/download/${VERSION}/hypha-${OS}_${ARCH}-${VERSION}.tar.gz"
+DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/releases/download/${VERSION}/preen-${OS}_${ARCH}-${VERSION}.tar.gz"
 
 # Download and install
-echo "Downloading Hypha ${VERSION} for ${OS}_${ARCH}..."
-if ! curl -L -o hypha.tar.gz "$DOWNLOAD_URL"; then
-    echo "Failed to download Hypha. Please check your internet connection and try again."
+echo "Downloading Preen ${VERSION} for ${OS}_${ARCH}..."
+if ! curl -L -o preen.tar.gz "$DOWNLOAD_URL"; then
+    echo "Failed to download Preen. Please check your internet connection and try again."
     exit 1
 fi
 
 echo "Extracting..."
-if ! tar -xvzf hypha.tar.gz; then
+if ! tar -xvzf preen.tar.gz; then
     echo "Failed to extract the archive."
-    rm hypha.tar.gz
+    rm preen.tar.gz
     exit 1
 fi
 
 echo "Installing to $INSTALL_DIR..."
 if [ -w "$INSTALL_DIR" ]; then
-    mv hypha "$INSTALL_DIR"
+    mv preen "$INSTALL_DIR"
 else
-    sudo mv hypha "$INSTALL_DIR"
+    sudo mv preen "$INSTALL_DIR"
 fi
 
 echo "Cleaning up..."
-rm hypha.tar.gz
+rm preen.tar.gz
 
-echo "Hypha ${VERSION} has been successfully installed to $INSTALL_DIR"
+echo "Preen ${VERSION} has been successfully installed to $INSTALL_DIR"

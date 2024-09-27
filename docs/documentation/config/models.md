@@ -1,10 +1,10 @@
 ---
-description: how to configure hypha models.
+description: how to configure preen models.
 ---
 
 # Models
 
-Hypha models are defined as a YAML file. The model file is used to define the data sources, the query to be executed, and the type of query to be executed.
+Preen models are defined as a YAML file. The model file is used to define the data sources, the query to be executed, and the type of query to be executed.
 
 ## Model Configuration Options
 

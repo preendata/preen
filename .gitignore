@@ -1,4 +1,4 @@
-hyphadb
+preendb
 bin/
 tmp.txt
 .config/
@@ -120,9 +120,9 @@ venv.bak/
 **plugins
 *.tfstate*
 
-# Hypha
-*hyphaContext.db*
+# Preen
+*preenContext.db*
 .docker/db/data/**
-.hyphadb/config.yaml
-hypha
-.hypha/
+.preendb/config.yaml
+preen
+.preen/

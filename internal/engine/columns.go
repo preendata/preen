@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/hyphasql/sqlparser"
+	"github.com/preendata/sqlparser"
 )
 
 type FuncName string
@@ -45,8 +45,8 @@ type ColumnMetadata map[TableName]map[ColumnName]ColumnType
 // algorithm. This majority type is then packaged into the ColumnMetadata and return to the caller. This is important
 // for typing the model tables created in DuckDB
 func BuildColumnMetadata() (ColumnMetadata, error) {
-	// query data from hypha_information_schema
-	results, err := Execute("SELECT column_name, data_type, table_name FROM hypha_information_schema")
+	// query data from preen_information_schema
+	results, err := Execute("SELECT column_name, data_type, table_name FROM preen_information_schema")
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func ParseModelColumns(mc *ModelConfig, columnMetadata ColumnMetadata) error {
 }
 
 func parseSQLDatabaseModelColumns(model *Model, cp *columnParser) error {
-	cp.ddlString = "hypha_source_name varchar"
+	cp.ddlString = "preen_source_name varchar"
 	selectStmt := model.Parsed.(*sqlparser.Select)
 	for selectIdx := range selectStmt.SelectExprs {
 		cp.selectIdx = selectIdx
@@ -229,16 +229,16 @@ func parseSQLDatabaseModelColumns(model *Model, cp *columnParser) error {
 func parseNoSQLDatabaseModelColumns(model *Model, cp *columnParser) error {
 	cp.modelName = ModelName(model.Name)
 	cp.tableName = TableName(model.Name)
-	cp.ddlString = "hypha_source_name varchar, document json"
+	cp.ddlString = "preen_source_name varchar, document json"
 	cp.columns[cp.tableName] = make(map[ColumnName]Column)
 	sourceColumn := Column{
 		ModelName: model.Name,
 		TableName: &cp.tableName,
 		IsJoin:    false,
 		Position:  0,
-		Alias:     "hypha_source_name",
+		Alias:     "preen_source_name",
 	}
-	sourceColumnHashKey := ColumnName(fmt.Sprintf("%s.hypha_source_name", model.Name))
+	sourceColumnHashKey := ColumnName(fmt.Sprintf("%s.preen_source_name", model.Name))
 	cp.columns[cp.tableName][sourceColumnHashKey] = sourceColumn
 	documentColumn := Column{
 		ModelName: model.Name,

@@ -35,14 +35,14 @@ jobs:
           GOARCH: ${{ matrix.arch }}
           CGO_ENABLED: 1
         run: |
-          CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build -o output/${{ matrix.os }}_${{ matrix.arch }}/hypha --ldflags="-extldflags=-static" -tags osusergo,netgo main.go
-          tar -C output/${{ matrix.os }}_${{ matrix.arch }} -czvf hypha-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz hypha
+          CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build -o output/${{ matrix.os }}_${{ matrix.arch }}/preen --ldflags="-extldflags=-static" -tags osusergo,netgo main.go
+          tar -C output/${{ matrix.os }}_${{ matrix.arch }} -czvf preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz preen
           echo "Built for $GOOS $GOARCH"
 
       - name: Upload binaries
         uses: svenstaro/upload-release-action@v2
         with:
-          file: hypha-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
+          file: preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
 
@@ -73,13 +73,13 @@ jobs:
           GOARCH: ${{ matrix.arch }}
           CGO_ENABLED: 1
         run: |
-          CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build -o output/${{ matrix.os }}_${{ matrix.arch }}/hypha main.go
-          tar -C output/${{ matrix.os }}_${{ matrix.arch }} -czvf hypha-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz hypha
+          CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build -o output/${{ matrix.os }}_${{ matrix.arch }}/preen main.go
+          tar -C output/${{ matrix.os }}_${{ matrix.arch }} -czvf preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz preen
           echo "Built for $GOOS $GOARCH"
           
       - name: Upload binaries
         uses: svenstaro/upload-release-action@v2
         with:
-          file: hypha-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
+          file: preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}

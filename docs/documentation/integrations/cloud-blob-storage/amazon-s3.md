@@ -1,12 +1,12 @@
 ---
-description: how to configure hypha to connect to Amazon S3.
+description: how to configure preen to connect to Amazon S3.
 ---
 
 # Amazon S3
 
 ## Credentials
 
-Hypha's Amazon S3 integration uses the AWS SDK's credential chain to authenticate requests. This means you don't need to explicitly provide access keys in your application code or environment variables. Instead, the SDK will automatically look for credentials in the following order:
+Preen's Amazon S3 integration uses the AWS SDK's credential chain to authenticate requests. This means you don't need to explicitly provide access keys in your application code or environment variables. Instead, the SDK will automatically look for credentials in the following order:
 
 1. Environment variables
 2. Shared credential file (\~/.aws/credentials)
@@ -36,12 +36,12 @@ export AWS_SECRET_ACCESS_KEY=YOUR_SECRET_KEY
 
 ### Region and Bucket Configuration
 
-Region and bucket name are specified in your Hypha source configuration.
+Region and bucket name are specified in your Preen source configuration.
 
-### Hypha Source and Model Configuration for Amazon S3
+### Preen Source and Model Configuration for Amazon S3
 
 ```yaml
-# FILENAME: ~/.hypha/models/users.yaml
+# FILENAME: ~/.preen/models/users.yaml
 name: users
 type: file
 file_patterns:
@@ -56,7 +56,7 @@ options:
 ```
 
 ```yaml
-# FILENAME: ~/.hypha/sources.yaml
+# FILENAME: ~/.preen/sources.yaml
 sources:
   - name: users-s3-us-east-1
     engine: s3

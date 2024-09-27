@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
-	"github.com/hyphasql/hypha/internal/engine"
+	"github.com/preendata/preen/internal/engine"
 	"github.com/urfave/cli/v2"
 )
 
@@ -15,8 +15,8 @@ func Repl(c *cli.Context) error {
 	fmt.Println("Output format: ", outputFormat)
 
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt:            "hypha> ",
-		HistoryFile:       "/tmp/hypha-history.tmp",
+		Prompt:            "preen> ",
+		HistoryFile:       "/tmp/preen-history.tmp",
 		InterruptPrompt:   "^C",
 		EOFPrompt:         "exit",
 		HistorySearchFold: true,
@@ -58,7 +58,7 @@ func Repl(c *cli.Context) error {
 
 		cmd := strings.Join(cmds, " ")
 		cmds = cmds[:0]
-		rl.SetPrompt("hyphadb> ")
+		rl.SetPrompt("preendb> ")
 		if err := rl.SaveHistory(cmd); err != nil {
 			fmt.Printf("failed to save repl history: %v\n", err)
 		}

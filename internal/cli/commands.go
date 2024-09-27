@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/hyphasql/hypha/internal/engine"
+	"github.com/preendata/preen/internal/engine"
 	"github.com/urfave/cli/v2"
 )
 

@@ -24,7 +24,7 @@ func ddbNewAppender(connector driver.Connector, schema string, table string) (*d
 }
 
 func ddbCreateConnector() (driver.Connector, error) {
-	connector, err := duckdb.NewConnector("./hyphaContext.db?threads=4", func(execer driver.ExecerContext) error {
+	connector, err := duckdb.NewConnector("./preenContext.db?threads=4", func(execer driver.ExecerContext) error {
 		bootQueries := []string{
 			"INSTALL 'json'",
 			"LOAD 'json'",

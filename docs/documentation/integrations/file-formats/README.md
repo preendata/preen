@@ -1,5 +1,5 @@
 ---
-description: how to configure hypha to connect to file systems.
+description: how to configure preen to connect to file systems.
 ---
 
 # File Formats
@@ -8,6 +8,6 @@ The file formats are configured as a YAML file and contain configurations specif
 
 ## CSV
 
-Hypha supports the following file formats for file-based sources:
+Preen supports the following file formats for file-based sources:
 
 - [CSV](csv-format.md)

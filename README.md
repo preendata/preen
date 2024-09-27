@@ -1,10 +1,10 @@
-![tests](https://github.com/hyphasql/hypha/actions/workflows/ci.yaml/badge.svg)
+![tests](https://github.com/preendata/preen/actions/workflows/ci.yaml/badge.svg)
 
-# Hypha
+# Preen
 
-Hypha is a powerful command-line application for querying from multiple sources locally from your laptop. Under the hood, Hypha uses [DuckDB](https://duckdb.org/) to build an ephemeral, in-memory data warehouse and then uses DuckDB's SQL engine to query the data. Think of Hypha as a mix of Fivetran and DBT for your DuckDB use cases. You describe the data you want to query using a declarative language and Hypha takes care of the rest.
+Preen is a powerful command-line application for querying from multiple sources locally from your laptop. Under the hood, Preen uses [DuckDB](https://duckdb.org/) to build an ephemeral, in-memory data warehouse and then uses DuckDB's SQL engine to query the data. Think of Preen as a mix of Fivetran and DBT for your DuckDB use cases. You describe the data you want to query using a declarative language and Preen takes care of the rest.
 
-Hypha is currently in the alpha stage and not all features are available. We are working on adding more features and improving the user experience. If you have any questions or feedback, please feel free to open an issue on GitHub.
+Preen is currently in the alpha stage and not all features are available. We are working on adding more features and improving the user experience. If you have any questions or feedback, please feel free to open an issue on GitHub.
 
 ## Features
 
@@ -20,31 +20,31 @@ Hypha is currently in the alpha stage and not all features are available. We are
 
 ### Download pre-built binary
 
-You can download a pre-built binary for your operating system and architecture from the [GitHub Releases](https://github.com/hyphasql/hypha/releases) page.
+You can download a pre-built binary for your operating system and architecture from the [GitHub Releases](https://github.com/preendata/preen/releases) page.
 
 ```bash
 # Using curl
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/hyphasql/hypha/main/build/install.sh)"
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/preendata/preen/main/build/install.sh)"
 
 # Using wget
-sh -c "$(wget https://raw.githubusercontent.com/hyphasql/hypha/main/build/install.sh -O -)"
+sh -c "$(wget https://raw.githubusercontent.com/preendata/preen/main/build/install.sh -O -)"
 ```
 
 ### Build from source
 
-To build Hypha from source, you need to have Go 1.23.0 or later installed on your system. Then, you can build the application using the following commands:
+To build Preen from source, you need to have Go 1.23.0 or later installed on your system. Then, you can build the application using the following commands:
 
 ```bash
-git clone https://github.com/hyphasql/hypha.git
-cd hypha
+git clone https://github.com/preendata/preen.git
+cd preen
 make build
 ```
 
-This will create a `hypha` binary in the `bin` directory. You can add this to your `PATH` if you want to use the `hypha` command from anywhere.
+This will create a `preen` binary in the `bin` directory. You can add this to your `PATH` if you want to use the `preen` command from anywhere.
 
 ## Configuration
 
-Hypha uses two configuration files: `sources.yaml` and `models.yaml`. The `sources.yaml` file is used to configure the data sources that Hypha will query. The `models.yaml` file is used to define the models that Hypha will build. The directory Hypha will look for source and model configurations is configurable via the `HYPHA_CONFIG_PATH` environment variable. You can see an example of the environment configuation in the [.env.example](.env.example) file.The `models.yaml` file is optional. If it is not present, Hypha will look for `.yaml` files in the `models` directory.
+Preen uses two configuration files: `sources.yaml` and `models.yaml`. The `sources.yaml` file is used to configure the data sources that Preen will query. The `models.yaml` file is used to define the models that Preen will build. The directory Preen will look for source and model configurations is configurable via the `PREEN_CONFIG_PATH` environment variable. You can see an example of the environment configuation in the [.env.example](.env.example) file.The `models.yaml` file is optional. If it is not present, Preen will look for `.yaml` files in the `models` directory.
 
 Here is an example `sources.yaml` file:
 
@@ -55,7 +55,7 @@ sources:
     connection:
       host: localhost
       port: 27117
-      database: hypha
+      database: preen
       username: root
       password: ${MONGO_PASSWORD} # You can also use environment variables.
       auth_source: admin
@@ -69,7 +69,7 @@ Here is an example `models.yaml` file:
 
 ```yaml
 models:
-  - name: hypha-users-model
+  - name: preen-users-model
     type: database
     query: |
       SELECT users.user_id, users.name, users.email FROM users
@@ -78,7 +78,7 @@ models:
 You can validate your configuration by running:
 
 ```bash
-hypha source validate
+preen source validate
 ```
 
 ## Usage
@@ -88,7 +88,7 @@ hypha source validate
 Building a model will fetch the data from the source and save it to the DuckDB database. To build your models, run:
 
 ```bash
-hypha model build
+preen model build
 ```
 
 ### Querying Data
@@ -96,16 +96,16 @@ hypha model build
 You can query data using the interactive REPL. You can also specify the output format of the data (table, csv, markdown, json).
 
 ```bash
-hypha repl
+preen repl
 
 # Specify output format
-hypha repl --output-format csv
+preen repl --output-format csv
 ```
 
 For one-off queries, use the `query` command:
 
 ```bash
-hypha query "select * from your_model limit 10" --output-format csv
+preen query "select * from your_model limit 10" --output-format csv
 ```
 
 ## Development
@@ -121,4 +121,4 @@ To set up the development environment:
 
 ## License
 
-This project is dual-licensed under the LGPL-3.0 License and Hypha Enterprise License - see the [LICENSE](LICENSE) file for details. Our core features are free to use under the LGPL-3.0 License. If you need additional features, you can purchase a Hypha Enterprise License.
+This project is dual-licensed under the LGPL-3.0 License and Preen Enterprise License - see the [LICENSE](LICENSE) file for details. Our core features are free to use under the LGPL-3.0 License. If you need additional features, you can purchase a Preen Enterprise License.

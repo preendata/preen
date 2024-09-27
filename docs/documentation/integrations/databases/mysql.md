@@ -1,15 +1,15 @@
 ---
-description: how to configure hypha to connect to MySQL databases.
+description: how to configure preen to connect to MySQL databases.
 ---
 
 # MySQL
 
-Hypha uses the [sql](https://pkg.go.dev/database/sql) library to connect to MySQL databases.
+Preen uses the [sql](https://pkg.go.dev/database/sql) library to connect to MySQL databases.
 
-## Example Hypha Source Configuration
+## Example Preen Source Configuration
 
 ```yaml
-# FILENAME: ~/.hypha/sources.yaml
+# FILENAME: ~/.preen/sources.yaml
 sources:
   - name: mysql-example
     engine: mysql
@@ -26,7 +26,7 @@ sources:
 MySQL models are defined as a YAML file that contains a SQL query.
 
 ```yaml
-# FILENAME: ~/.hypha/models/users.yaml
+# FILENAME: ~/.preen/models/users.yaml
 name: users # This name needs to be unique
 type: sql
 query: |
@@ -41,9 +41,9 @@ query: |
 
 ## MySQL Type Mappings
 
-A comprehensive list of MySQL type mappings can be found [here](https://github.com/hyphasql/hypha/blob/main/internal/engine/types.go#L190-L240).
+A comprehensive list of MySQL type mappings can be found [here](https://github.com/preendata/preen/blob/main/internal/engine/types.go#L190-L240).
 
 ## Code References
 
-- [types.go](https://github.com/hyphasql/hypha/blob/main/internal/engine/types.go)
-- [postgres.go](https://github.com/hyphasql/hypha/blob/main/internal/engine/mysql.go)
+- [types.go](https://github.com/preendata/preen/blob/main/internal/engine/types.go)
+- [postgres.go](https://github.com/preendata/preen/blob/main/internal/engine/mysql.go)
