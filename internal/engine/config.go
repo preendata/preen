@@ -2,7 +2,7 @@ package engine
 
 import "fmt"
 
-const Version = "v0.1.1"
+const Version = "v0.2.0"
 
 func GetConfig(modelTarget string) (*SourceConfig, *ModelConfig, error) {
 	sc, err := GetSourceConfig()

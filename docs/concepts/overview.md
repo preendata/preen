@@ -4,7 +4,7 @@ description: Show the overall system architecture.
 
 # Overview
 
-The core concepts of Hypha are:
+The core concepts of Preen are:
 
 - [Sources](sources.md)
 - [Models](models.md)

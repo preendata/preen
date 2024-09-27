@@ -6,7 +6,7 @@ description: what is a source?
 
 ## Overview
 
-A Hypha **Source** is any data storage system that is listed under the [integrations](../documentation/integrations/ "mention") section, such as a database (e.g. Postgres, MySQL etc.) or file store (Amazon S3).
+A Preen **Source** is any data storage system that is listed under the [integrations](../documentation/integrations/ "mention") section, such as a database (e.g. Postgres, MySQL etc.) or file store (Amazon S3).
 
 ## Definition
 

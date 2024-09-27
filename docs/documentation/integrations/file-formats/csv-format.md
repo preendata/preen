@@ -1,10 +1,10 @@
 ---
-description: how to configure hypha to read CSV files.
+description: how to configure preen to read CSV files.
 ---
 
 # CSV Format
 
-Hypha supports the following options for CSV format. This is largely a wrapper on the [DuckDB CSV scan options](https://duckdb.org/docs/data/csv/overview.html#parameters).
+Preen supports the following options for CSV format. This is largely a wrapper on the [DuckDB CSV scan options](https://duckdb.org/docs/data/csv/overview.html#parameters).
 
 | Option               | Description                                          | Default Value |
 | -------------------- | ---------------------------------------------------- | ------------- |
@@ -39,10 +39,10 @@ Hypha supports the following options for CSV format. This is largely a wrapper o
 
 ### Basic Auto-Detection
 
-This is the most common case. Hypha will auto-detect the CSV format and use the default options.
+This is the most common case. Preen will auto-detect the CSV format and use the default options.
 
 ```yaml
-# FILENAME: ~/.hypha/models/users.yaml
+# FILENAME: ~/.preen/models/users.yaml
 name: users
 type: file
 file_patterns:
@@ -62,7 +62,7 @@ options:
 This is useful if you want to override the auto-detection and specify the options manually. This will save time and avoid the memory overhead of auto-detection.
 
 ```yaml
-# FILENAME: ~/.hypha/models/users.yaml
+# FILENAME: ~/.preen/models/users.yaml
 name: users
 type: file
 file_patterns:
@@ -88,7 +88,7 @@ options:
 ### Partially Specifying Options to override auto-detection
 
 ```yaml
-# FILENAME: ~/.hypha/models/users.yaml
+# FILENAME: ~/.preen/models/users.yaml
 name: users
 type: file
 file_patterns:

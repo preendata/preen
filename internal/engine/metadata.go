@@ -24,14 +24,14 @@ func BuildMetadata(sc *SourceConfig, mc *ModelConfig) error {
 	ic := make(chan []driver.Value, 10)
 	dc := make(chan []int64)
 
-	go Insert("hypha_information_schema", ic, dc)
+	go Insert("preen_information_schema", ic, dc)
 
 	// Group sources by engine to distribute across specific engine handlers
-	hyphaSourcesByEngine := groupSourceByEngine(sc)
+	preenSourcesByEngine := groupSourceByEngine(sc)
 
 	sourceErrGroup := new(errgroup.Group)
 
-	for engine, sources := range hyphaSourcesByEngine {
+	for engine, sources := range preenSourcesByEngine {
 		sourceErrGroup.Go(func() error {
 			switch engine {
 			case "postgres":
@@ -66,7 +66,7 @@ func BuildMetadata(sc *SourceConfig, mc *ModelConfig) error {
 		return err
 	}
 	ic <- []driver.Value{"quit"}
-	ConfirmInsert("hypha_information_schema", dc, 0)
+	ConfirmInsert("preen_information_schema", dc, 0)
 	Info("Metadata build completed successfully")
 
 	return nil
@@ -266,7 +266,7 @@ func groupSourceByEngine(sc *SourceConfig) map[string][]Source {
 // prepareDDBInformationSchema creates the table for the information schema in duckDB
 func prepareDDBInformationSchema() error {
 	informationSchemaColumnNames := []string{"source_name varchar", "model_name varchar", "table_name varchar", "column_name varchar", "data_type varchar"}
-	informationSchemaTableName := "main.hypha_information_schema"
+	informationSchemaTableName := "main.preen_information_schema"
 	Debug(fmt.Sprintf("Creating table %s", informationSchemaTableName))
 	err := ddbExec(fmt.Sprintf("create or replace table %s (%s)", informationSchemaTableName, strings.Join(informationSchemaColumnNames, ", ")))
 	if err != nil {

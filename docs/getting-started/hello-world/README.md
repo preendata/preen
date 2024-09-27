@@ -1,6 +1,6 @@
 # Your First Query
 
-Getting start with Hypha is as simple as connecting to the data sources you want to query, defining your model, and querying the result.
+Getting start with Preen is as simple as connecting to the data sources you want to query, defining your model, and querying the result.
 
 
 

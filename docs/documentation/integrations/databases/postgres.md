@@ -1,15 +1,15 @@
 ---
-description: how to configure hypha to connect to Postgres databases.
+description: how to configure preen to connect to Postgres databases.
 ---
 
 # Postgres
 
-Hypha uses the [pgx](https://github.com/jackc/pgx) library to connect to Postgres databases.
+Preen uses the [pgx](https://github.com/jackc/pgx) library to connect to Postgres databases.
 
-## Example Hypha Source Configuration
+## Example Preen Source Configuration
 
 ```yaml
-# FILENAME: ~/.hypha/sources.yaml
+# FILENAME: ~/.preen/sources.yaml
 sources:
   - name: postgres-example
     engine: postgres
@@ -26,7 +26,7 @@ sources:
 Postgres models are defined as a YAML file that contains a SQL query.
 
 ```yaml
-# FILENAME: ~/.hypha/models/users.yaml
+# FILENAME: ~/.preen/models/users.yaml
 name: users # This name needs to be unique
 type: sql
 query: |
@@ -41,9 +41,9 @@ query: |
 
 ## Postgres Type Mappings
 
-A comprehensive list of Postgres type mappings can be found [here](https://github.com/hyphasql/hypha/blob/main/internal/engine/types.go#L190-L240). We use the [pgtype](https://pkg.go.dev/github.com/jackc/pgtype) library to map Postgres types to Go types, with a few custom mappings for things like `float64`, `duration`, and `time` types.
+A comprehensive list of Postgres type mappings can be found [here](https://github.com/preendata/preen/blob/main/internal/engine/types.go#L190-L240). We use the [pgtype](https://pkg.go.dev/github.com/jackc/pgtype) library to map Postgres types to Go types, with a few custom mappings for things like `float64`, `duration`, and `time` types.
 
 ## Code References
 
-- [types.go](https://github.com/hyphasql/hypha/blob/main/internal/engine/types.go)
-- [postgres.go](https://github.com/hyphasql/hypha/blob/main/internal/engine/postgres.go)
+- [types.go](https://github.com/preendata/preen/blob/main/internal/engine/types.go)
+- [postgres.go](https://github.com/preendata/preen/blob/main/internal/engine/postgres.go)

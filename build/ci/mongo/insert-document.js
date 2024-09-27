@@ -1,5 +1,5 @@
-db = db.getSiblingDB('hypha');
-db.auth('hypha', 'thisisnotarealpassword');
+db = db.getSiblingDB('preen');
+db.auth('preen', 'thisisnotarealpassword');
 db.createCollection('test');
 
 db.test.insertOne({

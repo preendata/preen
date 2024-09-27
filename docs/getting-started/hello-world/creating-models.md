@@ -10,12 +10,12 @@ Read more about the rationale behind [models.md](../../concepts/models.md "menti
 
 ## Defining a Model
 
-You can define models in two ways, adding a `models.yaml` file to the `HYPHA_CONFIG_PATH` or adding individual model files to the  `~/.hypha/models` directory. You may save a model file anywhere you'd like, so long as its parent directory is specified by `HYPHA_MODELS_PATH`
+You can define models in two ways, adding a `models.yaml` file to the `PREEN_CONFIG_PATH` or adding individual model files to the  `~/.preen/models` directory. You may save a model file anywhere you'd like, so long as its parent directory is specified by `PREEN_MODELS_PATH`
 
 Here's an example `database` model. **Note that column names need to be fully qualified, i.e.  users.id instead of id.**
 
 ```yaml
-# FILENAME: ~/.hypha/models/users.yaml
+# FILENAME: ~/.preen/models/users.yaml
 name: users # This name needs to be unique
 type: sql
 query: |
@@ -33,7 +33,7 @@ query: |
 Consider a simplified [source.md](../../concepts/source.md "mention") config from the last page, pared down to one data source. You register the users model with the source as follows.
 
 ```yaml
-# FILENAME: ~/.hypha/sources.yaml
+# FILENAME: ~/.preen/sources.yaml
 sources:
   - name: postgres-model
     engine: postgres
@@ -47,9 +47,9 @@ sources:
       - users
 ```
 
-You can now validate and build your models in Hypha.
+You can now validate and build your models in Preen.
 
 ```bash
-hypha source validate
-hypha model build
+preen source validate
+preen model build
 ```

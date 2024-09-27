@@ -1,13 +1,13 @@
 db.createUser({
-  user: "hypha",
+  user: "preen",
   pwd: "thisisnotarealpassword",
   roles: [
-      { role: "readWrite", db: "hypha" }
+      { role: "readWrite", db: "preen" }
   ]
 });
 
 db.grantRolesToUser(
-   "hypha",
+   "preen",
    [
      { role: "read", db: "admin" }
    ]

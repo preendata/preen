@@ -29,7 +29,7 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=thisisnotarealpassword
-      - MONGO_INITDB_DATABASE=hypha
+      - MONGO_INITDB_DATABASE=preen
     volumes:
       - ./mongo/init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh
       - ./mongo/create-mongo-user.js:/scripts/create-mongo-user.js

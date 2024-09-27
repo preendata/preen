@@ -3,14 +3,14 @@ package cli
 import (
 	"fmt"
 
-	"github.com/hyphasql/hypha/internal/engine"
+	"github.com/preendata/preen/internal/engine"
 	"github.com/urfave/cli/v2"
 )
 
 func NewApp() *cli.App {
 	app := &cli.App{
-		Name:  "hypha",
-		Usage: "A command-line application for hypha",
+		Name:  "preen",
+		Usage: "A command-line application for preen",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "log-level",
@@ -80,7 +80,7 @@ func NewApp() *cli.App {
 							&cli.StringFlag{
 								Name:    "target",
 								Aliases: []string{"t"},
-								Usage:   "Target a specific model(s). The default is all models. This is relative to the HYPHA_MODELS_PATH.",
+								Usage:   "Target a specific model(s). The default is all models. This is relative to the PREEN_MODELS_PATH.",
 							},
 							&cli.BoolFlag{
 								Name:    "source-name",
@@ -120,7 +120,7 @@ func NewApp() *cli.App {
 				Name:  "version",
 				Usage: "Print the version of the application",
 				Action: func(c *cli.Context) error {
-					fmt.Println("Hypha version:", engine.Version)
+					fmt.Println("Preen version:", engine.Version)
 					return nil
 				},
 			},

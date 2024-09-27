@@ -7,7 +7,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/hyphasql/sqlparser"
+	"github.com/preendata/sqlparser"
 	yaml "gopkg.in/yaml.v3"
 )
 
@@ -69,8 +69,8 @@ type ModelConfig struct {
 	Env    *Env     `yaml:"-"`
 }
 
-// Models can be defined in a models.yaml file in the hypha config directory.
-// Models can also be defined in individual .yaml files in the hypha models directory.
+// Models can be defined in a models.yaml file in the preen config directory.
+// Models can also be defined in individual .yaml files in the preen models directory.
 
 func GetModelConfigs(modelTarget string) (*ModelConfig, error) {
 	mc := ModelConfig{}
@@ -80,8 +80,8 @@ func GetModelConfigs(modelTarget string) (*ModelConfig, error) {
 	}
 	mc.Env = env
 
-	configFilePath := filepath.Join(mc.Env.HyphaConfigPath, "models.yaml")
-	modelsDir := mc.Env.HyphaModelsPath
+	configFilePath := filepath.Join(mc.Env.PreenConfigPath, "models.yaml")
+	modelsDir := mc.Env.PreenModelsPath
 
 	// Check if a models.yaml file exists in the config directory.
 	// If it does, parse it.
@@ -102,7 +102,7 @@ func GetModelConfigs(modelTarget string) (*ModelConfig, error) {
 	if len(mc.Models) == 0 {
 		return nil, fmt.Errorf(
 			"no models detected in %s/models.yaml file or %s directory",
-			mc.Env.HyphaConfigPath, mc.Env.HyphaModelsPath,
+			mc.Env.PreenConfigPath, mc.Env.PreenModelsPath,
 		)
 	}
 
@@ -146,7 +146,7 @@ func BuildModels(sc *SourceConfig, mc *ModelConfig) error {
 	return nil
 }
 
-// Parse the models.yaml file in the hypha config directory. This file can contain multiple models.
+// Parse the models.yaml file in the preen config directory. This file can contain multiple models.
 // It is optional, but if it exists, it will be parsed.
 func parseModelsYamlFile(filePath string, mc *ModelConfig) error {
 	file, err := os.ReadFile(filePath)

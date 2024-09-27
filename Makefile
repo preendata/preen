@@ -4,7 +4,7 @@ integration-test: build
 
 .PHONY: build
 build:
-	go build -o bin/hypha main.go
+	go build -o bin/preen main.go
 
 .PHONY: lint
 lint:

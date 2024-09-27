@@ -24,9 +24,9 @@ sources:
     connection:
       host: localhost
       port: 27017
-      database: hypha
-      username: root
-      password: thisisnotarealpassword
+      database: preen
+      username: ${MONGO_USER}
+      password: ${MONGO_PASSWORD}
       auth_source: admin
     models:
       - mongodb-test

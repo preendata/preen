@@ -9,7 +9,7 @@ import (
 
 func Upgrade() error {
 	// Define the install script URL
-	installScriptURL := "https://raw.githubusercontent.com/hyphasql/hypha/main/build/install.sh"
+	installScriptURL := "https://raw.githubusercontent.com/preendata/preen/main/build/install.sh"
 
 	// Determine the command to use for downloading the script
 	var cmd *exec.Cmd
@@ -28,6 +28,6 @@ func Upgrade() error {
 		return fmt.Errorf("failed to upgrade: %w", err)
 	}
 
-	fmt.Println("Hypha has been successfully upgraded.")
+	fmt.Println("Preen has been successfully upgraded.")
 	return nil
 }

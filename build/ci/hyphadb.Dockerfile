@@ -1,7 +1,7 @@
 FROM golang:1.21.5-bullseye
 
-COPY . /hyphadb
+COPY . /preen
 
-WORKDIR /hyphadb
+WORKDIR /preen
 
 RUN go mod tidy
