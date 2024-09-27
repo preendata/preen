@@ -11,6 +11,8 @@ jobs:
       PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
       MYSQL_USER: ${{ secrets.MYSQL_USER }}
       MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+      MONGO_USER: ${{ secrets.MONGO_USER }}
+      MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
     runs-on: ubuntu-latest
 
     steps:
