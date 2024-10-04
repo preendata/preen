@@ -121,4 +121,4 @@ To set up the development environment:
 
 ## License
 
-This project is dual-licensed under the LGPL-3.0 License and Preen Enterprise License - see the [LICENSE](LICENSE) file for details. Our core features are free to use under the LGPL-3.0 License. If you need additional features, you can purchase a Preen Enterprise License.
+This project is licensed under the LGPL-3.0 License. See the [LICENSE](LICENSE) file for details.
