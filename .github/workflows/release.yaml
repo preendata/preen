@@ -39,10 +39,16 @@ jobs:
           tar -C output/${{ matrix.os }}_${{ matrix.arch }} -czvf preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz preen
           echo "Built for $GOOS $GOARCH"
 
+      - name: Generate checksum
+        run: |
+          sha256sum preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz | tee preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.sha256sum
+
       - name: Upload binaries
         uses: svenstaro/upload-release-action@v2
         with:
-          file: preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
+          files: |
+            preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
+            preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.sha256sum
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
 
@@ -76,10 +82,16 @@ jobs:
           CGO_ENABLED=1 CGO_LDFLAGS="-L/usr/lib" go build -o output/${{ matrix.os }}_${{ matrix.arch }}/preen main.go
           tar -C output/${{ matrix.os }}_${{ matrix.arch }} -czvf preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz preen
           echo "Built for $GOOS $GOARCH"
+
+      - name: Generate checksum
+        run: |
+          sha256sum preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz | tee preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.sha256sum
           
       - name: Upload binaries
         uses: svenstaro/upload-release-action@v2
         with:
-          file: preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
+          files: |
+            preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
+            preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.sha256sum
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
