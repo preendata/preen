@@ -46,7 +46,7 @@ jobs:
       - name: Upload binaries
         uses: svenstaro/upload-release-action@v2
         with:
-          files: |
+          file: |
             preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
             preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.sha256sum
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -90,7 +90,7 @@ jobs:
       - name: Upload binaries
         uses: svenstaro/upload-release-action@v2
         with:
-          files: |
+          file: |
             preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
             preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.sha256sum
           repo_token: ${{ secrets.GITHUB_TOKEN }}
