@@ -85,7 +85,7 @@ jobs:
 
       - name: Generate checksum
         run: |
-          sha256sum preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz | tee preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.sha256sum
+          shasum -a 256 preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz | tee preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.sha256sum
           
       - name: Upload binaries
         uses: svenstaro/upload-release-action@v2
