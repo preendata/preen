@@ -43,12 +43,17 @@ jobs:
         run: |
           sha256sum preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz | tee preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.sha256sum
 
-      - name: Upload binaries
+      - name: Upload binary
         uses: svenstaro/upload-release-action@v2
         with:
-          file: |
-            preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
-            preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.sha256sum
+          file: preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+
+      - name: Upload checksum
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.sha256sum
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
 
@@ -85,13 +90,18 @@ jobs:
 
       - name: Generate checksum
         run: |
-          sha256sum preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz | tee preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.sha256sum
-          
-      - name: Upload binaries
+          shasum -a 256 preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz | tee preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.sha256sum
+
+      - name: Upload binary
         uses: svenstaro/upload-release-action@v2
         with:
-          file: |
-            preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
-            preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.sha256sum
+          file: preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.tar.gz
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref }}
+
+      - name: Upload checksum
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: preen-${{ matrix.os }}_${{ matrix.arch }}-${{ github.event.release.tag_name }}.sha256sum
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }}
