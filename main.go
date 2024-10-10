@@ -4,15 +4,17 @@ import (
 	"log"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/preendata/preen/internal/cli"
 	"github.com/preendata/preen/internal/engine"
-	"github.com/joho/godotenv"
 )
 
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Print("warn: error loading .env file", err)
+		if os.Getenv("PREEN_DEBUG") == "true" {
+			log.Print("warn: error loading .env file", err)
+		}
 	}
 
 	err = engine.Initialize()
