@@ -42,6 +42,10 @@ func BuildMetadata(sc *SourceConfig, mc *ModelConfig) error {
 				if err := buildMySQLInformationSchema(sources, ic, mc); err != nil {
 					return fmt.Errorf("error building mysql information schema: %w", err)
 				}
+			case "snowflake":
+				if err := buildSnowflakeInformationSchema(sources, ic, mc); err != nil {
+					return fmt.Errorf("error building snowflake information schema: %w", err)
+				}
 			case "mongodb":
 				Debug("No information schema required for MongoDB")
 			case "s3":
@@ -181,6 +185,29 @@ func buildMySQLInformationSchema(sources []Source, ic chan<- []driver.Value, mc 
 		if err != nil {
 			return err
 		}
+	}
+	if err := schemaErrGroup.Wait(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// buildSnowflakeInformationSchema builds the information schema for all snowflake sources in the config
+func buildSnowflakeInformationSchema(sources []Source, ic chan<- []driver.Value, mc *ModelConfig) error {
+	schemaErrGroup := new(errgroup.Group)
+
+	for _, source := range sources {
+		schemaErrGroup.Go(func() error {
+			pool, err := getSnowflakePoolFromSource(source)
+			if err != nil {
+				return err
+			}
+			defer pool.Close()
+
+			// TODO: Implement
+			return nil
+		})
 	}
 	if err := schemaErrGroup.Wait(); err != nil {
 		return err

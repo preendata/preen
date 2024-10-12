@@ -17,6 +17,9 @@ type Connection struct {
 	AuthSource string `yaml:"auth_source"`
 	BucketName string `yaml:"bucket_name"`
 	Region     string `yaml:"region"`
+	Schema     string `yaml:"schema"`
+	Warehouse  string `yaml:"warehouse"`
+	Role       string `yaml:"role"`
 }
 
 type Source struct {
