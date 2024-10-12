@@ -20,6 +20,7 @@ type Connection struct {
 	Schema     string `yaml:"schema"`
 	Warehouse  string `yaml:"warehouse"`
 	Role       string `yaml:"role"`
+	Account    string `yaml:"account"`
 }
 
 type Source struct {

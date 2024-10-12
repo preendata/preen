@@ -278,6 +278,7 @@ func processModelColumn(expr *sqlparser.AliasedExpr, cp *columnParser) error {
 	// If it does not exist, then we return an error since we are unable to determine
 	// the appropriate data type.
 	if _, ok := cp.columnMetadata[TableName(cp.tableName)][ColumnName(colName)]; !ok {
+		fmt.Println(cp.columnMetadata[TableName(cp.tableName)]) // TODO remove me
 		return fmt.Errorf("column not found in table: %s.%s. check that your model query is valid", cp.tableName, colName)
 	}
 

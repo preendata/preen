@@ -204,8 +204,44 @@ func buildSnowflakeInformationSchema(sources []Source, ic chan<- []driver.Value,
 				return err
 			}
 			defer pool.Close()
+			schema := "'PUBLIC'"
 
-			// TODO: Implement
+			//TODO
+			for _, model := range mc.Models {
+				if model.Type == "database" && model.Parsed != nil {
+					tablesQueryString := ""
+					for _, tableName := range model.TableSet {
+						if tablesQueryString != "" {
+							tablesQueryString += fmt.Sprintf(",'%s'", tableName)
+						} else {
+							tablesQueryString += fmt.Sprintf("'%s'", tableName)
+						}
+					}
+
+					query := fmt.Sprintf(`
+							select table_name, column_name, data_type from %s.information_schema.columns
+								where TABLE_SCHEMA = upper(%s) and table_name = upper(%s);
+						`, source.Connection.Database, schema, tablesQueryString)
+					rows, err := pool.Query(query)
+					if err != nil {
+						return err
+					}
+
+					defer rows.Close()
+
+					for rows.Next() {
+						var table_name string
+						var column_name string
+						var data_type string
+						err = rows.Scan(&table_name, &column_name, &data_type)
+
+						if err != nil {
+							return err
+						}
+						ic <- []driver.Value{source.Name, string(model.Name), table_name, column_name, data_type}
+					}
+				}
+			}
 			return nil
 		})
 	}
