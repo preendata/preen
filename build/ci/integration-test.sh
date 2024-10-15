@@ -28,4 +28,4 @@ fi
 
 
 echo "Information schema results from test suite:"
-bin/preen query "select * from preen_information_schema;"
+echo $(bin/preen query "select * from preen_information_schema;")
