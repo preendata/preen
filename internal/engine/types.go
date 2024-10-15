@@ -230,7 +230,7 @@ var duckdbTypeMap = map[string]string{
 	"inet":                        "varchar",
 	"cidr":                        "varchar",
 	"macaddr":                     "varchar",
-	"ARRAY":                       "json",
+	"array":                       "json",
 	"xml":                         "varchar",
 	"int4range":                   "varchar",
 	"varchar":                     "varchar",
