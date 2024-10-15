@@ -24,6 +24,15 @@ type duckdbDecimal float64
 
 func (d *duckdbDecimal) Scan(s any) error {
 	switch v := s.(type) {
+	// The string is from the Snowflake driver.
+	case string:
+		Debug(fmt.Sprintf("Scanning duckdbDecimal: %s", v))
+		if float, err := strconv.ParseFloat(v, 64); err == nil {
+			*d = duckdbDecimal(float)
+		} else {
+			Debug(fmt.Sprintf("Error scanning duckdbDecimal: %s", err))
+			return fmt.Errorf("error scanning duckdbDecimal: %w", err)
+		}
 	// The byte array is from the MySQL driver.
 	case []byte:
 		if float, err := strconv.ParseFloat(string(v), 64); err == nil {
@@ -196,6 +205,7 @@ var duckdbTypeMap = map[string]string{
 	"year":                        "smallint",
 	"double precision":            "double",
 	"double":                      "double",
+	"number":                      "double", //snowflake
 	"numeric":                     "double",
 	"decimal":                     "double",
 	"real":                        "real",
@@ -205,6 +215,7 @@ var duckdbTypeMap = map[string]string{
 	"date":                        "date",
 	"timestamp":                   "timestamp",
 	"datetime":                    "timestamp",
+	"timestamp_ntz":               "timestamp", //snowflake
 	"timestamp without time zone": "timestamp",
 	"timestamp with time zone":    "timestamp",
 	"binary":                      "blob",
