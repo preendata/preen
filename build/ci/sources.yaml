@@ -13,7 +13,7 @@ sources:
     engine: postgres
     connection:
       host: localhost
-      port: 5432
+      port: 54322
       database: postgres
       username: ${PG_USER}
       password: ${PG_PASSWORD}
