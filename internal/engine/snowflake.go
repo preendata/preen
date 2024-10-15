@@ -47,7 +47,7 @@ func ingestSnowflakeModel(r *Retriever, ic chan []driver.Value) error {
 	defer clientPool.Close()
 	rows, err := clientPool.Query(r.Query)
 	if err != nil {
-		return err
+		return fmt.Errorf("error querying Snowflake: %w", err)
 	}
 	defer rows.Close()
 
@@ -60,17 +60,26 @@ func ingestSnowflakeModel(r *Retriever, ic chan []driver.Value) error {
 
 func processSnowflakeRows(r *Retriever, ic chan []driver.Value, rows *sql.Rows) error {
 	valuePtrs, err := processSnowflakeColumns(rows)
+	fmt.Println("Valuetrs", valuePtrs)
 	if err != nil {
-		return err
+		return fmt.Errorf("error processing Snowflake columns: %w", err)
 	}
 	for rows.Next() {
 		if err = rows.Scan(valuePtrs...); err != nil {
-			return err
+			return fmt.Errorf("error scanning Snowflake rows: %w", err)
 		}
 		driverRow := make([]driver.Value, len(valuePtrs)+1)
 		driverRow[0] = r.Source.Name
 		for i, ptr := range valuePtrs {
-			driverRow[i+1] = ptr
+			if strPtr, ok := ptr.(*string); ok {
+				if strPtr != nil {
+					driverRow[i+1] = *strPtr // Dereference the string pointer
+				} else {
+					driverRow[i+1] = nil
+				}
+			} else {
+				driverRow[i+1] = ptr
+			}
 		}
 		ic <- driverRow
 	}
@@ -85,8 +94,9 @@ func processSnowflakeColumns(rows *sql.Rows) ([]any, error) {
 	}
 	valuePtrs := make([]any, len(columnTypes))
 
-	//TODO: make snowflake specific type changes
+	fmt.Println("Column types", columnTypes)
 	for i, columnType := range columnTypes {
+		fmt.Println("Column type", columnType.DatabaseTypeName(), columnType.DatabaseTypeName() == "TEXT")
 		switch columnType.DatabaseTypeName() {
 		case "DECIMAL", "NUMERIC", "FLOAT", "DOUBLE", "REAL":
 			valuePtrs[i] = new(duckdbDecimal)
@@ -103,11 +113,12 @@ func processSnowflakeColumns(rows *sql.Rows) ([]any, error) {
 		case "DATE", "DATETIME", "TIMESTAMP":
 			valuePtrs[i] = new(time.Time)
 		case "CHAR", "VARCHAR", "TEXT", "TINYTEXT", "MEDIUMTEXT", "LONGTEXT", "ENUM", "SET", "JSON", "TIME":
+			Debug(fmt.Sprintf("Column type is a string: %s", columnType.DatabaseTypeName()))
 			valuePtrs[i] = new(string)
 		default:
 			return nil, fmt.Errorf("unsupported column type: %s", columnType.DatabaseTypeName())
 		}
 	}
-
-	return nil, nil
+	// fmt.Println("ValuePtrs at exit of handler", valuePtrs)
+	return valuePtrs, nil
 }

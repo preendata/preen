@@ -206,7 +206,6 @@ func buildSnowflakeInformationSchema(sources []Source, ic chan<- []driver.Value,
 			defer pool.Close()
 			schema := "'PUBLIC'"
 
-			//TODO
 			for _, model := range mc.Models {
 				if model.Type == "database" && model.Parsed != nil {
 					tablesQueryString := ""

@@ -19,7 +19,13 @@ func Insert(modelName ModelName, ic <-chan []driver.Value, dc chan<- []int64) {
 		if message[0] == "quit" {
 			break
 		}
+		Debug(fmt.Sprintf("Inserting row: %+v", message))
+		for i, val := range message {
+			Debug(fmt.Sprintf("Column %d: Type %T, Value %v", i, val, val))
+		}
 		if err := appender.AppendRow(message...); err != nil {
+			Error(fmt.Sprintf("Failed to append row: %v", err))
+			Error(fmt.Sprintf("Row data: %+v", message))
 			panic(err)
 		}
 		rowCounter++
