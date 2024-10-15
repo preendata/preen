@@ -68,6 +68,19 @@ func Retrieve(sc *SourceConfig, mc *ModelConfig) error {
 				if err != nil {
 					return err
 				}
+			case "snowflake":
+				err := func(r Retriever, ic chan []driver.Value) error {
+					g.Go(func() error {
+						if err := ingestSnowflakeModel(&r, ic); err != nil {
+							return err
+						}
+						return nil
+					})
+					return nil
+				}(r, ic)
+				if err != nil {
+					return err
+				}
 			case "postgres":
 				err := func(r Retriever, ic chan []driver.Value) error {
 					g.Go(func() error {

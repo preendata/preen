@@ -42,6 +42,10 @@ func BuildMetadata(sc *SourceConfig, mc *ModelConfig) error {
 				if err := buildMySQLInformationSchema(sources, ic, mc); err != nil {
 					return fmt.Errorf("error building mysql information schema: %w", err)
 				}
+			case "snowflake":
+				if err := buildSnowflakeInformationSchema(sources, ic, mc); err != nil {
+					return fmt.Errorf("error building snowflake information schema: %w", err)
+				}
 			case "mongodb":
 				Debug("No information schema required for MongoDB")
 			case "s3":
@@ -181,6 +185,64 @@ func buildMySQLInformationSchema(sources []Source, ic chan<- []driver.Value, mc 
 		if err != nil {
 			return err
 		}
+	}
+	if err := schemaErrGroup.Wait(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// buildSnowflakeInformationSchema builds the information schema for all snowflake sources in the config
+func buildSnowflakeInformationSchema(sources []Source, ic chan<- []driver.Value, mc *ModelConfig) error {
+	schemaErrGroup := new(errgroup.Group)
+
+	for _, source := range sources {
+		schemaErrGroup.Go(func() error {
+			pool, err := getSnowflakePoolFromSource(source)
+			if err != nil {
+				return err
+			}
+			defer pool.Close()
+			schema := "'PUBLIC'"
+
+			for _, model := range mc.Models {
+				if model.Type == "database" && model.Parsed != nil {
+					tablesQueryString := ""
+					for _, tableName := range model.TableSet {
+						if tablesQueryString != "" {
+							tablesQueryString += fmt.Sprintf(",'%s'", tableName)
+						} else {
+							tablesQueryString += fmt.Sprintf("'%s'", tableName)
+						}
+					}
+
+					query := fmt.Sprintf(`
+							select table_name, column_name, data_type from %s.information_schema.columns
+								where TABLE_SCHEMA = upper(%s) and table_name = upper(%s);
+						`, source.Connection.Database, schema, tablesQueryString)
+					rows, err := pool.Query(query)
+					if err != nil {
+						return err
+					}
+
+					defer rows.Close()
+
+					for rows.Next() {
+						var table_name string
+						var column_name string
+						var data_type string
+						err = rows.Scan(&table_name, &column_name, &data_type)
+
+						if err != nil {
+							return err
+						}
+						ic <- []driver.Value{source.Name, string(model.Name), table_name, column_name, data_type}
+					}
+				}
+			}
+			return nil
+		})
 	}
 	if err := schemaErrGroup.Wait(); err != nil {
 		return err

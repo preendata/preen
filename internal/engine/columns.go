@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/preendata/sqlparser"
 )
@@ -280,9 +281,11 @@ func processModelColumn(expr *sqlparser.AliasedExpr, cp *columnParser) error {
 	if _, ok := cp.columnMetadata[TableName(cp.tableName)][ColumnName(colName)]; !ok {
 		return fmt.Errorf("column not found in table: %s.%s. check that your model query is valid", cp.tableName, colName)
 	}
+	// strings lower is
 
 	// Look up the data type and append it to the table creation DDL string.
-	colType := duckdbTypeMap[string(cp.columnMetadata[TableName(cp.tableName)][ColumnName(colName)].MajorityType)]
+	// ToLower is necessary because Snowflake is an upper case-aholic
+	colType := duckdbTypeMap[strings.ToLower(string(cp.columnMetadata[TableName(cp.tableName)][ColumnName(colName)].MajorityType))]
 	if colType == "" {
 		return fmt.Errorf("data type not found for column: %s.%s", cp.tableName, colName)
 	}
