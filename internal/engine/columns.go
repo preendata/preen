@@ -273,7 +273,7 @@ func processModelColumn(expr *sqlparser.AliasedExpr, cp *columnParser) error {
 	colName := expr.Expr.(*sqlparser.ColName).Name.String()
 	colHashKey := fmt.Sprintf("%s.%s", cp.tableName, colName)
 	cp.columns[cp.tableName][ColumnName(colHashKey)] = col
-
+	fmt.Println("delete me line 276 columns.go")
 	// Check to see if the table and column exists in the columnMetadata structure
 	// If it does not exist, then we return an error since we are unable to determine
 	// the appropriate data type.
