@@ -80,7 +80,7 @@ func GetModelConfigs(modelTarget string) (*ModelConfig, error) {
 	}
 	mc.Env = env
 
-	configFilePath := filepath.Join(mc.Env.PreenConfigPath, "models.yaml")
+	configFilePath := getYmlorYamlPath(mc.Env.PreenConfigPath, "models")
 	modelsDir := mc.Env.PreenModelsPath
 
 	// Check if a models.yaml file exists in the config directory.
@@ -178,7 +178,9 @@ func parseModelDirectoryFiles(modelsDir string, modelTarget string, mc *ModelCon
 		if d.IsDir() {
 			return nil
 		}
-		if strings.HasSuffix(path, ".yaml") && (modelTarget == "" || strings.HasPrefix(path, filepath.Join(modelsDir, modelTarget))) {
+		if (strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")) &&
+			(modelTarget == "" || strings.HasPrefix(path, filepath.Join(modelsDir, modelTarget))) {
+
 			file, err := os.ReadFile(path)
 			if err != nil {
 				return fmt.Errorf("error reading model file %s: %w", path, err)

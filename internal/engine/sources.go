@@ -3,7 +3,6 @@ package engine
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	yaml "gopkg.in/yaml.v3"
 )
@@ -56,7 +55,7 @@ func GetSourceConfig() (*SourceConfig, error) {
 		return nil, fmt.Errorf("failed to access %s with error %s", sc.Env.PreenConfigPath, err)
 	}
 
-	configFilePath := filepath.Join(sc.Env.PreenConfigPath, "sources.yaml")
+	configFilePath := getYmlorYamlPath(sc.Env.PreenConfigPath, "sources")
 
 	// Create file if not exists
 	file, err := os.ReadFile(configFilePath)
