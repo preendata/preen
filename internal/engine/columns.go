@@ -281,7 +281,6 @@ func processModelColumn(expr *sqlparser.AliasedExpr, cp *columnParser) error {
 	if _, ok := cp.columnMetadata[TableName(cp.tableName)][ColumnName(colName)]; !ok {
 		return fmt.Errorf("column not found in table: %s.%s. check that your model query is valid", cp.tableName, colName)
 	}
-	// strings lower is
 
 	// Look up the data type and append it to the table creation DDL string.
 	// ToLower is necessary because Snowflake is an upper case-aholic

@@ -25,3 +25,7 @@ if [[ $MONGO_RESULTS_LENGTH -ne 1 ]]; then
   echo "Expected 1 row in mongodb_test, got $MONGO_RESULTS_LENGTH"
   exit 1
 fi
+
+
+echo "Information schema results from test suite:"
+echo $(bin/preen query "select * from preen_information_schema;")
