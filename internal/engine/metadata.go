@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -140,7 +141,7 @@ func buildMySQLInformationSchema(sources []Source, ic chan<- []driver.Value, mc 
 
 				// Iterate over all models and get the tables for each model
 				for _, model := range mc.Models {
-					if model.Type == "database" && model.Parsed != nil {
+					if model.Type == "database" && model.Parsed != nil && slices.Contains(source.Models, string(model.Name)) {
 						tablesQueryString := ""
 						for _, tableName := range model.TableSet {
 							if tablesQueryString != "" {
@@ -207,7 +208,7 @@ func buildSnowflakeInformationSchema(sources []Source, ic chan<- []driver.Value,
 			schema := "'PUBLIC'"
 
 			for _, model := range mc.Models {
-				if model.Type == "database" && model.Parsed != nil {
+				if model.Type == "database" && model.Parsed != nil && slices.Contains(source.Models, string(model.Name)) {
 					tablesQueryString := ""
 					for _, tableName := range model.TableSet {
 						if tablesQueryString != "" {
@@ -269,7 +270,7 @@ func buildPostgresInformationSchema(sources []Source, ic chan<- []driver.Value, 
 
 				// Iterate over all models and get the tables for each model
 				for _, model := range mc.Models {
-					if model.Type == "database" && model.Parsed != nil {
+					if model.Type == "database" && model.Parsed != nil && slices.Contains(source.Models, string(model.Name)) {
 						tablesQueryString := ""
 						for _, tableName := range model.TableSet {
 							if tablesQueryString != "" {
