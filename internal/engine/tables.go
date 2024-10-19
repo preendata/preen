@@ -45,7 +45,8 @@ func getModelTableAliases(stmt *sqlparser.Select) (TableMap, TableSet) {
 			}
 		}
 	case *sqlparser.JoinTableExpr:
-		_, tableSet = parseJoinTables(t, tableMap, tableSet)
+		_, joinTables := parseJoinTables(t, tableMap, tableSet)
+		tableSet = append(tableSet, joinTables...)
 	}
 
 	return tableMap, tableSet
@@ -68,16 +69,21 @@ func parseJoinTables(j *sqlparser.JoinTableExpr, tableMap TableMap, tableSet Tab
 
 	switch left := j.LeftExpr.(type) {
 	case *sqlparser.JoinTableExpr:
-		parseJoinTables(left, tableMap, tableSet)
+		_, tableSet = parseJoinTables(left, tableMap, tableSet)
 	case *sqlparser.AliasedTableExpr:
 		leftAlias := left.As.String()
 		leftTable := left.Expr.(sqlparser.TableName).Name.String()
 		if leftAlias != "" {
 			tableMap[TableAlias(leftAlias)] = TableName(leftTable)
+			if !slices.Contains(tableSet, TableName(leftTable)) {
+				tableSet = append(tableSet, TableName(leftTable))
+			}
 		} else {
 			tableMap[TableAlias(leftTable)] = TableName(leftTable)
+			if !slices.Contains(tableSet, TableName(leftTable)) {
+				tableSet = append(tableSet, TableName(leftTable))
+			}
 		}
 	}
-
 	return j, tableSet
 }
