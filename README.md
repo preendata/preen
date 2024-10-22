@@ -18,6 +18,15 @@ Preen is currently in the alpha stage and not all features are available. We are
 
 ## Installation
 
+### Homebrew
+
+Download the executable via our Homebrew cask.
+
+```bash
+brew tap preendata/preen
+brew install preen
+```
+
 ### Download pre-built binary
 
 You can download a pre-built binary for your operating system and architecture from the [GitHub Releases](https://github.com/preendata/preen/releases) page.
