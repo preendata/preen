@@ -124,13 +124,6 @@ func NewApp() *cli.App {
 					return nil
 				},
 			},
-			{
-				Name:  "upgrade",
-				Usage: "Upgrade to the latest version of the application",
-				Action: func(c *cli.Context) error {
-					return Upgrade()
-				},
-			},
 		},
 		Before: func(c *cli.Context) error {
 			logLevel := ""
