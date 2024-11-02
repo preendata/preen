@@ -53,6 +53,8 @@ This will create a `preen` binary in the `bin` directory. You can add this to yo
 
 ## Configuration
 
+[Example repository](https://github.com/preendata/preen-template)
+
 Preen uses two configuration files: `sources.yaml` and `models.yaml`. The `sources.yaml` file is used to configure the data sources that Preen will query. The `models.yaml` file is used to define the models that Preen will build. The directory Preen will look for source and model configurations is configurable via the `PREEN_CONFIG_PATH` environment variable. You can see an example of the environment configuation in the [.env.example](.env.example) file.The `models.yaml` file is optional. If it is not present, Preen will look for `.yaml` files in the `models` directory.
 
 Here is an example `sources.yaml` file:
