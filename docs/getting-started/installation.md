@@ -6,6 +6,15 @@ description: how to install preen.
 
 You can install Preen a few different ways. Note that the binary installation is the easiest method if you want to get started quickly. We support building from source if you want to have a local copy of the application code and make changes.
 
+## Homebrew
+
+Download the executable via our Homebrew cask.
+
+```
+brew tap preendata/preen
+brew install preen
+```
+
 ## Download binary
 
 You can download a binary for your operating system and architecture from the [GitHub Releases](https://github.com/preendata/preen/releases) page.
