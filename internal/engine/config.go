@@ -23,6 +23,10 @@ func ValidateConfigs(sc *SourceConfig, mc *ModelConfig) error {
 		return fmt.Errorf("error on missing models: %w", err)
 	}
 
+	if err := removeUnusedModels(sc, mc); err != nil {
+		return fmt.Errorf("error removing unused models: %w", err)
+	}
+
 	if err := parseModels(mc); err != nil {
 		return fmt.Errorf("error parsing models: %w", err)
 	}

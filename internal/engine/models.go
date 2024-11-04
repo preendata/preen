@@ -125,6 +125,10 @@ func BuildModels(sc *SourceConfig, mc *ModelConfig) error {
 		return fmt.Errorf("error building information schema: %w", err)
 	}
 
+	if err := removeUnusedModels(sc, mc); err != nil {
+		return fmt.Errorf("error removing unused models: %w", err)
+	}
+
 	columnMetadata, err := BuildColumnMetadata()
 	if err != nil {
 		return fmt.Errorf("error building column metadata: %w", err)
@@ -275,5 +279,24 @@ func errorOnMissingModels(sc *SourceConfig, mc *ModelConfig) error {
 	if len(missingModels) > 0 {
 		return fmt.Errorf("no model file detected for models: %s", strings.Join(missingModels, ", "))
 	}
+	return nil
+}
+
+// Remove unused models from ModelConfig. If a model is not referenced in any source, it is unused.
+func removeUnusedModels(sc *SourceConfig, mc *ModelConfig) error {
+	usedModels := make([]string, 0)
+	for _, source := range sc.Sources {
+		for _, modelName := range source.Models {
+			usedModels = append(usedModels, string(modelName))
+		}
+	}
+
+	for i, model := range mc.Models {
+		if !slices.Contains(usedModels, string(model.Name)) {
+			Info(fmt.Sprintf("Removing unused model: %s", model.Name))
+			mc.Models = append(mc.Models[:i], mc.Models[i+1:]...)
+		}
+	}
+
 	return nil
 }
