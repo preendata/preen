@@ -262,7 +262,7 @@ func processModelColumn(expr *sqlparser.AliasedExpr, cp *columnParser) error {
 	if _, ok := cp.columns[cp.tableName]; !ok {
 		cp.columns[cp.tableName] = make(map[ColumnName]Column)
 	}
-	fmt.Println(cp.columns[cp.tableName])
+
 	col := Column{
 		TableName: &cp.tableName,
 		Position:  cp.selectIdx,

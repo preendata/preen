@@ -118,11 +118,11 @@ func processSnowflakeColumns(rows *sql.Rows) ([]any, error) {
 			valuePtrs[i] = new(int16)
 		case "TINYINT":
 			valuePtrs[i] = new(int8)
-		case "BIT", "BINARY", "VARBINARY", "TINYBLOB", "MEDIUMBLOB", "LONGBLOB", "BLOB", "VARIANT", "OBJECT", "ARRAY":
+		case "BINARY", "VARBINARY", "VARIANT", "OBJECT", "ARRAY":
 			valuePtrs[i] = new([]byte)
-		case "DATE", "DATETIME", "TIMESTAMP", "TIMESTAMP_TZ", "TIMESTAMP_LTZ", "TIMESTAMP_NTZ":
+		case "DATE", "DATETIME", "TIMESTAMP_TZ", "TIMESTAMP_LTZ", "TIMESTAMP_NTZ":
 			valuePtrs[i] = new(time.Time)
-		case "CHAR", "VARCHAR", "TEXT", "TINYTEXT", "MEDIUMTEXT", "LONGTEXT", "ENUM", "SET", "JSON", "TIME":
+		case "CHAR", "CHARACTER", "NCHAR", "VARCHAR", "TEXT", "STRING", "NVARCHAR", "NVARCHAR2", "CHAR VARYING", "NCHAR VARYING", "ENUM", "SET", "JSON", "TIME":
 			Debug(fmt.Sprintf("Column type is a string: %s", columnType.DatabaseTypeName()))
 			valuePtrs[i] = new(string)
 		default:
