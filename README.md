@@ -6,6 +6,9 @@ Preen is a powerful command-line application for querying from multiple sources 
 
 Preen is currently in the alpha stage and not all features are available. We are working on adding more features and improving the user experience. If you have any questions or feedback, please feel free to open an issue on GitHub.
 
+## Documentation
+See our [Gitbook](https://preen.gitbook.io/preen-docs) page for rich documentation on Preen.
+
 ## Features
 
 - Query data from multiple sources using a single interface
