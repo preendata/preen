@@ -13,11 +13,8 @@ sources:
   - name: s3-model
     engine: s3
     connection:
-      username: ACCJBKSHJLFALJAFJB
-      password: BALJBS786asdhjaa87ads6asdas23232
-      host: us-east-1
-      database: preendb-internal-transfer
-      AuthSource: mock-user-data-1.csv
+      bucket_name: users
+      region: us-east-1
   - name: postgres-model
     engine: postgres
     connection:
@@ -29,9 +26,9 @@ sources:
   - name: mongo-model
     engine: mongodb
     connection:
-      host: missing
-      port: this
-      database: stuff
+      host: ${MONGO_HOST}
+      port: ${MONGO_PORT}
+      database: mongo
 ```
 
 In a nutshell, your configuration is primarily a list of data sources, credentials, and their engine classification (see [config](../../documentation/config/ "mention")for list of supported engines). **Be sure to add this file to your `.gitignore` if you are keeping it somewhere version controlled.**
