@@ -229,7 +229,6 @@ var duckdbTypeMap = map[string]string{
 	"bytea":                       "blob",
 	"variant":                     "blob", // snowflake
 	"object":                      "json", // snowflake
-	// "array":                       "json", // snowflake
 	"json":                   "json",
 	"jsonb":                  "json",
 	"inet":                   "varchar",
