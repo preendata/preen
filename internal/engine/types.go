@@ -215,6 +215,8 @@ var duckdbTypeMap = map[string]string{
 	"date":                        "date",
 	"timestamp":                   "timestamp",
 	"datetime":                    "timestamp",
+	"timestamp_tz":                "timestamp", //snowflake
+	"timestamp_ltz":               "timestamp", //snowflake
 	"timestamp_ntz":               "timestamp", //snowflake
 	"timestamp without time zone": "timestamp",
 	"timestamp with time zone":    "timestamp",
@@ -225,6 +227,8 @@ var duckdbTypeMap = map[string]string{
 	"mediumblob":                  "blob",
 	"longblob":                    "blob",
 	"bytea":                       "blob",
+	"variant":                     "blob", // snowflake
+	"object":                      "json", // snowflake
 	"json":                        "json",
 	"jsonb":                       "json",
 	"inet":                        "varchar",
