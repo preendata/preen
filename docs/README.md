@@ -16,6 +16,8 @@ layout:
 
 Preen is a local-first, federated analytics engine built on top of DuckDB. Think of Preen as an open-core version of Fivetran, Hightouch, or Stitch for local data processing. Preen enables accessing data across 10s, 100s or 1000s of data sources. The only thing you need is a laptop, basic SQL and access to your data sources.
 
+{% embed url="https://www.youtube.com/watch?v=O3IMRaSkEcQ" %}
+
 ## Why Preen?
 
 * Run analysis and train AI models directly from the primary copy of your company's data.
